@@ -14,6 +14,10 @@
  *   - tout le reste se lit en ECART face au stuff porte. Un joueur ne compare
  *     pas deux fiches, il compare ce qu'il gagne et ce qu'il perd.
  */
+import { SLOTS } from '../../src/data/slots.mjs';
+import { STAT_LABELS } from '../../src/data/stats.mjs';
+import { EXOS_RARES } from '../../src/engine/exos.mjs';
+import { LIBELLE_EXO } from '../exos-piece.mjs';
 
 /**
  * Les lignes d'une comparaison.
@@ -90,3 +94,95 @@ export function grouperParFamille(lignes) {
  * @param {number} rang Zero pour le stuff porte.
  */
 export const nomDeColonne = (rang) => (rang === 0 ? 'Porte' : `Trouvé ${rang}`);
+
+/** Famille sous laquelle les degats se rangent dans le tableau. */
+export const FAMILLE_DEGATS = 'Dégâts';
+
+/**
+ * Les mesures de degats : le total, puis chaque sort choisi, puis l'arme.
+ *
+ * Elles passent AVANT les caracteristiques : un joueur qui compare deux
+ * stuffs veut d'abord savoir lequel frappe le plus, et sur quel sort.
+ *
+ * @param {{name?: string}[]} sorts Sorts choisis dans les reglages.
+ * @param {boolean} avecArme Vrai quand l'attaque de l'arme compte.
+ * @returns {{cle: string, libelle: string, famille: string}[]}
+ */
+export function mesuresDegats(sorts, avecArme) {
+  return [
+    { cle: 'degats', libelle: 'Dégâts par tour', famille: FAMILLE_DEGATS },
+    ...(sorts ?? []).map((sort, i) => ({
+      cle: `sort:${i}`, libelle: sort.name ?? `Sort ${i + 1}`, famille: FAMILLE_DEGATS,
+    })),
+    ...(avecArme ? [{ cle: 'arme', libelle: 'Arme', famille: FAMILLE_DEGATS }] : []),
+  ];
+}
+
+/**
+ * Les valeurs de ces mesures, lues dans le detail rendu par `damageValue`.
+ *
+ * Le detail range l'attaque de l'arme APRES les sorts, comme
+ * `attaquesAffichees` la place.
+ *
+ * @param {{total: number, perSpell: {average: number, repeats?: number}[]}|null} detail
+ * @param {number} nbSorts
+ * @param {boolean} avecArme
+ * @returns {Record<string, number>}
+ */
+export function valeursDegats(detail, nbSorts, avecArme) {
+  const parTour = (coup) => (coup ? (Number(coup.average) || 0) * (Number(coup.repeats) > 0 ? Number(coup.repeats) : 1) : 0);
+  const coups = detail?.perSpell ?? [];
+  const valeurs = { degats: Number(detail?.total) || 0 };
+  for (let i = 0; i < nbSorts; i += 1) valeurs[`sort:${i}`] = parTour(coups[i]);
+  if (avecArme) valeurs.arme = parTour(coups[nbSorts]);
+  return valeurs;
+}
+
+/** Ordre des cases sur le plateau, par emplacement. */
+const RANG_CASE = new Map(SLOTS.map((slot, i) => [slot.key, i]));
+
+/**
+ * Les pieces d'une colonne, dans l'ordre du plateau.
+ *
+ * Deux stuffs qui se lisent dans le meme ordre se comparent d'un coup d'oeil :
+ * l'amulette sous l'amulette, les bottes sous les bottes.
+ *
+ * @param {{slot?: string}[]|null} pieces
+ */
+export function ordonnerPieces(pieces) {
+  return [...(pieces ?? [])].sort((a, b) =>
+    (RANG_CASE.get(a.slot) ?? 99) - (RANG_CASE.get(b.slot) ?? 99));
+}
+
+/** Nom court de la case d'une piece, pour dire ou l'exo se pose. */
+const NOM_CASE = new Map(SLOTS.map((s) => [s.key, s.label]));
+
+/** « +30 » ou « -2 » : le signe se lit toujours. */
+const signe = (n) => (n < 0 ? `\u2212${Math.abs(n)}` : `+${n}`);
+
+/**
+ * Ce que la forgemagie ajoute a une colonne, une ligne par exo.
+ *
+ * L'ordre suit les pieces, donc le plateau : le joueur lit « Exo PA, Ceinture »
+ * sous la ceinture qu'il voit dans la ligne des pieces. Un over
+ * (« Vitalite +30 ») se lit avant l'exo rare de la meme piece, comme sur la
+ * fiche. Une piece hors de la colonne ne compte pas, meme si la table garde
+ * encore ses exos.
+ *
+ * @param {Record<string, any>|null} exos Table des exos par piece.
+ * @param {{id: number, slot?: string}[]|null} pieces Pieces de la colonne, ordonnees.
+ * @returns {string[]}
+ */
+export function libellesExos(exos, pieces) {
+  return (pieces ?? []).flatMap((piece) => {
+    const exo = exos?.[piece.id];
+    if (!exo) return [];
+    const ou = NOM_CASE.get(piece.slot) ?? piece.slot ?? '';
+    const overs = Object.entries(exo.over ?? {})
+      .filter(([, v]) => Number.isFinite(Number(v)) && Number(v) !== 0)
+      .map(([stat, v]) => `${STAT_LABELS[stat] ?? stat} ${signe(Number(v))} \u00b7 ${ou}`);
+    const rares = EXOS_RARES.filter((cle) => exo[cle])
+      .map((cle) => `Exo ${LIBELLE_EXO[cle]} \u00b7 ${ou}`);
+    return [...overs, ...rares];
+  });
+}

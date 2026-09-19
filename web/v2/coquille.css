@@ -710,6 +710,21 @@ tr.titre th, tr.titre td {
   font-size: 9px; text-transform: uppercase; letter-spacing: .05em;
 }
 
+/* Les pieces de chaque stuff, en tete du tableau : on voit ce qu'on compare
+   avant de lire les chiffres. */
+.compare-pieces td { padding-top: 8px; padding-bottom: 8px; vertical-align: top; }
+.compare-pieces-grille {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px;
+  max-width: 120px; margin-left: auto;
+}
+.compare-pieces .piece-candidat { border-radius: 4px; }
+.compare-exos td { padding-top: 4px; padding-bottom: 8px; vertical-align: top; font: 11px/1.35 var(--ui); }
+.compare-exos-liste { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.compare-exo { color: var(--jade); white-space: nowrap; }
+.compare-exo-aucun { color: var(--texte-3); }
+.compare td.compare-note { text-align: left; font: 12px/1.4 var(--ui); }
+.compare td.compare-note .aide { padding: 12px 4px; }
+
 /* Cocher un stuff trouve l'ajoute a la comparaison. */
 .candidat-cocher { display: inline-flex; align-items: center; cursor: pointer; }
 .candidat-cocher input { cursor: pointer; margin: 0; }
