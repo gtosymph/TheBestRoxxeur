@@ -22,7 +22,8 @@ import { etatInitial, optionsAffichees } from '../reglages.mjs';
 import { etatRange, reprendreEtat, sauverEtat } from '../etat-stockage.mjs';
 import { adopter, reglageDuFragment, resume } from '../partage-lien.mjs';
 import {
-  attaqueArme, buildCourant, cibleAffichee, cibleDe, objectif, passifsActifs, profilDe,
+  attaqueArme, attaquesAffichees, buildCourant, cibleAffichee, cibleDe, objectif, passifsActifs,
+  profilDe,
   scoreAffiche, sortsCalcules, valeurDeReference,
 } from '../objectif.mjs';
 import { appliquerBuild } from '../equipement.mjs';
@@ -30,7 +31,7 @@ import { enrichirSorts } from '../sorts-migration.mjs';
 import { creerRecherche } from '../recherche.mjs';
 import { ouvrirFiche } from '../item-panel.mjs';
 import { iconeStat } from '../icons.mjs';
-import { SEARCH_MODES } from '../../src/solver/score.mjs';
+import { damageValue, SEARCH_MODES } from '../../src/solver/score.mjs';
 import { STAT_LABELS } from '../../src/data/stats.mjs';
 import { conditionValue } from '../../src/solver/condition-value.mjs';
 
@@ -39,7 +40,7 @@ import { creerGestesSorts } from '../gestes-sorts.mjs';
 import { brancherSets } from '../branchements.mjs';
 import { enregistrerSet, lireSets } from '../presets.mjs';
 import { installerSimulations } from '../simulations-panel.mjs';
-import { ajouterSimulation } from '../simulations.mjs';
+import { ajouterSimulation, lireSimulations } from '../simulations.mjs';
 import { instantane, patchDepuisSimulation } from '../instantane.mjs';
 import { emblemeDeClasse } from '../classes.mjs';
 import { LIBELLES_OPTIONS } from '../reglages.mjs';
@@ -54,6 +55,8 @@ import { garderSignature, reglagesChanges, reprendreSignature } from './perempti
 import { ouvrirIdentite } from './identite.mjs';
 import { basculerPalette, fermerPalette, paletteOuverte } from './palette.mjs';
 import { comparaisonOuverte, fermerComparaison, ouvrirComparaison } from './vue-comparaison.mjs';
+import { mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
+import { basculerChoix, cleDeChoix, rafraichirChoix } from './choix-comparaison.mjs';
 import { FAMILLES } from './fiche.mjs';
 import { fermerPoints, ouvrirPoints, pointsOuverts } from './vue-points.mjs';
 import { renderMelange } from './vue-melange.mjs';
@@ -103,20 +106,32 @@ let toutVoir = false;
  *
  * Une seule table pour les trois listes : on compare un stuff trouve avec un
  * palier d'achat et un essai garde, ce qu'aucune des trois ne permettait
- * separement. La cle est l'OBJET lui-meme — deux stuffs peuvent porter le
- * meme score sans etre le meme stuff — et la valeur dit d'ou il vient.
+ * separement. La cle est le STUFF et sa liste (`cleDeChoix`), jamais l'objet :
+ * les listes recreent leurs objets a chaque dessin, et une cle par objet
+ * gardait des coches que plus aucune case ne montrait.
  */
-const choisis = new Map();
+let choisis = new Map();
 
-/** Oublie les coches dont l'objet n'est plus a l'ecran. */
-function nettoyerChoisis(vivants) {
-  for (const objet of choisis.keys()) if (!vivants.has(objet)) choisis.delete(objet);
+/** Ce que les listes montrent en ce moment, pour rafraichir les coches. */
+function stuffsVisibles() {
+  return [
+    ...(etat.candidats ?? []).map((objet) => ({ objet, famille: 'trouve' })),
+    ...(etat.paliers ?? []).map((objet) => ({ objet, famille: 'palier' })),
+    ...lireSimulations().map((objet) => ({ objet, famille: 'essai' })),
+  ];
+}
+
+/** Les coches d'une liste, telles que ses cases les lisent. */
+function selectionDe(famille, nommer) {
+  return {
+    choisis: { has: (objet) => choisis.has(cleDeChoix(objet, famille)) },
+    onBasculer: (objet) => basculerChoisi(objet, famille, nommer(objet)),
+  };
 }
 
 /** Coche ou decoche un stuff, d'ou qu'il vienne. */
-function basculerChoisi(objet, nom) {
-  if (choisis.has(objet)) choisis.delete(objet);
-  else choisis.set(objet, { nom });
+function basculerChoisi(objet, famille, nom) {
+  choisis = basculerChoix(choisis, objet, famille, nom);
   render();
 }
 
@@ -250,6 +265,10 @@ window.addEventListener('pointercancel', cadence.relacher, true);
 
 function peindre() {
   if (vierge) return;
+
+  // Avant de dessiner : une coche dont le stuff a quitte l'ecran s'oublie,
+  // sinon la comparaison compterait un stuff que plus aucune case ne montre.
+  choisis = rafraichirChoix(choisis, stuffsVisibles());
 
   const build = buildCourant(etat, catalogue);
   const stats = build?.stats ?? {};
@@ -555,11 +574,7 @@ function renderTrouves(bilan) {
     itemById: catalogue?.itemById ?? new Map(),
     porte: bilan,
     onPorter: (candidat) => recherche.porterAlaMain(candidat),
-    selection: {
-      choisis,
-      onBasculer: (candidat) => basculerChoisi(candidat,
-        `Trouvé ${candidats.indexOf(candidat) + 1}`),
-    },
+    selection: selectionDe('trouve', (candidat) => `Trouvé ${candidats.indexOf(candidat) + 1}`),
   });
 }
 
@@ -607,11 +622,7 @@ function renderProximite() {
       message(`Stuff porté : ${palier.changements} pièce(s) à acheter, `
         + `${nombre(Math.floor(palier.damage))} de dégâts.`);
     },
-    selection: {
-      choisis,
-      onBasculer: (palier) => basculerChoisi(palier,
-        `${palier.changements} pièce(s)`),
-    },
+    selection: selectionDe('palier', (palier) => `${palier.changements} pièce(s)`),
   });
 }
 
@@ -792,21 +803,32 @@ const MESURES_COMPARABLES = FAMILLES.flatMap(([famille, paires]) =>
   paires.map(([cle, libelle]) => ({ cle, libelle, famille })));
 
 /**
- * Les statistiques d'un stuff coche.
+ * Une colonne de la comparaison : ses statistiques, ses degats, ses pieces.
  *
- * Un essai garde porte les siennes : ce sont celles qu'il AVAIT, et les
+ * Un essai garde porte ses statistiques : ce sont celles qu'il AVAIT, et les
  * recalculer aujourd'hui donnerait autre chose si les points ou les options
  * ont bouge depuis. Un candidat ou un palier n'en porte pas : on repose son
  * stuff sur une copie de l'etat et on laisse le moteur faire le calcul.
+ *
+ * Les degats se comptent toujours avec les sorts du jour : c'est la question
+ * que le joueur pose maintenant, et l'arme de la colonne — pas celle portee —
+ * frappe quand l'option la compte.
+ *
+ * @param {string} nom
+ * @param {any|null} objet Stuff coche, ou null pour le stuff porte.
  */
-function statsDe(objet) {
-  if (objet.stats) return objet.stats;
-
-  const ids = objet.itemIds ?? (objet.pieces ?? []).map((p) => p.id);
-  return buildCourant(
-    { ...etat, ...appliquerBuild(etat, { ...objet, itemIds: ids }, catalogue.itemById) },
-    catalogue,
-  )?.stats ?? {};
+function colonneDe(nom, objet) {
+  const ids = objet ? (objet.itemIds ?? (objet.pieces ?? []).map((p) => p.id)) : null;
+  const etatCol = objet
+    ? { ...etat, ...appliquerBuild(etat, { ...objet, itemIds: ids }, catalogue.itemById) }
+    : etat;
+  const stats = objet?.stats ?? buildCourant(etatCol, catalogue)?.stats ?? {};
+  const degats = damageValue(attaquesAffichees(etatCol), stats, cibleDe(etat));
+  return {
+    nom,
+    stats: { ...stats, ...valeursDegats(degats, etat.sorts.length, etat.options.arme) },
+    pieces: ordonnerPieces([...etatCol.equipped.values()]),
+  };
 }
 
 /** Ouvre la comparaison du stuff porte et des stuffs coches. */
@@ -814,10 +836,10 @@ function comparer() {
   if (choisis.size === 0) return;
 
   ouvrirComparaison({
-    mesures: MESURES_COMPARABLES,
+    mesures: [...mesuresDegats(etat.sorts, etat.options.arme), ...MESURES_COMPARABLES],
     colonnes: [
-      { nom: 'Porte', stats: buildCourant(etat, catalogue)?.stats ?? {} },
-      ...[...choisis].map(([objet, { nom }]) => ({ nom, stats: statsDe(objet) })),
+      colonneDe('Porté', null),
+      ...[...choisis.values()].map(({ objet, nom }) => colonneDe(nom, objet)),
     ],
     minimums: new Set(etat.conditions.map((c) => c.stat)),
   });
@@ -1288,11 +1310,8 @@ async function main() {
       onFiger: gestesReference.figerSimulation,
       onGarder: () => garderSimulation(),
       onMessage: (texte) => message(texte),
-      selection: {
-        choisis,
-        onBasculer: (simulation) => basculerChoisi(simulation,
-          simulation.nom || `${nomDeClasse(simulation.classe)} ${simulation.niveau}`),
-      },
+      selection: selectionDe('essai', (simulation) => simulation.nom
+        || `${nomDeClasse(simulation.classe)} ${simulation.niveau}`),
     });
 
     remplirListesSets();

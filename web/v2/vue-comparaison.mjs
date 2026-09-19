@@ -12,6 +12,7 @@
 import { el } from '../render.mjs';
 import { piegerFocus } from '../focus-piege.mjs';
 import { iconeStat } from '../icons.mjs';
+import { cacherBulle, montrerBulle, suivreBulle } from '../hover-card.mjs';
 import { grouperParFamille, lignesComparaison, nomDeColonne } from './comparaison.mjs';
 
 let racine = null;
@@ -39,8 +40,9 @@ export const comparaisonOuverte = () => Boolean(racine) && !racine.hidden;
  *
  * @param {object} liens
  * @param {{cle: string, libelle: string}[]} liens.mesures
- * @param {{nom: string, stats: Record<string, number>}[]} liens.colonnes
- *   La premiere est le stuff porte : c'est la reference des ecarts.
+ * @param {{nom: string, stats: Record<string, number>, pieces?: any[]}[]} liens.colonnes
+ *   La premiere est le stuff porte : c'est la reference des ecarts. Les
+ *   pieces, quand elles sont la, se montrent en tete de colonne.
  * @param {Set<string>} liens.minimums
  */
 export function ouvrirComparaison({ mesures, colonnes, minimums }) {
@@ -95,17 +97,43 @@ export function ouvrirComparaison({ mesures, colonnes, minimums }) {
   const intitule = (famille) => el('tr', { class: 'compare-famille' },
     el('th', { scope: 'colgroup', colspan: String(colonnes.length + 1), text: famille }));
 
-  const corps = lignes.length === 0
-    ? el('p', { class: 'aide', style: 'padding:18px 16px',
-        text: 'Ces stuffs ont exactement les mêmes valeurs sur toutes les mesures.' })
+  /* Les pieces d'une colonne, comme sur le plateau : une image par piece,
+     la fiche au survol. Une piece que le stuff porte n'a pas se cadre en
+     vert — c'est ce que le joueur devrait acheter ou echanger. */
+  const portees = new Set((colonnes[0]?.pieces ?? []).map((p) => p.id));
+  const vignette = (piece, i) => el('img', {
+    class: `piece-candidat ${i > 0 && !portees.has(piece.id) ? 'entrante' : ''}`.trim(),
+    src: piece.img, alt: piece.fr, title: piece.fr, decoding: 'async',
+    onMouseenter: (ev) => montrerBulle(piece, ev.clientX, ev.clientY, { ancre: ev.currentTarget }),
+    onMousemove: (ev) => suivreBulle(ev.clientX, ev.clientY),
+    onMouseleave: cacherBulle,
+  });
+  const rangeePieces = colonnes.some((c) => (c.pieces ?? []).length > 0)
+    ? el('tr', { class: 'compare-pieces' },
+        el('th', { scope: 'row', text: 'Pièces' }),
+        ...colonnes.map((c, i) => el('td', {},
+          el('div', { class: 'compare-pieces-grille' },
+            ...(c.pieces ?? []).map((piece) => vignette(piece, i))))))
+    : null;
+
+  /* Quand tout est identique, les pieces restent : c'est la seule chose qui
+     dit encore au joueur ce qu'il a mis cote a cote. */
+  const identiques = el('p', { class: 'aide', style: 'padding:18px 16px',
+    text: 'Ces stuffs ont exactement les mêmes valeurs sur toutes les mesures.' });
+  const corps = lignes.length === 0 && !rangeePieces
+    ? identiques
     : el('table', { class: 'compare' },
         el('thead', {}, el('tr', {},
           el('th', { text: '' }),
           ...colonnes.map((c, i) => el('th', { text: c.nom ?? nomDeColonne(i) })))),
-        el('tbody', {}, ...grouperParFamille(lignes).flatMap((groupe) => [
-          ...(groupe.famille ? [intitule(groupe.famille)] : []),
-          ...groupe.lignes.map(rangee),
-        ])));
+        el('tbody', {}, rangeePieces,
+          ...(lignes.length === 0
+            ? [el('tr', {}, el('td', { class: 'compare-note', colspan: String(colonnes.length + 1) }, identiques))]
+            : []),
+          ...grouperParFamille(lignes).flatMap((groupe) => [
+            ...(groupe.famille ? [intitule(groupe.famille)] : []),
+            ...groupe.lignes.map(rangee),
+          ])));
 
   racine.replaceChildren(el('div', {
     class: 'compare-boite', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Comparer',
