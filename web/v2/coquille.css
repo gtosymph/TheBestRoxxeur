@@ -2069,3 +2069,62 @@ table.conditions .mini[aria-pressed="true"] { color: var(--ambre); border-color:
   .palette-onglets button { flex: none; min-height: 34px; }
   .palette-filtres { flex-wrap: wrap; }
 }
+
+/* ======================================================== La cible ===
+
+   Sous le nombre de degats, une phrase dit contre quoi il est compte. La
+   feuille qui l'ouvre tient trois choses : les monstres gardes, les cinq
+   pourcentages a la main, le bestiaire ou l'on cherche. Les pourcentages
+   s'ecrivent en chiffres a chasse fixe : « 14/17/16/29/25 % » se compare
+   d'une ligne a l'autre seulement si les barres tombent au meme endroit. */
+
+.bloc-cible { display: grid; gap: 2px; margin-top: 9px; }
+.bloc-cible .cible-phrase { color: var(--texte-2); font-variant-numeric: tabular-nums; }
+.bloc-cible .appel { margin-top: 2px; }
+
+.cible-gardes, .cible-resultats { display: grid; gap: 4px; }
+.cible-resultats { max-height: 320px; overflow-y: auto; padding-right: 4px; }
+.cible-ligne {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px;
+  padding: 5px 8px; border: 1px solid var(--filet); border-radius: 6px; background: var(--surface-2);
+  font-size: 12px;
+}
+.cible-ligne.gardee { grid-template-columns: 1fr auto auto auto; }
+.cible-ligne.dedans { opacity: .55; }
+.cible-nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--texte); }
+.cible-nom small { color: var(--texte-3); }
+.cible-res { font-family: var(--mono); font-size: 11px; color: var(--texte-2); font-variant-numeric: tabular-nums; }
+.cible-ligne select.grade { height: 24px; font-size: 11px; }
+.cible-ligne .btn { height: 24px; padding: 0 8px; font-size: 11px; }
+.cible-moyenne { margin: 6px 0 0; font-family: var(--mono); font-size: 12px; color: var(--texte); min-height: 1em; }
+
+.etiquette {
+  display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 640; letter-spacing: .5px; text-transform: uppercase;
+  background: var(--surface-3); color: var(--texte-2);
+}
+.etiquette.boss { background: var(--iris-fond); color: var(--iris); }
+
+.cible-manuel { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.cible-champ { display: grid; gap: 4px; font-size: 11px; color: var(--texte-2); }
+.cible-champ input { width: 100%; height: 26px; padding: 0 6px; text-align: right; font-family: var(--mono); }
+.cible-champ input:disabled { opacity: .5; }
+.cible-champ .unite { display: none; }
+
+.cible-filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 8px; font-size: 12px; color: var(--texte-2); }
+.cible-filtres input[type="search"] { flex: 1 1 180px; height: 28px; padding: 0 8px; }
+.cible-filtres .case { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.cible-filtres .case input { accent-color: var(--iris); margin: 0; }
+.cible-niveaux { display: inline-flex; align-items: center; gap: 4px; }
+.cible-niveaux input { width: 56px; height: 26px; padding: 0 5px; font-family: var(--mono); text-align: right; }
+
+@media (max-width: 560px) {
+  .cible-manuel { grid-template-columns: repeat(3, 1fr); }
+  .cible-ligne, .cible-ligne.gardee { grid-template-columns: 1fr auto; }
+}
+
+/* La borne haute : un chiffre qu'aucun stuff n'atteint, et qui dit combien
+   il reste a chercher. Il se lit en retrait, sous la phrase des degats, et
+   porte sa reserve en infobulle : la phrase seule ferait croire a un stuff
+   possible. */
+.borne { display: block; margin-top: 4px; color: var(--texte-3); cursor: help; font-variant-numeric: tabular-nums; }

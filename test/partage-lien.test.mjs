@@ -270,3 +270,18 @@ test('un minimum se retrouve entier apres l\'aller-retour', async () => {
   const arrivee = adopter(await decoder(await coder(etat)), CATALOGUE);
   assert.deepEqual(arrivee.conditions, etat.conditions);
 });
+
+test('la cible voyage dans le lien et revient entiere', async () => {
+  const cible = {
+    manuel: { neutre: 0, terre: 0, feu: 0, eau: 0, air: 0 },
+    monstres: [{ id: 1, nom: 'Bouftou', grade: 5, niveau: 20, res: { neutre: 5, terre: 10, feu: 0, eau: 0, air: 0 } }],
+  };
+  assert.deepEqual(formePartagee({ ...etatInitial(), cible }).cible, cible);
+
+  const arrivee = adopter(await decoder(await coder({ ...etatInitial(), cible })), CATALOGUE);
+  assert.deepEqual(arrivee.cible, cible);
+});
+
+test('une cible vide ne voyage pas', () => {
+  assert.equal(formePartagee(etatInitial()).cible, undefined);
+});
