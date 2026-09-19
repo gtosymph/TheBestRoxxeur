@@ -23,13 +23,14 @@ const entier = (v) => Math.floor(v).toLocaleString('fr-FR');
  * Bloc des degats de l'arme, calcules avec les statistiques du build.
  * @param {any} item
  * @param {Record<string, number>|null} stats
+ * @param {Record<string, number>|null} [cible] Resistances de la cible.
  */
-function blocArmeCalculee(item, stats) {
+function blocArmeCalculee(item, stats, cible = null) {
   if (!stats || item.slot !== 'arme') return null;
   const attaque = weaponAttack(item);
   if (!attaque) return null;
 
-  const detail = computeSpellDetail(attaque, stats);
+  const detail = computeSpellDetail(attaque, stats, cible);
   return el('div', { class: 'fiche-arme calc' },
     el('div', { class: 'titre-arme', text: 'Avec vos caractéristiques' }),
     el('div', { class: 'lignes-arme' },
@@ -117,7 +118,7 @@ export function ouvrirFiche(item, actions = {}) {
             item.weapon.map((ligne) => ligneArme(ligne, `${ligne.min}–${ligne.max}`))))
       : null,
 
-    blocArmeCalculee(item, actions.stats ?? null),
+    blocArmeCalculee(item, actions.stats ?? null, actions.cible ?? null),
 
     item.twoHanded
       ? el('div', { class: 'fiche-note', text: 'Arme à deux mains : elle interdit le bouclier.' })

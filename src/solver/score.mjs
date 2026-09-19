@@ -210,14 +210,17 @@ export function evaluateCondition(condition, stats, degats = 0) {
  * Degats totaux d'un build, toutes attaques confondues.
  * @param {any[]} spells
  * @param {Record<string, number>} stats
+ * @param {Record<string, number>|null} [resistances] Resistances de la cible
+ *   par element (voir src/engine/cible.mjs). Absentes : la cible ne resiste
+ *   a rien.
  * @returns {{total: number, perSpell: any[]}}
  */
-export function damageValue(spells, stats) {
+export function damageValue(spells, stats, resistances = null) {
   let total = 0;
   const perSpell = [];
 
   for (const spell of spells) {
-    const result = computeSpell(spell, stats);
+    const result = computeSpell(spell, stats, resistances);
     // L'attaque d'une arme compte ses utilisations par tour ; un sort
     // compte un seul lancer, comme dans le calcul de reference.
     const repeats = Number(spell.repeats) > 0 ? Number(spell.repeats) : 1;
@@ -236,13 +239,15 @@ export function damageValue(spells, stats) {
  * @param {any[]} objective.conditions
  * @param {any[]} [objective.spells]
  * @param {string} [objective.mode]
+ * @param {Record<string, number>} [objective.cible] Resistances de la cible
+ *   par element. Elles reduisent chaque coup ; le reste du score ne bouge pas.
  * @param {{details?: boolean}} [options] details : mettre faux dans la boucle
  *   du solveur, qui ne lit que le score. Le detail par condition coute un
  *   objet par condition et par evaluation, pour rien.
  * @returns {{score: number, penalty: number, damage: number, satisfied: boolean, unmet: any[], details: any[]}}
  */
 export function scoreBuild(stats, objective, options = {}) {
-  const { conditions, spells = [], mode = SEARCH_MODES.DAMAGE } = objective;
+  const { conditions, spells = [], mode = SEARCH_MODES.DAMAGE, cible = null } = objective;
   const avecDetails = options.details !== false;
   const normalisees = normalizeConditions(conditions);
   let penalty = 0;
@@ -255,7 +260,7 @@ export function scoreBuild(stats, objective, options = {}) {
   const combo = mode === SEARCH_MODES.STATS ? null : objectiveCombo(objective, stats, spells);
   const damage = mode === SEARCH_MODES.STATS
     ? 0
-    : (combo ? combo.total : damageValue(spells, stats).total);
+    : (combo ? combo.total : damageValue(spells, stats, cible).total);
 
   for (const condition of normalisees) {
     const result = evaluateCondition(condition, stats, damage);
@@ -360,6 +365,7 @@ function objectiveCombo(objective, stats, spells) {
     elementsMin: Number(reglage.elementsMin) || 0,
     unLancer: Boolean(reglage.unLancer),
     cibleTelefrag: Boolean(reglage.cibleTelefrag),
+    resistances: objective.cible ?? null,
   });
 }
 

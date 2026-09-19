@@ -9,6 +9,7 @@
 import { STAT_KEYS } from '../src/data/stats.mjs';
 import { computeBuild } from '../src/engine/build.mjs';
 import { normaliserMenace } from '../src/engine/defense.mjs';
+import { estVide, resistancesCible } from '../src/engine/cible.mjs';
 import { weaponAttack } from '../src/engine/damage.mjs';
 import { normalizePassives } from '../src/data/passives.mjs';
 import { configPassifsDefaut } from '../src/data/passives-defaults.mjs';
@@ -131,6 +132,15 @@ export function menaceDe(etat) {
 }
 
 /**
+ * Resistances de la cible, telles que le moteur les lit, ou null.
+ * @param {any} etat
+ */
+export function cibleDe(etat) {
+  if (!etat.cible || estVide(etat.cible)) return null;
+  return resistancesCible(etat.cible);
+}
+
+/**
  * Objectif remis au solveur.
  * @param {any} etat
  */
@@ -145,6 +155,10 @@ export function objectif(etat) {
     // Modele d'adversaire : il decide de la valeur en vie d'une resistance,
     // donc de tout l'axe « degats ou survie ».
     menace: menaceDe(etat),
+    // Ce que le stuff frappe : chaque coup se reduit de la resistance de la
+    // cible dans son element. Absente quand rien n'est pose, pour que le
+    // solveur n'ait rien a multiplier.
+    cible: cibleDe(etat),
     spells: sortsCalcules(etat),
     // Le solveur ajoute lui-meme l'attaque de l'arme de chaque build essaye.
     useWeapon: etat.options.arme,

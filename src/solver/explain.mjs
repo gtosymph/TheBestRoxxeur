@@ -113,12 +113,13 @@ export function sensibiliteStats(stats, objective) {
   const spells = objective?.spells ?? [];
   if (spells.length === 0) return [];
 
-  const base = damageValue(spells, stats).total;
+  const cible = objective?.cible ?? null;
+  const base = damageValue(spells, stats, cible).total;
 
   const mesures = [];
   for (const [stat, pas] of Object.entries(PAS_PAR_STAT)) {
     const augmentees = { ...stats, [stat]: (stats[stat] ?? 0) + pas };
-    const gain = damageValue(spells, augmentees).total - base;
+    const gain = damageValue(spells, augmentees, cible).total - base;
     mesures.push({ stat, pas, gain, gainParPas: gain / pas });
   }
 

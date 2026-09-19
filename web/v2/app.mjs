@@ -22,8 +22,8 @@ import { etatInitial, optionsAffichees } from '../reglages.mjs';
 import { etatRange, reprendreEtat, sauverEtat } from '../etat-stockage.mjs';
 import { adopter, reglageDuFragment, resume } from '../partage-lien.mjs';
 import {
-  buildCourant, cibleAffichee, passifsActifs, profilDe, scoreAffiche, sortsCalcules,
-  valeurDeReference,
+  attaqueArme, buildCourant, cibleAffichee, cibleDe, objectif, passifsActifs, profilDe,
+  scoreAffiche, sortsCalcules, valeurDeReference,
 } from '../objectif.mjs';
 import { appliquerBuild } from '../equipement.mjs';
 import { enrichirSorts } from '../sorts-migration.mjs';
@@ -43,7 +43,6 @@ import { ajouterSimulation } from '../simulations.mjs';
 import { instantane, patchDepuisSimulation } from '../instantane.mjs';
 import { emblemeDeClasse } from '../classes.mjs';
 import { LIBELLES_OPTIONS } from '../reglages.mjs';
-import { attaqueArme } from '../objectif.mjs';
 import { computeSpellDetail } from '../../src/engine/damage.mjs';
 import { creerGestesReference } from '../gestes-reference.mjs';
 
@@ -76,6 +75,9 @@ import { fermerVisite, ouvrirVisite, visiteOuverte } from './vue-visite.mjs';
 import { fermerSignaler, ouvrirSignaler, signalerOuvert } from './vue-signaler.mjs';
 import { VERSION_LUE } from '../version.mjs';
 import { fermerMinimums, minimumsOuverts, MINIMUM_NEUF, ouvrirMinimums } from './vue-minimums.mjs';
+import { cibleOuverte, fermerCible, ouvrirCible, renderBlocCible } from './vue-cible.mjs';
+import { resumeCible } from './cible.mjs';
+import { borneDegats } from '../../src/solver/borne.mjs';
 import { paliersUtiles, renderPaliers, renderReglageProximite } from '../proximite-panel.mjs';
 import { renderAnalyse } from '../analyse-panel.mjs';
 import { equiperDans, remplacer, remplacementAuChoix } from '../equipement.mjs';
@@ -276,7 +278,7 @@ function peindre() {
     onGarder: garderCombo,
   });
   const arme = attaqueArme(etat);
-  renderArme($('carte-arme'), arme, arme && stats ? computeSpellDetail(arme, stats) : null);
+  renderArme($('carte-arme'), arme, arme && stats ? computeSpellDetail(arme, stats, cibleDe(etat)) : null);
   renderFraicheur();
   renderArret();
 }
@@ -334,6 +336,41 @@ function renderPlateau(stats) {
   $('avatar-image').src = avatarDeClasse(etat.classe, etat.sexe);
 }
 
+/**
+ * La borne haute se recalcule seulement quand ce qui la fait bouger a bouge :
+ * elle parcourt tout le catalogue, et un rendu par frappe au clavier ne doit
+ * pas le payer.
+ */
+let borneGardee = { cle: null, valeur: null };
+
+function borneCourante() {
+  const objective = objectif(etat);
+  const cle = JSON.stringify([etat.niveau, [...etat.bannis], etat.scrolls, etat.options.passifs,
+    objective.spells, objective.cible, objective.menace]);
+  if (borneGardee.cle !== cle) {
+    borneGardee = {
+      cle,
+      valeur: borneDegats({
+        items: catalogue.items, level: etat.niveau, setById: catalogue.setById,
+        banned: etat.bannis, scrolls: etat.scrolls, objective,
+      }),
+    };
+  }
+  return borneGardee.valeur;
+}
+
+/** Sous les degats : ce qu'aucun stuff ne depasse, et pourquoi c'est au-dessus. */
+function renderBorne() {
+  const borne = borneCourante();
+  const noeud = $('borne-phrase');
+  noeud.hidden = borne === null;
+  if (borne === null) return;
+  noeud.textContent = `Borne haute : ${nombre(borne)}, qu'aucun stuff n'atteint.`;
+  noeud.title = 'Chaque emplacement prend le meilleur de chaque statistique, sans les conditions '
+    + 'ni le cumul des panoplies, et tous les points vont partout à la fois. '
+    + 'Le vrai optimum est en dessous, souvent de loin.';
+}
+
 function renderVerdict(stats, degats) {
   const vDegats = $('v-degats');
   vDegats.textContent = degats === null ? '—' : nombre(degats);
@@ -342,6 +379,7 @@ function renderVerdict(stats, degats) {
   $('degats-avec-sorts').hidden = degats === null;
   if (degats !== null) {
     $('degats-phrase').textContent = `Vos sorts envoient ${nombre(degats)} dégâts sur un tour.`;
+    renderBorne();
   }
 
   const pdv = Number(stats.pdvEffectifs) || 0;
@@ -351,6 +389,9 @@ function renderVerdict(stats, degats) {
   const rangees = rangerOptions(optionsAffichees(etat.options));
   renderOptions($('options-degats'), rangees.degats, poserOption);
   renderOptions($('options-pdv'), rangees.pdv, poserOption);
+  // Contre quoi le nombre est compte : sans la phrase, 947 ne dit rien.
+  renderBlocCible($('bloc-cible'), resumeCible(etat.cible),
+    () => ouvrirCible({ lireEtat, setEtat, message }));
 
   // « A acheter » n'a de sens que face a un stuff de reference : sans lui, tout
   // est un achat, et le chiffre ne dit rien.
@@ -953,6 +994,7 @@ function ouvrirFicheDe(cle, item) {
   const build = buildCourant(etat, catalogue);
   ouvrirFiche(item, {
     stats: build?.stats ?? null,
+    cible: cibleDe(etat),
     onRemove: () => gestes.retirer(cle),
     onLock: () => gestes.verrouiller(item),
     verrouille: etat.verrous.has(item.id),
@@ -1318,6 +1360,7 @@ window.addEventListener('keydown', (ev) => {
   else if (visiteOuverte()) fermerVisite();
   else if (comparaisonOuverte()) fermerComparaison();
   else if (minimumsOuverts()) fermerMinimums();
+  else if (cibleOuverte()) fermerCible();
   else if (signalerOuvert()) fermerSignaler();
   else if (comboOuvert()) fermerCombo();
   else if (reglagesOuverts()) fermerReglages();

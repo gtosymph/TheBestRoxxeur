@@ -14,6 +14,7 @@ const FICHIERS = [
   ['items.json', 'objets'],
   ['sets.json', 'panoplies'],
   ['effects.json', 'effets'],
+  ['monsters.json', 'monstres'],
 ];
 
 async function lire(dossier, fichier) {

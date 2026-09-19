@@ -80,9 +80,11 @@ export function maitriseArmeBonus(stats) {
  * @param {'melee' | 'distance' | null} [hit.range] Portee du coup.
  * @param {boolean} [hit.maitrise] Vrai pour un coup d'arme sous maitrise.
  * @param {Record<string, number>} stats Statistiques du personnage.
+ * @param {Record<string, number>} [resistances] Resistance de la cible par
+ *   element, en pour cent. Absente : la cible ne resiste a rien.
  * @returns {number} Degats infliges, arrondis vers le bas.
  */
-export function computeHit(hit, stats) {
+export function computeHit(hit, stats, resistances = null) {
   const { element, base, critical = false, source = 'sort', range = null, maitrise = false } = hit;
 
   if (!Number.isFinite(base) || base <= 0) return 0;
@@ -106,7 +108,24 @@ export function computeHit(hit, stats) {
   const scaled = (base * (100 + power)) / 100 + flat;
   const total = applyPercentFamilies(scaled, stats, { source, range });
 
-  return Math.max(0, total);
+  return Math.max(0, applyResistance(total, resistances?.[element]));
+}
+
+/**
+ * Ce qu'il reste d'un coup apres la resistance de la cible.
+ *
+ * Le jeu l'applique en tout dernier, sur les degats deja arrondis, et
+ * arrondit encore vers le bas. Une resistance negative augmente le coup ;
+ * cent pour cent ou plus l'annule.
+ *
+ * @param {number} degats Coup avant resistance.
+ * @param {number|undefined} pourcent Resistance de la cible dans cet element.
+ * @returns {number}
+ */
+function applyResistance(degats, pourcent) {
+  if (!pourcent) return degats;
+  if (pourcent >= 100) return 0;
+  return Math.floor((degats * (100 - pourcent)) / 100);
 }
 
 /**
@@ -133,20 +152,21 @@ export function criticalRate(stats, spellCritBonus = 0) {
  * @param {'melee' | 'distance' | null} [line.range]
  * @param {Record<string, number>} stats
  * @param {number} [critRate] Taux critique en fraction de 1.
+ * @param {Record<string, number>} [resistances] Resistances de la cible.
  * @returns {{normal: number, critical: number, average: number}}
  */
-export function computeLine(line, stats, critRate = criticalRate(stats)) {
+export function computeLine(line, stats, critRate = criticalRate(stats), resistances = null) {
   const { element, min, max, source = 'sort', range = null, maitrise = false } = line;
   const critMin = line.critMin ?? min;
   const critMax = line.critMax ?? max;
 
   const normal = computeHit(
     { element, base: (min + max) / 2, critical: false, source, range, maitrise },
-    stats,
+    stats, resistances,
   );
   const critical = computeHit(
     { element, base: (critMin + critMax) / 2, critical: true, source, range, maitrise },
-    stats,
+    stats, resistances,
   );
 
   const rate = Math.min(1, Math.max(0, critRate));
@@ -178,9 +198,11 @@ export function computeLine(line, stats, critRate = criticalRate(stats)) {
  *
  * @param {boolean} [spell.compterDiffere] Compter les lignes des tours suivants.
  * @param {Record<string, number>} stats
+ * @param {Record<string, number>} [resistances] Resistances de la cible par
+ *   element (voir cible.mjs). Absentes : la cible ne resiste a rien.
  * @returns {{normal: number, critical: number, average: number, differe: number, perAp: number|null}}
  */
-export function computeSpell(spell, stats) {
+export function computeSpell(spell, stats, resistances = null) {
   const lines = Array.isArray(spell.lines) ? spell.lines : [];
   const rate = criticalRate(stats, spell.baseCrit ?? 0);
   const compterDiffere = spell.compterDiffere === true;
@@ -191,7 +213,7 @@ export function computeSpell(spell, stats) {
   let differe = 0;
 
   for (const line of lines) {
-    const result = computeLine(line, stats, rate);
+    const result = computeLine(line, stats, rate, resistances);
     if (line.differe > 0) {
       differe += result.average;
       // Le differe se lit toujours a part, meme quand il compte : c'est ce
@@ -274,10 +296,11 @@ export function weaponAttack(item, options = {}) {
  *
  * @param {any} spell
  * @param {Record<string, number>} stats
+ * @param {Record<string, number>} [resistances] Resistances de la cible.
  */
-export function computeSpellDetail(spell, stats) {
+export function computeSpellDetail(spell, stats, resistances = null) {
   const lines = Array.isArray(spell.lines) ? spell.lines : [];
-  const moyennes = computeSpell(spell, stats);
+  const moyennes = computeSpell(spell, stats, resistances);
   const rate = criticalRate(stats, spell.baseCrit ?? 0);
   const compterDiffere = spell.compterDiffere === true;
 
@@ -292,10 +315,10 @@ export function computeSpellDetail(spell, stats) {
     const ligne = {
       element,
       differe: line.differe > 0 ? line.differe : 0,
-      normalMin: computeHit({ element, base: min, source, range, maitrise }, stats),
-      normalMax: computeHit({ element, base: max, source, range, maitrise }, stats),
-      critMin: computeHit({ element, base: critMin, critical: true, source, range, maitrise }, stats),
-      critMax: computeHit({ element, base: critMax, critical: true, source, range, maitrise }, stats),
+      normalMin: computeHit({ element, base: min, source, range, maitrise }, stats, resistances),
+      normalMax: computeHit({ element, base: max, source, range, maitrise }, stats, resistances),
+      critMin: computeHit({ element, base: critMin, critical: true, source, range, maitrise }, stats, resistances),
+      critMax: computeHit({ element, base: critMax, critical: true, source, range, maitrise }, stats, resistances),
     };
 
     // Les bornes montrees decrivent ce que le score additionne : une ligne
