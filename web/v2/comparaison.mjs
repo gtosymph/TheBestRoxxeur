@@ -15,6 +15,9 @@
  *     pas deux fiches, il compare ce qu'il gagne et ce qu'il perd.
  */
 import { SLOTS } from '../../src/data/slots.mjs';
+import { STAT_LABELS } from '../../src/data/stats.mjs';
+import { EXOS_RARES } from '../../src/engine/exos.mjs';
+import { LIBELLE_EXO } from '../exos-piece.mjs';
 
 /**
  * Les lignes d'une comparaison.
@@ -149,4 +152,37 @@ const RANG_CASE = new Map(SLOTS.map((slot, i) => [slot.key, i]));
 export function ordonnerPieces(pieces) {
   return [...(pieces ?? [])].sort((a, b) =>
     (RANG_CASE.get(a.slot) ?? 99) - (RANG_CASE.get(b.slot) ?? 99));
+}
+
+/** Nom court de la case d'une piece, pour dire ou l'exo se pose. */
+const NOM_CASE = new Map(SLOTS.map((s) => [s.key, s.label]));
+
+/** « +30 » ou « -2 » : le signe se lit toujours. */
+const signe = (n) => (n < 0 ? `\u2212${Math.abs(n)}` : `+${n}`);
+
+/**
+ * Ce que la forgemagie ajoute a une colonne, une ligne par exo.
+ *
+ * L'ordre suit les pieces, donc le plateau : le joueur lit « Exo PA, Ceinture »
+ * sous la ceinture qu'il voit dans la ligne des pieces. Un over
+ * (« Vitalite +30 ») se lit avant l'exo rare de la meme piece, comme sur la
+ * fiche. Une piece hors de la colonne ne compte pas, meme si la table garde
+ * encore ses exos.
+ *
+ * @param {Record<string, any>|null} exos Table des exos par piece.
+ * @param {{id: number, slot?: string}[]|null} pieces Pieces de la colonne, ordonnees.
+ * @returns {string[]}
+ */
+export function libellesExos(exos, pieces) {
+  return (pieces ?? []).flatMap((piece) => {
+    const exo = exos?.[piece.id];
+    if (!exo) return [];
+    const ou = NOM_CASE.get(piece.slot) ?? piece.slot ?? '';
+    const overs = Object.entries(exo.over ?? {})
+      .filter(([, v]) => Number.isFinite(Number(v)) && Number(v) !== 0)
+      .map(([stat, v]) => `${STAT_LABELS[stat] ?? stat} ${signe(Number(v))} \u00b7 ${ou}`);
+    const rares = EXOS_RARES.filter((cle) => exo[cle])
+      .map((cle) => `Exo ${LIBELLE_EXO[cle]} \u00b7 ${ou}`);
+    return [...overs, ...rares];
+  });
 }

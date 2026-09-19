@@ -40,7 +40,7 @@ export const comparaisonOuverte = () => Boolean(racine) && !racine.hidden;
  *
  * @param {object} liens
  * @param {{cle: string, libelle: string}[]} liens.mesures
- * @param {{nom: string, stats: Record<string, number>, pieces?: any[]}[]} liens.colonnes
+ * @param {{nom: string, stats: Record<string, number>, pieces?: any[], exos?: string[]}[]} liens.colonnes
  *   La premiere est le stuff porte : c'est la reference des ecarts. Les
  *   pieces, quand elles sont la, se montrent en tete de colonne.
  * @param {Set<string>} liens.minimums
@@ -116,6 +116,18 @@ export function ouvrirComparaison({ mesures, colonnes, minimums }) {
             ...(c.pieces ?? []).map((piece) => vignette(piece, i))))))
     : null;
 
+  /* La forgemagie, sous les pieces : un stuff qui gagne un PA par un exo ne
+     vaut pas un stuff qui le gagne par ses pieces, et le joueur doit le voir. */
+  const rangeeExos = colonnes.some((c) => (c.exos ?? []).length > 0)
+    ? el('tr', { class: 'compare-exos' },
+        el('th', { scope: 'row', text: 'Exos' }),
+        ...colonnes.map((c) => el('td', {},
+          (c.exos ?? []).length === 0
+            ? el('span', { class: 'compare-exo-aucun', text: '—' })
+            : el('div', { class: 'compare-exos-liste' },
+                ...(c.exos ?? []).map((texte) => el('span', { class: 'compare-exo', text: texte }))))))
+    : null;
+
   /* Quand tout est identique, les pieces restent : c'est la seule chose qui
      dit encore au joueur ce qu'il a mis cote a cote. */
   const identiques = el('p', { class: 'aide', style: 'padding:18px 16px',
@@ -126,7 +138,7 @@ export function ouvrirComparaison({ mesures, colonnes, minimums }) {
         el('thead', {}, el('tr', {},
           el('th', { text: '' }),
           ...colonnes.map((c, i) => el('th', { text: c.nom ?? nomDeColonne(i) })))),
-        el('tbody', {}, rangeePieces,
+        el('tbody', {}, rangeePieces, rangeeExos,
           ...(lignes.length === 0
             ? [el('tr', {}, el('td', { class: 'compare-note', colspan: String(colonnes.length + 1) }, identiques))]
             : []),

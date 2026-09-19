@@ -55,7 +55,7 @@ import { garderSignature, reglagesChanges, reprendreSignature } from './perempti
 import { ouvrirIdentite } from './identite.mjs';
 import { basculerPalette, fermerPalette, paletteOuverte } from './palette.mjs';
 import { comparaisonOuverte, fermerComparaison, ouvrirComparaison } from './vue-comparaison.mjs';
-import { mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
+import { libellesExos, mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
 import { basculerChoix, cleDeChoix, rafraichirChoix } from './choix-comparaison.mjs';
 import { FAMILLES } from './fiche.mjs';
 import { fermerPoints, ouvrirPoints, pointsOuverts } from './vue-points.mjs';
@@ -824,10 +824,14 @@ function colonneDe(nom, objet) {
     : etat;
   const stats = objet?.stats ?? buildCourant(etatCol, catalogue)?.stats ?? {};
   const degats = damageValue(attaquesAffichees(etatCol), stats, cibleDe(etat));
+  const pieces = ordonnerPieces([...etatCol.equipped.values()]);
   return {
     nom,
     stats: { ...stats, ...valeursDegats(degats, etat.sorts.length, etat.options.arme) },
-    pieces: ordonnerPieces([...etatCol.equipped.values()]),
+    pieces,
+    // La forgemagie de la colonne : celle du joueur, plus celle que le
+    // solveur a posee sur ce stuff.
+    exos: libellesExos(etatCol.exos, pieces),
   };
 }
 

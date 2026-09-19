@@ -11,7 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  lignesComparaison, mesuresDegats, nomDeColonne, ordonnerPieces, valeursDegats,
+  libellesExos, lignesComparaison, mesuresDegats, nomDeColonne, ordonnerPieces, valeursDegats,
 } from '../web/v2/comparaison.mjs';
 
 const MESURES = [
@@ -120,4 +120,27 @@ test('les pieces d\'une colonne se rangent comme sur le plateau', () => {
   ];
   assert.deepEqual(ordonnerPieces(pieces).map((p) => p.id), [2, 4, 1, 3]);
   assert.deepEqual(ordonnerPieces(null), []);
+});
+
+test('libellesExos nomme chaque exo rare et chaque over, dans l ordre des pieces', () => {
+  const pieces = [
+    { id: 1, slot: 'amulette', fr: 'Amu' },
+    { id: 2, slot: 'anneau', fr: 'Bague' },
+    { id: 3, slot: 'ceinture', fr: 'Ceinture' },
+  ];
+  const exos = {
+    3: { pa: 1 },
+    2: { over: { vitalite: 30, force: -2 } },
+  };
+  assert.deepEqual(libellesExos(exos, pieces), [
+    'Vitalité +30 · Anneau',
+    'Force −2 · Anneau',
+    'Exo PA · Ceinture',
+  ]);
+});
+
+test('libellesExos rend une liste vide sans exo ou sans piece', () => {
+  assert.deepEqual(libellesExos({}, [{ id: 1, slot: 'cape' }]), []);
+  assert.deepEqual(libellesExos(null, []), []);
+  assert.deepEqual(libellesExos({ 9: { pm: 1 } }, [{ id: 1, slot: 'cape' }]), []);
 });
