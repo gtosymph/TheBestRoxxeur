@@ -102,10 +102,12 @@ const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, `http://localhost:${PORT}`);
 
-    // La page vit dans web/. Une redirection garde les chemins relatifs justes :
-    // servir le fichier depuis "/" ferait chercher les ressources a la racine.
-    if (url.pathname === '/' || url.pathname === '/web' || url.pathname === '/web/') {
-      response.writeHead(302, { location: '/web/index.html' }).end();
+    // L'atelier vit dans web/v2/. Une redirection garde les chemins relatifs
+    // justes : servir le fichier depuis "/" ferait chercher les ressources a
+    // la racine. La requete suit, pour qu'un lien de partage ouvert sur la
+    // racine garde son reglage.
+    if (['/', '/web', '/web/', '/web/index.html'].includes(url.pathname)) {
+      response.writeHead(302, { location: '/web/v2/index.html' + url.search }).end();
       return;
     }
 

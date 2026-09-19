@@ -62,14 +62,14 @@ jobs:
       - uses: actions/checkout@v4
 
       # Le site n'a pas d'etape de construction : il se compose en copiant ce
-      # qui doit etre servi, et RIEN d'autre. Les maquettes, les tests et les
-      # scripts d'ingestion n'ont aucune raison d'etre publics.
+      # qui doit etre servi, et RIEN d'autre. Les tests, les scripts
+      # d'ingestion et les sources brutes n'ont aucune raison d'etre publics.
       - name: Composer le site
         run: |
           mkdir -p _site
           cp index.html .nojekyll _site/
           cp -r web src data _site/
-          rm -rf _site/web/maquettes _site/data/raw
+          rm -rf _site/data/raw
           du -sh _site
 
       - uses: actions/configure-pages@v5

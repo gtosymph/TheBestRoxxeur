@@ -5,13 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Best Roxxeur</title>
 <meta name="description" content="Solveur de stuff Dofus : il cherche le meilleur equipement pour vos sorts, votre niveau et vos contraintes.">
+<!-- Ce que les messageries montrent quand un lien du site se partage.
+     L'image est fixe : GitHub Pages ne dessine rien a la demande. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Best Roxxeur">
+<meta property="og:title" content="The Best Roxxeur">
+<meta property="og:description" content="Le meilleur stuff Dofus pour vos sorts, votre niveau et vos conditions. Sans compte, tout dans le navigateur.">
+<meta property="og:url" content="https://gtosymph.github.io/TheBestRoxxeur/">
+<meta property="og:image" content="https://gtosymph.github.io/TheBestRoxxeur/web/apercu.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Best Roxxeur — optimiseur de stuff Dofus, avec une courbe dégâts contre survie.">
+<meta property="og:locale" content="fr_FR">
+<meta name="twitter:card" content="summary_large_image">
 
 <!--
   Porte d'entree du site publie.
 
-  Les deux ecrans vivent dans des sous-dossiers, et la racine n'avait donc
-  aucune page : ouvrir l'adresse du site ne montrait rien. Cette page mene a
-  l'atelier, et laisse v1 joignable par son adresse.
+  L'atelier vit dans web/v2/, et la racine n'avait donc aucune page : ouvrir
+  l'adresse du site ne montrait rien. Cette page mene a l'atelier. Le dossier
+  garde son nom pour que les liens deja partages continuent de marcher.
 
   Le renvoi passe par une balise « refresh » AVANT le script : elle marche
   sans JavaScript, et c'est la seule facon d'etre sur qu'un visiteur arrive
@@ -31,7 +44,6 @@
   }
   h1 { margin: 0; font-size: 20px; font-weight: 640; color: #e8ecf6; }
   a { color: #9b93ff; }
-  .discret { font-size: 12px; color: #7b839b; }
 </style>
 </head>
 <body>
@@ -39,7 +51,6 @@
 <h1>The Best Roxxeur</h1>
 <p>Ouverture de l'atelier…</p>
 <p><a href="web/v2/index.html">Entrer maintenant</a></p>
-<p class="discret">L'ancien ecran reste la : <a href="web/index.html">version precedente</a>.</p>
 
 <script>
   // La requete et le fragment suivent le visiteur : un lien de partage
