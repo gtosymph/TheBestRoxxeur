@@ -38,6 +38,7 @@ export const plusOuvert = () => racine !== null;
 const LIGNES = Object.freeze([
   { cible: 'vider', nom: 'Vider le stuff', aide: 'Enleve toutes les pièces portées' },
   { cible: 'partager', nom: 'Partager', aide: 'Un lien, ou l\'envoi vers Dofusbook' },
+  { cible: 'importer', nom: 'Importer', aide: 'Un stuff venu de Dofusbook' },
   { cible: 'signaler', nom: 'Signaler', aide: 'Un défaut, une idée' },
   { cible: 'visite', nom: 'Visite guidée', aide: 'A quoi sert chaque écran' },
   { cible: 'reglages', nom: 'Reglages', aide: 'Calcul, moteur et habillage' },

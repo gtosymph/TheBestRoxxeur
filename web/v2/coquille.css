@@ -2128,3 +2128,28 @@ table.conditions .mini[aria-pressed="true"] { color: var(--ambre); border-color:
    porte sa reserve en infobulle : la phrase seule ferait croire a un stuff
    possible. */
 .borne { display: block; margin-top: 4px; color: var(--texte-3); cursor: help; font-variant-numeric: tabular-nums; }
+
+/* ====================================== L'import ===
+
+   La liste des pieces lues se montre AVANT de poser : trois colonnes, la
+   case, le nom, le niveau. La case d'abord, parce que c'est elle qui trahit
+   une mauvaise lecture — deux « Anneau 1 » ou un chapeau en cape se voient
+   d'un coup d'oeil, un nom mal lu non. */
+.import-apercu { margin-top: 14px; }
+.import-lignes {
+  display: grid; gap: 4px; margin-bottom: 10px;
+  max-height: 260px; overflow-y: auto;
+}
+.import-ligne {
+  display: grid; grid-template-columns: 110px 1fr auto; align-items: baseline; gap: 10px;
+  padding: 6px 10px; background: var(--surface-2); border: 1px solid var(--filet);
+  border-radius: var(--r); font-size: 12px;
+}
+.import-case { color: var(--texte-3); text-transform: uppercase; letter-spacing: .04em; font-size: 10px; }
+.import-nom { color: var(--texte); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-ligne small { color: var(--texte-3); font-variant-numeric: tabular-nums; }
+.champ-dire + .ligne-lien { margin-top: 8px; }
+@media (max-width: 640px) {
+  .import-ligne { grid-template-columns: 1fr auto; }
+  .import-case { grid-column: 1 / -1; }
+}

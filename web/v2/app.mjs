@@ -76,6 +76,7 @@ import { fermerSignaler, ouvrirSignaler, signalerOuvert } from './vue-signaler.m
 import { VERSION_LUE } from '../version.mjs';
 import { fermerMinimums, minimumsOuverts, MINIMUM_NEUF, ouvrirMinimums } from './vue-minimums.mjs';
 import { cibleOuverte, fermerCible, ouvrirCible, renderBlocCible } from './vue-cible.mjs';
+import { fermerImport, importOuvert, ouvrirImport } from './vue-import.mjs';
 import { resumeCible } from './cible.mjs';
 import { borneDegats } from '../../src/solver/borne.mjs';
 import { paliersUtiles, renderPaliers, renderReglageProximite } from '../proximite-panel.mjs';
@@ -1224,8 +1225,8 @@ async function main() {
   // Chaque commande recoit son dessin avant son libelle. Ceux de « Chercher »
   // et d'« Annuler » changent avec ce qu'ils font : ils se posent au rendu.
   for (const [id, nom] of [['arreter', 'pause'], ['vider', 'poubelle'],
-    ['partager', 'partage'], ['signaler', 'megaphone'], ['visite', 'boussole'],
-    ['reglages', 'engrenage']]) {
+    ['partager', 'partage'], ['importer', 'importer'], ['signaler', 'megaphone'],
+    ['visite', 'boussole'], ['reglages', 'engrenage']]) {
     $(id).prepend(icone(nom));
   }
 
@@ -1361,6 +1362,7 @@ window.addEventListener('keydown', (ev) => {
   else if (comparaisonOuverte()) fermerComparaison();
   else if (minimumsOuverts()) fermerMinimums();
   else if (cibleOuverte()) fermerCible();
+  else if (importOuvert()) fermerImport();
   else if (signalerOuvert()) fermerSignaler();
   else if (comboOuvert()) fermerCombo();
   else if (reglagesOuverts()) fermerReglages();
@@ -1429,6 +1431,8 @@ $('vider').addEventListener('click', vider);
 $('reglages').addEventListener('click',
   () => ouvrirReglages({ lireEtat, onOption: poserOption }));
 $('partager').addEventListener('click', () => ouvrirPartage({ lireEtat, message }));
+$('importer').addEventListener('click',
+  () => ouvrirImport({ lireEtat, setEtat, message, lireCatalogue: () => catalogue }));
 $('regler-combo').addEventListener('click',
   () => ouvrirCombo({ lireEtat, onOption: poserOption }));
 $('visite').addEventListener('click', () => ouvrirVisite({ message }));

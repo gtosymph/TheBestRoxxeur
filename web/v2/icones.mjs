@@ -54,6 +54,18 @@ const DESSINS = Object.freeze({
   },
 
   /**
+   * Importer : une fleche qui descend dans un bac.
+   *
+   * Le geste inverse du partage : quelque chose arrive ici. La fleche vers le
+   * bas, seule, dirait « telecharger » ; le bac dit ou la chose se pose.
+   */
+  importer: {
+    plein: false,
+    d: 'M12 3.5v11M8.2 10.7l3.8 3.8 3.8-3.8'
+      + 'M4 14.5v3.6a2.4 2.4 0 0 0 2.4 2.4h11.2a2.4 2.4 0 0 0 2.4-2.4v-3.6',
+  },
+
+  /**
    * Megaphone : dire quelque chose a quelqu'un.
    *
    * Un point d'exclamation dans un triangle dirait « attention, danger » ;
