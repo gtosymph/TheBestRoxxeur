@@ -1,0 +1,94 @@
+# Le catalogue se rafraichit tout seul.
+#
+# Les objets viennent de DofusDB, et une mise a jour du jeu les change sans
+# rien dire chez nous. Sans ce workflow, le catalogue vieillissait en silence
+# et les builds devenaient faux sans qu'aucun signe n'apparaisse.
+#
+# Chaque lundi matin, il ingere les donnees, les compare a celles du depot et,
+# si quelque chose a bouge et que les tests passent, ouvre une PR qui dit ce
+# qui change : combien d'objets ajoutes, enleves, modifies, et lesquels. La
+# fusion reste un geste humain — un objet mal ingere ne doit pas partir en
+# ligne tout seul.
+#
+# Il faut, une fois, cocher dans les reglages du depot :
+#   Settings > Actions > General > « Allow GitHub Actions to create and
+#   approve pull requests ». Sans cette case, `gh pr create` est refuse.
+name: Donnees
+
+on:
+  schedule:
+    # Lundi, 06:00 UTC, soit 08:00 a Paris en ete et 07:00 en hiver.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# Deux rafraichissements ne se marchent pas dessus.
+concurrency:
+  group: donnees
+  cancel-in-progress: true
+
+jobs:
+  rafraichir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Garder le catalogue d'avant
+        run: cp -r data /tmp/data-avant
+
+      # Le projet n'a aucune dependance : rien a installer. Les icones ne
+      # copient que ce qui manque, donc un lundi sans nouvel objet ne charge
+      # rien.
+      - name: Ingerer
+        run: |
+          npm run data:all
+          npm run data:icons
+
+      - name: Mesurer le changement
+        id: mesure
+        run: |
+          if git diff --quiet -- data web/assets/items; then
+            echo "change=non" >> "$GITHUB_OUTPUT"
+            echo "Rien n'a bouge."
+          else
+            echo "change=oui" >> "$GITHUB_OUTPUT"
+            node scripts/diff-catalogue.mjs /tmp/data-avant data > /tmp/resume.md
+            cat /tmp/resume.md
+          fi
+
+      # Un catalogue qui casse un test ne merite pas de PR : il merite qu'on
+      # regarde le journal de cette action.
+      - name: Tests sur le nouveau catalogue
+        if: steps.mesure.outputs.change == 'oui'
+        run: npm test
+
+      - name: Ouvrir la PR
+        if: steps.mesure.outputs.change == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jour="$(date -u +%Y-%m-%d)"
+          branche="chore/donnees-$jour"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branche"
+          git add data web/assets/items
+          git commit -m "chore(data): catalogue du $jour" -m "Ingestion automatique depuis DofusDB."
+          git push --force-with-lease origin "$branche"
+          {
+            echo "Ingestion automatique du catalogue DofusDB, le $jour."
+            echo
+            cat /tmp/resume.md
+            echo
+            echo "Les tests passent sur le nouveau catalogue. Fusionnez pour que le site le serve."
+          } > /tmp/corps.md
+          gh pr create --base main --head "$branche" \
+            --title "chore(data): catalogue du $jour" \
+            --body-file /tmp/corps.md
