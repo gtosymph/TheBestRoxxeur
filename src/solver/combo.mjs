@@ -71,14 +71,14 @@ function sortBonifie(spell, supplement) {
 }
 
 /** Prepare les entrees et les regroupe par couple de variantes. */
-function preparerGroupes(spells, stats, { telefrag, unLancer, cibleTelefrag }) {
+function preparerGroupes(spells, stats, { telefrag, unLancer, cibleTelefrag, resistances }) {
   const groupes = new Map();
 
   for (const spell of spells) {
     const cout = Number.isFinite(spell.apCost) && spell.apCost > 0 ? spell.apCost : null;
     if (cout == null) continue;
 
-    const resultat = computeSpell(spell, stats);
+    const resultat = computeSpell(spell, stats, resistances);
     if (resultat.average <= 0) continue;
 
     const tf = cibleTelefrag ? spell.telefragCible ?? null : null;
@@ -92,7 +92,7 @@ function preparerGroupes(spells, stats, { telefrag, unLancer, cibleTelefrag }) {
     let cumul = 0;
     for (let k = 1; k <= max; k += 1) {
       cumul += tf && tf.bonusParLancer > 0
-        ? computeSpell(sortBonifie(spell, (k - 1) * tf.bonusParLancer), stats).average
+        ? computeSpell(sortBonifie(spell, (k - 1) * tf.bonusParLancer), stats, resistances).average
         : resultat.average;
       valeurs[k] = cumul;
     }
@@ -331,16 +331,17 @@ function optimiserAvecElements(parGroupe, budget, elementsMin) {
  * @param {number} [reglages.elementsMin] Elements distincts exiges (0 = libre).
  * @param {boolean} [reglages.unLancer] Vrai : chaque sort se lance au plus une fois.
  * @param {boolean} [reglages.cibleTelefrag] Vrai : bonus des sorts sur cible telefrag.
+ * @param {Record<string, number>} [reglages.resistances] Resistances de la cible.
  * @returns {{total: number, budget: number, paUtilises: number, lancers: any[],
  *   elementsCouverts: string[], elementsMin: number, elementsManquants: number}}
  */
 export function optimiserCombo(spells, stats, reglages) {
   const { paBudget, telefrag = true, elementsMin = 0, unLancer = false,
-    cibleTelefrag = false } = reglages;
+    cibleTelefrag = false, resistances = null } = reglages;
   const budget = Math.max(0, Math.floor(paBudget ?? 0));
   const minElements = Math.max(0, Math.min(ELEMENTS_COMPTES.length, Math.floor(elementsMin)));
 
-  const parGroupe = preparerGroupes(spells, stats, { telefrag, unLancer, cibleTelefrag });
+  const parGroupe = preparerGroupes(spells, stats, { telefrag, unLancer, cibleTelefrag, resistances });
 
   const resultat = minElements > 0
     ? optimiserAvecElements(parGroupe, budget, minElements)
