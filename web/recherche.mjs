@@ -261,6 +261,7 @@ export function creerRecherche({ $, lireEtat, setEtat, appliquer, message, garde
         allocation: etat.allocation,
         scrolls: etat.scrolls,
         passivesConfig: etat.options.passifs ? configPassifsDefaut() : null,
+        exosConfig: etat.exos ?? {},
         profile: { classe: etat.classe, sexe: etat.sexe },
         bannedIds: [...etat.bannis],
         lockedIds: [...etat.verrous],

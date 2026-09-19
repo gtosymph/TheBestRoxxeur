@@ -8,6 +8,7 @@
  */
 import { loadCatalog } from './catalog-web.mjs';
 import { normalizePassives } from '../src/data/passives.mjs';
+import { normaliserExos } from '../src/engine/exos.mjs';
 import { STAT_KEYS } from '../src/data/stats.mjs';
 import { preparerRecherche, solve } from '../src/solver/genetic.mjs';
 import { creerArchive } from '../src/solver/candidates.mjs';
@@ -61,6 +62,8 @@ function resumer(result) {
     damage: result.detail.damage,
     satisfied: result.detail.satisfied,
     unmet: result.detail.unmet,
+    // Exos rares que le solveur a poses lui-meme, s'il en avait le droit.
+    exos: result.exos ?? [],
   };
 }
 
@@ -68,6 +71,7 @@ async function chercher(request) {
   catalogPromise ??= loadCatalog();
   const catalog = await catalogPromise;
   const { passives } = normalizePassives(request.passivesConfig, new Set(STAT_KEYS));
+  const exos = normaliserExos(request.exosConfig, new Set(STAT_KEYS));
 
   const base = {
     items: catalog.items,
@@ -75,6 +79,7 @@ async function chercher(request) {
     level: request.level,
     scrolls: request.scrolls,
     passives,
+    exos,
     profile: request.profile,
     banned: new Set(request.bannedIds ?? []),
     lockedIds: request.lockedIds ?? [],

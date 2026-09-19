@@ -166,6 +166,21 @@ test('appliquerBuild', async (t) => {
     assert.equal(patch.equipped.size, 2);
   });
 
+  await t.test('les exos poses par le solveur deviennent ceux du joueur', () => {
+    const etat = { ...etatInitial(), exos: { [ANNEAU_A.id]: { over: { vitalite: 10 } } } };
+    const patch = appliquerBuild(etat, {
+      itemIds: [EPEE.id, ANNEAU_A.id], exos: [{ id: EPEE.id, cle: 'pa' }],
+    }, itemById);
+    assert.deepEqual(patch.exos, {
+      [ANNEAU_A.id]: { over: { vitalite: 10 } }, [EPEE.id]: { pa: 1 },
+    });
+  });
+
+  await t.test('sans exo du solveur, la table ne change pas', () => {
+    const patch = appliquerBuild(etatInitial(), { itemIds: [EPEE.id] }, itemById);
+    assert.equal('exos' in patch, false);
+  });
+
   await t.test('les verrous qui ne portent plus sur le build tombent', () => {
     const etat = etatInitial();
     etat.verrous.add(EPEE.id).add(ANNEAU_C.id);

@@ -26,6 +26,7 @@ export const GROUPES_OPTIONS = Object.freeze([
   { cle: 'arme', titre: 'Arme' },
   { cle: 'combo', titre: 'Combo' },
   { cle: 'defense', titre: 'Defense' },
+  { cle: 'forge', titre: 'Forgemagie' },
 ]);
 
 /** Options de calcul proposees. */
@@ -104,6 +105,13 @@ export const OPTIONS = Object.freeze([
     aide: 'Compte vos résistances mêlée et distance, moitié chacune : votre\n'
       + 'adversaire frappe tantôt au contact, tantôt de loin.\n'
       + 'Décoche : seuls les cinq éléments comptent.' },
+  { cle: 'exosPa', groupe: 'forge', libelle: 'Exos PA libres', type: 'nombre', min: 0, max: 3,
+    aide: 'Nombre d\'exos PA que le solveur peut poser lui-même, une par pièce\n'
+      + 'sans PA natif, sans dépasser 12 PA. Vos propres exos comptent en plus.' },
+  { cle: 'exosPm', groupe: 'forge', libelle: 'Exos PM libres', type: 'nombre', min: 0, max: 3,
+    aide: 'Nombre d\'exos PM que le solveur peut poser lui-même, sans dépasser 6 PM.' },
+  { cle: 'exosPo', groupe: 'forge', libelle: 'Exos portée libres', type: 'nombre', min: 0, max: 3,
+    aide: 'Nombre d\'exos portée que le solveur peut poser lui-même, sans dépasser 6 de portée.' },
 ]);
 
 /** Options numeriques qui n'ont de sens que quand le combo est actif. */
@@ -203,7 +211,11 @@ export function etatInitial() {
       armeElementsMin: 0, armeElementsMax: 0,
       // Modele d'adversaire qui sert aux points de vie effectifs.
       menaceCoup: 300, menacePlafond: 50, menacePosition: true,
+      exosPa: 0, exosPm: 0, exosPo: 0,
     },
+    // Forgemagie posee par le joueur, par identifiant de piece : elle suit la
+    // piece dans les essais, le lien de partage et la reference.
+    exos: {},
     // Ce que le stuff frappe : resistances par element, a la main ou par
     // des monstres du bestiaire (voir src/engine/cible.mjs).
     cible: CIBLE_VIDE,

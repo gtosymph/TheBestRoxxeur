@@ -88,3 +88,14 @@ export const LIBELLE_CASE = Object.freeze({
   'artefact:0': 'Dofus 1', 'artefact:1': 'Dofus 2', 'artefact:2': 'Dofus 3',
   'artefact:3': 'Dofus 4', 'artefact:4': 'Dofus 5', 'artefact:5': 'Dofus 6',
 });
+
+/**
+ * Chaque famille de piece, avec son article, pour une phrase : « un exo PA
+ * sur la ceinture ». Les artefacts n'ont pas de nom de famille qui se lise :
+ * la phrase prend alors le nom de la piece.
+ */
+export const LIBELLE_SLOT_EXO = Object.freeze({
+  amulette: 'l\'amulette', cape: 'la cape', anneau: 'l\'anneau', ceinture: 'la ceinture',
+  bottes: 'les bottes', chapeau: 'le chapeau', arme: 'l\'arme', bouclier: 'le bouclier',
+  monture: 'la monture',
+});

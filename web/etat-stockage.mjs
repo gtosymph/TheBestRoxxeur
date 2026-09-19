@@ -78,6 +78,7 @@ export function serialiserEtat(etat) {
     changementsMax: etat.changementsMax,
     cible: etat.cible,
     verrous: [...etat.verrous],
+    exos: etat.exos ?? {},
     equipped: [...etat.equipped.entries()].map(([cle, piece]) => [cle, piece.id]),
     posees: [...etat.posees],
     ...Object.fromEntries(LISTES.map((cle) => [cle, bornerListe(etat[cle])])),
@@ -167,6 +168,8 @@ export function appliquerRange(etat, data, catalogue) {
     // Un etat range avant la cible n'en a pas : il garde la cible vide.
     ...(data.cible ? { cible: normaliserCible(data.cible) } : {}),
     ...(Array.isArray(data.verrous) ? { verrous: new Set(data.verrous) } : {}),
+    // Un etat range avant la forgemagie n'a pas d'exo : il garde la table vide.
+    ...(data.exos && typeof data.exos === 'object' ? { exos: data.exos } : {}),
     equipped,
     posees: new Set(data.posees ?? []),
     ...Object.fromEntries(LISTES
