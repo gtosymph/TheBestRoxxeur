@@ -13,11 +13,12 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { loadCatalog } from '../data/catalog-node.mjs';
 import { normalizePassives } from '../data/passives.mjs';
+import { normaliserExos } from '../engine/exos.mjs';
 import { STAT_KEYS } from '../data/stats.mjs';
 import { preparerRecherche, solve } from './genetic.mjs';
 
 const {
-  level, objective, allocation, scrolls, passivesConfig, bannedIds, allowedSlots,
+  level, objective, allocation, scrolls, passivesConfig, exosConfig, bannedIds, allowedSlots,
 } = workerData ?? {};
 
 // Le catalogue est relu depuis le disque plutot que transmis par message :
@@ -25,7 +26,8 @@ const {
 const preparation = (async () => {
   const catalog = await loadCatalog();
   const { passives } = normalizePassives(passivesConfig, new Set(STAT_KEYS));
-  return { catalog, passives };
+  const exos = normaliserExos(exosConfig, new Set(STAT_KEYS));
+  return { catalog, passives, exos };
 })();
 
 /** Contexte de recherche, prepare a la premiere vague et garde ensuite. */
@@ -39,7 +41,7 @@ parentPort.on('message', async (message) => {
   if (message?.type !== 'vague') return;
 
   try {
-    const { catalog, passives } = await preparation;
+    const { catalog, passives, exos } = await preparation;
 
     const demande = {
       items: catalog.items,
@@ -48,6 +50,7 @@ parentPort.on('message', async (message) => {
       allocation,
       scrolls,
       passives,
+      exos,
       banned: new Set(bannedIds ?? []),
       allowedSlots: allowedSlots ? new Set(allowedSlots) : null,
       objective,

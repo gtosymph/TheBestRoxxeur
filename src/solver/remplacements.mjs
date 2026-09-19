@@ -73,11 +73,14 @@ function incompatible(candidat, autres) {
 export function meilleursRemplacements(items, contexte) {
   const {
     catalogue, bannis = new Set(), level, allocation, scrolls, passives, profile, setById, objective,
+    exos = null,
   } = contexte;
+  const exosLibres = objective?.exosLibres ?? null;
 
   const noter = (portees) => {
     const { stats, invalid } = computeBuild(
-      { items: portees, level, allocation, scrolls, passives, profile, menace: objective?.menace },
+      { items: portees, level, allocation, scrolls, passives, profile, menace: objective?.menace,
+        exos, exosLibres },
       setById,
     );
     const detail = scoreBuild(stats, objective, SANS_DETAILS);
@@ -88,7 +91,8 @@ export function meilleursRemplacements(items, contexte) {
 
   const base = noter(items) ?? scoreBuild(
     computeBuild(
-      { items, level, allocation, scrolls, passives, profile, menace: objective?.menace },
+      { items, level, allocation, scrolls, passives, profile, menace: objective?.menace,
+        exos, exosLibres },
       setById,
     ).stats, objective, SANS_DETAILS,
   );

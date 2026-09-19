@@ -157,3 +157,31 @@ test('cache d\'evaluation', async (t) => {
     assert.equal(evaluate(genome).score, avant);
   });
 });
+
+test('calcul incremental : les exos du joueur et le budget du solveur suivent', () => {
+  const random = createRandom(31);
+  const porteur = { allocation: {} };
+  // Un exo sur une piece de chaque pool : la mutation la fera entrer et sortir.
+  const exos = new Map(pools.filter((p) => p.length > 0).map((p) => [p[0].id, { pa: 1, vitalite: 40 }]));
+  const base = {
+    level: NIVEAU, scrolls: {}, passives, profile: {}, exos,
+    exosLibres: { pa: 1, pm: 1, po: 0 },
+  };
+  const incremental = createIncrementalBuild({
+    pools, setById: catalogue.setById, porteur, ...base,
+  });
+
+  let genome = randomGenome(layout, pools, random);
+  incremental.rebaser(genome);
+  for (let pas = 0; pas < 40; pas += 1) {
+    genome = muterUneCase(genome, random);
+    const rapide = incremental.calculer(genome);
+    const complet = computeBuild(
+      { items: decode(genome, pools), allocation: porteur.allocation, ...base },
+      catalogue.setById,
+    );
+    memesStats(rapide.raw, complet.raw, `pas ${pas} (brutes)`);
+    memesStats(rapide.stats, complet.stats, `pas ${pas} (derivees)`);
+    if (pas % 7 === 6) incremental.rebaser(genome);
+  }
+});

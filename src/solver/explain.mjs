@@ -59,11 +59,12 @@ export const PAS_PAR_STAT = Object.freeze({
  *   casseCondition: boolean, scoreAvec: number, scoreSans: number}[]}
  */
 export function apportsPieces(items, contexte) {
-  const { level, allocation, scrolls, passives, profile, setById, objective } = contexte;
+  const { level, allocation, scrolls, passives, profile, setById, objective, exos = null } = contexte;
 
   const noter = (portees) => {
     const { stats } = computeBuild(
-      { items: portees, level, allocation, scrolls, passives, profile, menace: objective?.menace },
+      { items: portees, level, allocation, scrolls, passives, profile, menace: objective?.menace,
+        exos, exosLibres: objective?.exosLibres ?? null },
       setById,
     );
     return scoreBuild(stats, objective);

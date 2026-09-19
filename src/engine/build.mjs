@@ -7,6 +7,7 @@ import { MENACE_DEFAUT, normaliserMenace, pdvEffectifs } from './defense.mjs';
 import { evaluateCriteria } from '../data/criteria.mjs';
 import { passiveBonuses } from '../data/passives.mjs';
 import { SCROLLABLE, SCROLL_BONUS, checkAllocation } from './characteristics.mjs';
+import { PLAFONDS, placerExos } from './exos.mjs';
 
 /** Niveau a partir duquel le personnage gagne un point d'action. */
 export const NIVEAU_PA_BONUS = 100;
@@ -88,10 +89,13 @@ export function setBonuses(items, setById) {
  * @param {Record<string, number>} [build.allocation] Points investis par caracteristique.
  * @param {Record<string, boolean>} [build.scrolls] Parchemins pris par caracteristique.
  * @param {Map<number, Record<string, number>>} [build.passives] Passifs actifs.
+ * @param {Map<number, Record<string, number>>} [build.exos] Forgemagie par piece.
  * @param {Map<number, any>} setById
  * @returns {{stats: Record<string, number>, sets: any[], passives: number[], allocation: any}}
  */
-export function aggregate({ items, level, allocation = {}, scrolls = {}, passives = null }, setById) {
+export function aggregate({
+  items, level, allocation = {}, scrolls = {}, passives = null, exos = null,
+}, setById) {
   const stats = emptyStats();
 
   // 1. Apports des items.
@@ -107,6 +111,14 @@ export function aggregate({ items, level, allocation = {}, scrolls = {}, passive
   const { stats: passiveStats, active: activePassives } = passiveBonuses(items, passives);
   addInto(stats, passiveStats);
 
+  // 3 bis. Forgemagie : les exos habillent la piece, ils la suivent.
+  if (exos) {
+    for (const item of items) {
+      const exo = item && exos.get(item.id);
+      if (exo) addInto(stats, exo);
+    }
+  }
+
   // 4. Parchemins et points de caracteristique.
   for (const characteristic of SCROLLABLE) {
     if (scrolls[characteristic]) stats[characteristic] += SCROLL_BONUS;
@@ -116,6 +128,15 @@ export function aggregate({ items, level, allocation = {}, scrolls = {}, passive
 
   return { stats, sets, passives: activePassives, allocation: checkAllocation(allocation, level) };
 }
+
+/** Points d'action d'un personnage nu : sept a partir du niveau cent. */
+const basePa = (level) => BASE.pa + (level >= NIVEAU_PA_BONUS ? 1 : 0);
+
+/**
+ * Valeurs de depart des mesures que la forgemagie peut pousser.
+ * @param {number} level
+ */
+export const basesExos = (level) => ({ pa: basePa(level), pm: BASE.pm, po: BASE.po });
 
 /**
  * Ajoute les statistiques derivees, calculees a partir des caracteristiques.
@@ -131,10 +152,10 @@ export function derive(stats, level, menace = MENACE_DEFAUT) {
 
   // Un personnage gagne un point d'action au niveau cent : sans equipement,
   // une fiche de niveau 190 annonce sept points d'action.
-  const paBase = BASE.pa + (level >= NIVEAU_PA_BONUS ? 1 : 0);
-  out.pa = paBase + (stats.pa ?? 0);
-  out.pm = BASE.pm + (stats.pm ?? 0);
-  out.po = BASE.po + (stats.po ?? 0);
+  // Le jeu plafonne les trois : un treizieme PA ne sert a rien en combat.
+  out.pa = Math.min(PLAFONDS.pa, basePa(level) + (stats.pa ?? 0));
+  out.pm = Math.min(PLAFONDS.pm, BASE.pm + (stats.pm ?? 0));
+  out.po = Math.min(PLAFONDS.po, BASE.po + (stats.po ?? 0));
   out.invocations = BASE.invocations + (stats.invocations ?? 0);
 
   out.pdv = BASE.vieFixe + BASE.vieParNiveau * level + (stats.vitalite ?? 0);
@@ -200,14 +221,25 @@ export function unequipableItems(items, stats, profile = {}) {
 
 /**
  * Calcule un build de bout en bout.
+ *
+ * `build.exosLibres` est le budget d'exos rares que le solveur peut poser
+ * lui-meme ; `exos` rend ou il les a poses.
+ *
  * @param {object} build
  * @param {Map<number, any>} setById
  */
 export function computeBuild(build, setById) {
-  const { stats, sets, passives, allocation } = aggregate(build, setById);
-  const derived = derive(stats, build.level, normaliserMenace(build.menace));
+  const agrege = aggregate(build, setById);
+  const { raw, places } = placerExos({
+    items: build.items, raw: agrege.stats, bases: basesExos(build.level),
+    budget: build.exosLibres ?? null, exos: build.exos ?? null,
+  });
+  const derived = derive(raw, build.level, normaliserMenace(build.menace));
   const invalid = unequipableItems(build.items, derived, build.profile);
-  return { stats: derived, raw: stats, sets, passives, allocation, invalid };
+  return {
+    stats: derived, raw, sets: agrege.sets, passives: agrege.passives,
+    allocation: agrege.allocation, invalid, exos: places,
+  };
 }
 
 /** Cles de statistiques connues, exportees pour la validation. */
