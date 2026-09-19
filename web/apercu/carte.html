@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte d'apercu — The Best Roxxeur</title>
+<!--
+  La carte que les messageries montrent quand un lien du site se partage.
+
+  Elle se dessine ici, dans un canvas de 1200 x 630, puis s'enregistre en PNG
+  dans web/apercu.png (a cote de ce dossier). Node ne sait pas dessiner du texte sans dependance ;
+  le navigateur, si. Ouvrez cette page par le serveur local, attendez la
+  police, puis cliquez « Enregistrer ». Passez ensuite le fichier par
+  `node scripts/compacter-png.mjs web/apercu.png` : il pese trois fois moins.
+
+  L'apercu est le meme pour tous les liens : GitHub Pages sert des fichiers
+  fixes, il ne peut pas dessiner les degats du stuff partage.
+-->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  body { margin: 0; background: #222; display: grid; place-items: center; min-height: 100vh; gap: 16px; font: 14px system-ui; color: #ccc; }
+  canvas { width: 600px; height: 315px; box-shadow: 0 8px 40px rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+<canvas id="carte" width="1200" height="630"></canvas>
+<p><a id="dl" download="apercu.png" style="color:#9b93ff">Enregistrer apercu.png</a> · <span id="etat">police en cours de chargement…</span></p>
+<script>
+(async () => {
+  await document.fonts.load('700 96px "Bricolage Grotesque"');
+  await document.fonts.load('500 96px "Bricolage Grotesque"');
+  await document.fonts.load('500 30px "JetBrains Mono"');
+  await document.fonts.ready;
+
+  const c = document.getElementById('carte');
+  const g = c.getContext('2d');
+  const W = 1200, H = 630;
+
+  // Fond : bleu-noir du Studio, avec une lueur iris discrete en haut a droite.
+  g.fillStyle = '#0d1017'; g.fillRect(0, 0, W, H);
+  const lueur = g.createRadialGradient(1040, 80, 20, 1040, 80, 700);
+  lueur.addColorStop(0, 'rgba(127,116,255,.22)'); lueur.addColorStop(1, 'rgba(127,116,255,0)');
+  g.fillStyle = lueur; g.fillRect(0, 0, W, H);
+
+  // Grille fine, comme la courbe de l'atelier.
+  const X0 = 700, Y0 = 130, GW = 420, GH = 370;
+  g.strokeStyle = 'rgba(200,206,222,.08)'; g.lineWidth = 1;
+  for (let i = 0; i <= 6; i++) { const x = X0 + (GW / 6) * i; g.beginPath(); g.moveTo(x, Y0); g.lineTo(x, Y0 + GH); g.stroke(); }
+  for (let i = 0; i <= 5; i++) { const y = Y0 + (GH / 5) * i; g.beginPath(); g.moveTo(X0, y); g.lineTo(X0 + GW, y); g.stroke(); }
+
+  // La courbe « degats ou survie » : concave, comme un vrai front de Pareto.
+  const pts = [];
+  for (let i = 0; i <= 40; i++) {
+    const t = i / 40;
+    const x = X0 + t * GW;
+    const y = Y0 + GH - Math.pow(1 - Math.pow(t, 2.2), 0.55) * GH * 0.92 - 10;
+    pts.push([x, y]);
+  }
+  const aire = g.createLinearGradient(0, Y0, 0, Y0 + GH);
+  aire.addColorStop(0, 'rgba(127,116,255,.28)'); aire.addColorStop(1, 'rgba(127,116,255,0)');
+  g.beginPath(); g.moveTo(pts[0][0], Y0 + GH);
+  for (const [x, y] of pts) g.lineTo(x, y);
+  g.lineTo(pts.at(-1)[0], Y0 + GH); g.closePath(); g.fillStyle = aire; g.fill();
+  g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+  g.strokeStyle = '#7f74ff'; g.lineWidth = 4; g.lineJoin = 'round'; g.stroke();
+
+  // Les paliers : quelques stuffs sur la courbe, un porte.
+  const paliers = [4, 11, 19, 27, 34];
+  for (const i of paliers) {
+    const [x, y] = pts[i];
+    g.beginPath(); g.arc(x, y, 9, 0, Math.PI * 2); g.fillStyle = '#0d1017'; g.fill();
+    g.lineWidth = 3; g.strokeStyle = '#c8cede'; g.stroke();
+  }
+  { const [x, y] = pts[19];
+    g.beginPath(); g.arc(x, y, 14, 0, Math.PI * 2); g.fillStyle = '#7f74ff'; g.fill();
+    g.beginPath(); g.arc(x, y, 24, 0, Math.PI * 2); g.strokeStyle = 'rgba(127,116,255,.45)'; g.lineWidth = 3; g.stroke();
+    g.font = '500 22px "JetBrains Mono"'; g.fillStyle = '#e8ecf6'; g.textAlign = 'left';
+    g.fillText('4 137 dégâts', x + 30, y - 4);
+    g.fillStyle = '#7b839b'; g.fillText('4 506 pdv effectifs', x + 30, y + 26);
+  }
+  // Axes
+  g.font = '500 20px "JetBrains Mono"'; g.fillStyle = '#7b839b'; g.textAlign = 'left';
+  g.fillText('survie →', X0, Y0 + GH + 34);
+  g.save(); g.translate(X0 - 22, Y0 + GH); g.rotate(-Math.PI / 2); g.fillText('dégâts →', 0, 0); g.restore();
+
+  // Texte
+  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  g.font = '500 24px "JetBrains Mono"'; g.fillStyle = '#7f74ff';
+  g.fillText('OPTIMISEUR DE STUFF DOFUS', 80, 150);
+  g.font = '700 92px "Bricolage Grotesque"'; g.fillStyle = '#e8ecf6';
+  g.fillText('The Best', 76, 260); g.fillText('Roxxeur', 76, 356);
+  g.font = '500 30px "Bricolage Grotesque"'; g.fillStyle = '#c8cede';
+  const lignes = ['Le meilleur stuff pour vos sorts,', 'votre niveau et vos conditions.', 'Sans compte, tout dans le navigateur.'];
+  lignes.forEach((l, i) => g.fillText(l, 80, 430 + i * 42));
+  g.font = '500 22px "JetBrains Mono"'; g.fillStyle = '#7b839b';
+  g.fillText('gtosymph.github.io/TheBestRoxxeur', 80, 575);
+
+  const url = c.toDataURL('image/png');
+  document.getElementById('dl').href = url;
+  document.getElementById('etat').textContent = 'prête';
+  window.__apercuPret = true;
+})();
+</script>
+</body>
+</html>

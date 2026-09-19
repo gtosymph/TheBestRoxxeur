@@ -11,7 +11,7 @@ un fichier de profil les emporte ailleurs.
 ## Lancer le projet
 
 ```sh
-npm run serve     # ouvre http://localhost:4173/web/index.html
+npm run serve     # ouvre http://localhost:4173/web/v2/index.html
 npm test          # lance les tests (node:test, aucune dependance)
 npm run bench     # mesure la convergence du solveur
 npm run bench:gate  # le meme banc, en garde-fou : il echoue si le score baisse
@@ -109,41 +109,37 @@ dessus. Le panneau le marque « votre reglage ».
 src/data/     Catalogue : items, panoplies, sorts, effets, criteres d'equipement
 src/engine/   Moteur pur : agregation d'un build, degats, defense
 src/solver/   Recherche : genetique, descente locale, proximite, survie
-web/          Interface : un module par panneau, aucun cadre applicatif
+web/          Modules partages de l'interface : recherche, rendu, stockage
+web/v2/       L'atelier : la coquille servie, une vue par volet
 scripts/      Serveur local, bancs, ingestion des donnees
 test/         Tests node:test, un fichier par sujet
 data/         JSON ingeres depuis les sources du jeu
 ```
 
-Deux regles tiennent le decoupage :
+Trois regles tiennent le decoupage :
 
 1. **`src/` ne connait pas le navigateur.** Le moteur et le solveur tournent
    aussi bien dans Node que dans un fil de calcul.
-2. **Chaque panneau separe le calcul du rendu.** Une fonction pure rend les
-   lignes a montrer, une fonction de rendu les pose dans le document. La
-   fonction pure porte les tests ; voir `web/objectifs-panel.mjs` et
-   `web/survie-panel.mjs` pour le patron.
-3. **`web/app.mjs` ne fait qu'orchestrer.** Il garde l'etat, tient son
-   historique pour l'annulation, et appelle le rendu. Tout le reste part en
+2. **Chaque vue separe le calcul du rendu.** Une fonction pure rend les lignes
+   a montrer, une fonction de rendu les pose dans le document. La fonction
+   pure porte les tests ; voir `web/v2/fiche.mjs` et `web/survie-panel.mjs`
+   pour le patron.
+3. **`web/v2/app.mjs` ne fait qu'orchestrer.** Il garde l'etat, tient son
+   historique pour l'annulation, et appelle les vues. Tout le reste part en
    modules qu'il branche a la main : `gestes-catalogue.mjs` et
-   `gestes-reference.mjs` changent l'etat, `resultats-panel.mjs` montre ce que
-   la recherche a rendu, `branchements.mjs` relie les commandes de la page.
+   `gestes-reference.mjs` changent l'etat, `recherche.mjs` mene le solveur,
+   `branchements.mjs` relie les commandes de la page.
 
 ### L'ecran
 
-Un **theme** habille l'ecran, une **disposition** en deplace les parties ; les
-deux se combinent librement et se choisissent dans la barre du haut.
+L'atelier vit dans `web/v2/`. Le dossier garde ce nom parce que les liens de
+partage deja distribues y menent ; le premier ecran, qui vivait dans `web/`,
+a ete retire en septembre 2026 (voir l'historique avant la version 1.2.0).
 
-| Disposition | Ce qu'elle fait |
-| --- | --- |
-| Colonnes | Quatre colonnes, la disposition d'origine. |
-| Bandeau | Le resultat en tete sur toute la largeur, les colonnes dessous. |
-
-Une disposition ne recree jamais une section : elle deplace les noeuds
-existants, donc les ecouteurs, les canvas et les champs la suivent. Pour en
-ajouter une, il suffit d'un plan dans `web/layouts.mjs` et d'une feuille dans
-`web/dispositions/` ; `test/dispositions.test.mjs` verifie que la feuille
-existe.
+Un **habillage** teint l'ecran sans en changer la structure : chaque habillage
+est une feuille posee apres la feuille de base, listee dans
+`web/v2/catalogue-themes.mjs`. Le choix se garde dans le navigateur et se
+force par `?theme=`.
 
 ## Les donnees
 

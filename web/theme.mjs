@@ -13,58 +13,29 @@
 import { CLES, ecrire, lireTexte } from './stockage.mjs';
 
 /**
- * Themes proposes. Le premier porte la feuille de base : il n'a pas de
- * feuille propre a poser.
- */
-export const THEMES_V1 = [
-  { cle: 'nuit', nom: 'Nuit', fichier: null },
-  { cle: 'papier', nom: 'Papier', fichier: 'themes/papier.css' },
-  { cle: 'forge', nom: 'Forge', fichier: 'themes/forge.css' },
-  { cle: 'console', nom: 'Console', fichier: 'themes/console.css' },
-  { cle: 'cockpit', nom: 'Cockpit', fichier: 'themes/cockpit.css' },
-];
-
-/**
- * Theme d'un visiteur qui n'a encore rien choisi.
- * Le script d'amorce du document pose la meme feuille avant le premier
- * rendu : gardez les deux d'accord.
- */
-export const THEME_DEFAUT = 'cockpit';
-
-/**
- * Themes de la coquille v2, repris du catalogue.
+ * Themes de la coquille, repris du catalogue.
  *
  * Les chemins de `fichier` y sont relatifs au document, donc a `web/v2/`.
  */
-export { THEMES_V2 } from './v2/catalogue-themes.mjs';
-
-/**
- * Cle ou v2 garde son choix.
- *
- * Elle differe de celle de v1 : « braise » n'existe pas dans la liste de v1,
- * et une cle commune ferait retomber v1 sur son theme de depart des que v2
- * aurait ecrit le sien.
- */
-export const CLE_THEME_V2 = CLES.themeV2;
-
-/**
- * Liste et defaut en vigueur.
- *
- * Le module sert deux coquilles qui n'ont ni la meme palette ni les memes
- * feuilles. Plutot que de dupliquer tout ce qui suit, chaque coquille dit
- * une fois lequel des deux jeux elle porte.
- */
-let THEMES = THEMES_V1;
-let DEFAUT = THEME_DEFAUT;
+import { THEME_V2_DEFAUT, THEMES_V2 } from './v2/catalogue-themes.mjs';
+export { THEMES_V2 };
 
 /**
  * Cle ou le choix se garde.
  *
- * Chaque coquille a la sienne : « braise » n'existe pas dans la liste de v1,
- * et une cle commune ferait retomber v1 sur son theme de depart des que v2
- * aurait ecrit le sien.
+ * Elle garde son suffixe « v2 » : c'est celle que les navigateurs des joueurs
+ * portent deja, et la renommer leur ferait perdre leur habillage.
  */
-let CLE = CLES.theme;
+export const CLE_THEME_V2 = CLES.themeV2;
+
+/**
+ * Liste, defaut et cle en vigueur.
+ *
+ * Une coquille — ou un test — peut en poser d'autres par `configurerThemes`.
+ */
+let THEMES = THEMES_V2;
+let DEFAUT = THEME_V2_DEFAUT;
+let CLE = CLE_THEME_V2;
 const ID_FEUILLE = 'feuille-theme';
 
 /**
@@ -72,7 +43,7 @@ const ID_FEUILLE = 'feuille-theme';
  *
  * @param {{themes: any[], defaut: string, cle?: string}} reglage
  */
-export function configurerThemes({ themes, defaut, cle = CLES.theme }) {
+export function configurerThemes({ themes, defaut, cle = CLE_THEME_V2 }) {
   THEMES = themes;
   DEFAUT = defaut;
   CLE = cle;
