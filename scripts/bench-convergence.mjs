@@ -46,12 +46,15 @@ const GENERATIONS_PAR_VAGUE = 40;
 
 /**
  * Seuil du garde-fou : moyenne minimale attendue sur les parametres figes.
- * Valeur mesuree le 2026-08-31 : 2868 (deterministe, graines 101 a 404),
- * apres le reglage de la descente locale ; elle valait 2488 avant.
+ * Valeur mesuree le 2026-09-19 : 2565 (deterministe, graines 101 a 404),
+ * depuis que le moteur plafonne les PA, les PM et la portee comme le jeu.
+ * Elle valait 2868 avant ce plafond, et le banc notait alors des builds a
+ * quatorze PA que personne ne peut porter : la baisse mesure une correction,
+ * pas une regression. Elle valait 2488 avant le reglage de la descente locale.
  * La marge absorbe les evolutions legitimes du moteur ; relevez le seuil
  * quand une amelioration mesuree releve durablement la moyenne.
  */
-const SEUIL_GATE = 2700;
+const SEUIL_GATE = 2400;
 const GATE = process.argv.includes('--gate');
 
 const AVEC_ARME = process.argv.includes('--arme');
