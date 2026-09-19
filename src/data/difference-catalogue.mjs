@@ -44,7 +44,7 @@ export function comparer(avant, apres) {
 
 /** Quelques noms, puis « et N autres » : une PR se lit, elle ne se deroule pas. */
 function nommer(entrees, maxNoms) {
-  const noms = entrees.slice(0, maxNoms).map((e) => e.fr ?? e.name ?? `#${e.id}`);
+  const noms = entrees.slice(0, maxNoms).map((e) => e.fr ?? e.nom ?? e.name ?? `#${e.id}`);
   const reste = entrees.length - noms.length;
   return noms.join(', ') + (reste > 0 ? ` et ${reste} autres` : '');
 }
