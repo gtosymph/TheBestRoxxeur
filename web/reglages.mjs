@@ -204,6 +204,9 @@ export function etatInitial() {
       // Modele d'adversaire qui sert aux points de vie effectifs.
       menaceCoup: 300, menacePlafond: 50, menacePosition: true,
     },
+    // Ce que le stuff frappe : resistances par element, a la main ou par
+    // des monstres du bestiaire (voir src/engine/cible.mjs).
+    cible: CIBLE_VIDE,
     allocation: { ...ALLOCATION_VIDE },
     // Valeur maximale que la recherche investit par caracteristique. `null` dit
     // « aucune limite » ; zero est une vraie limite, qui interdit d'investir.
@@ -212,4 +215,5 @@ export function etatInitial() {
     limites: parCaracteristique(null),
     scrolls: parCaracteristique(false),
   };
-}
+}import { CIBLE_VIDE } from '../src/engine/cible.mjs';
+

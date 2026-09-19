@@ -8,6 +8,7 @@
  */
 import { classeConnue } from './classes.mjs';
 import { CLES, ecrireJson, lireJson } from './stockage.mjs';
+import { normaliserCible } from '../src/engine/cible.mjs';
 
 /**
  * Version du format des limites de caracteristique.
@@ -75,6 +76,7 @@ export function serialiserEtat(etat) {
     possedees: [...etat.possedees],
     reference: etat.reference,
     changementsMax: etat.changementsMax,
+    cible: etat.cible,
     verrous: [...etat.verrous],
     equipped: [...etat.equipped.entries()].map(([cle, piece]) => [cle, piece.id]),
     posees: [...etat.posees],
@@ -162,6 +164,8 @@ export function appliquerRange(etat, data, catalogue) {
     ...(Array.isArray(data.possedees) ? { possedees: new Set(data.possedees) } : {}),
     ...(data.reference?.itemIds ? { reference: data.reference } : {}),
     ...(Number.isFinite(data.changementsMax) ? { changementsMax: data.changementsMax } : {}),
+    // Un etat range avant la cible n'en a pas : il garde la cible vide.
+    ...(data.cible ? { cible: normaliserCible(data.cible) } : {}),
     ...(Array.isArray(data.verrous) ? { verrous: new Set(data.verrous) } : {}),
     equipped,
     posees: new Set(data.posees ?? []),
