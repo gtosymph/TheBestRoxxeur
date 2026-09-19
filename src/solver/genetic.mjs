@@ -135,7 +135,12 @@ const AVEC_DETAILS = Object.freeze({ details: true });
  * @param {object} context
  * @returns {(genome: number[]) => {score: number, stats: any, detail: any}}
  */
-export function createEvaluator({ pools, setById, level, porteur, scrolls, passives, profile, objective }) {
+export function createEvaluator({
+  pools, setById, level, porteur, scrolls, passives, profile, objective, exos = null,
+}) {
+  // Le budget d'exos libres voyage dans l'objectif, comme la menace : il dit
+  // ce que la recherche a le droit de faire, pas ce que le personnage porte.
+  const exosLibres = objective?.exosLibres ?? null;
   // L'attaque d'une arme se construit une seule fois par arme rencontree.
   const attaques = new Map();
 
@@ -192,7 +197,7 @@ export function createEvaluator({ pools, setById, level, porteur, scrolls, passi
     const items = decode(genome, pools);
     const { stats, invalid } = computeBuild(
       { items, level, allocation: porteur.allocation, scrolls, passives, profile,
-        menace: objective?.menace }, setById,
+        menace: objective?.menace, exos, exosLibres }, setById,
     );
     const resultat = noterBuild(items, stats, invalid);
 
@@ -206,16 +211,20 @@ export function createEvaluator({ pools, setById, level, porteur, scrolls, passi
   // contourne, il ne sert qu'une poignee de fois par recherche.
   evaluate.complet = (genome, allocation = porteur.allocation) => {
     const items = decode(genome, pools);
-    const { stats, invalid } = computeBuild(
-      { items, level, allocation, scrolls, passives, profile, menace: objective?.menace }, setById,
+    const { stats, invalid, exos: places } = computeBuild(
+      { items, level, allocation, scrolls, passives, profile, menace: objective?.menace,
+        exos, exosLibres }, setById,
     );
-    return noterBuild(items, stats, invalid, AVEC_DETAILS);
+    // Les exos que le solveur a poses lui-meme se rendent avec le build : le
+    // joueur doit lire « avec un exo PA sur la ceinture », pas le deviner.
+    return { ...noterBuild(items, stats, invalid, AVEC_DETAILS), exos: places };
   };
 
   evaluate.invalidate = () => { cache.clear(); };
   evaluate.incremental = () => {
     const delta = createIncrementalBuild({
       pools, setById, level, porteur, scrolls, passives, profile, menace: objective?.menace,
+      exos, exosLibres,
     });
     return {
       noter: (genome) => {
@@ -384,7 +393,7 @@ function secouer(genome, pools, random, guidage, locks = null, force = 0) {
 export function preparerRecherche(input) {
   const {
     items, setById, level, objective,
-    allocation = {}, scrolls = {}, passives = null, profile = {},
+    allocation = {}, scrolls = {}, passives = null, profile = {}, exos = null,
     lockedIds = [], banned = new Set(), allowedSlots = null,
   } = input;
 
@@ -410,7 +419,9 @@ export function preparerRecherche(input) {
   // La repartition des points vit dans un porteur : le solveur peut la faire
   // evoluer en cours de route, l'evaluation lit toujours la version courante.
   const porteur = { allocation: { ...allocation } };
-  const evaluate = createEvaluator({ pools, setById, level, porteur, scrolls, passives, profile, objective });
+  const evaluate = createEvaluator({
+    pools, setById, level, porteur, scrolls, passives, profile, objective, exos,
+  });
 
   // Repartit les points au service du meilleur genome, puis rejoue les scores
   // de la population : tous les individus se comparent a points egaux.
@@ -427,7 +438,7 @@ export function preparerRecherche(input) {
    */
   const allocationPour = (genome, cible = objective) => {
     const itemsRef = decode(genome, pools);
-    const { stats: raw } = aggregate({ items: itemsRef, level, allocation: {}, scrolls, passives }, setById);
+    const { stats: raw } = aggregate({ items: itemsRef, level, allocation: {}, scrolls, passives, exos }, setById);
     // L'arme du build de reference compte dans les degats vises par les points.
     const { allocation } = optimiserAllocation({
       raw, level, objective: { ...cible, spells: evaluate.spellsAvecArme(itemsRef) },
@@ -744,6 +755,9 @@ export function solve(input, options = {}, onProgress) {
       pdv: vue.stats.pdv,
       endurance: vue.stats[STAT_ENDURANCE],
       tenable: estTenable(vue, axe),
+      // Les exos rares poses par le solveur : sans eux, porter ce build ne
+      // rendrait pas les degats annonces.
+      exos: vue.exos ?? [],
     };
   };
 
@@ -825,6 +839,7 @@ export function solve(input, options = {}, onProgress) {
     detail: final.detail,
     invalid: final.invalid,
     violations: final.violations,
+    exos: final.exos ?? [],
     unplaced,
     history,
     candidats,

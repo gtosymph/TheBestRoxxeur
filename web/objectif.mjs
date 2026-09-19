@@ -11,6 +11,7 @@ import { computeBuild } from '../src/engine/build.mjs';
 import { normaliserMenace } from '../src/engine/defense.mjs';
 import { estVide, resistancesCible } from '../src/engine/cible.mjs';
 import { weaponAttack } from '../src/engine/damage.mjs';
+import { normaliserExos } from '../src/engine/exos.mjs';
 import { normalizePassives } from '../src/data/passives.mjs';
 import { configPassifsDefaut } from '../src/data/passives-defaults.mjs';
 import { scoreBuild, SEARCH_MODES } from '../src/solver/score.mjs';
@@ -65,6 +66,27 @@ export function passifsActifs(etat) {
   return passifsMemo;
 }
 
+/**
+ * Forgemagie du joueur, telle que le moteur la lit.
+ * @param {any} etat
+ */
+export function exosDe(etat) {
+  return normaliserExos(etat.exos ?? {}, new Set(STAT_KEYS));
+}
+
+/**
+ * Budget d'exos que le solveur peut poser lui-meme, ou null quand il est nul.
+ * @param {any} etat
+ */
+export function exosLibresDe(etat) {
+  const budget = {
+    pa: Math.max(0, Number(etat.options.exosPa) || 0),
+    pm: Math.max(0, Number(etat.options.exosPm) || 0),
+    po: Math.max(0, Number(etat.options.exosPo) || 0),
+  };
+  return budget.pa + budget.pm + budget.po > 0 ? budget : null;
+}
+
 /** Classe et sexe du personnage, tels que le moteur les lit. */
 export function profilDe(etat) {
   return { classe: etat.classe, sexe: etat.sexe };
@@ -107,6 +129,7 @@ export function buildCourant(etat, catalogue) {
       allocation: etat.allocation,
       scrolls: etat.scrolls,
       passives: passifsActifs(etat),
+      exos: exosDe(etat),
       profile: profilDe(etat),
       menace: menaceDe(etat),
     },
@@ -159,6 +182,8 @@ export function objectif(etat) {
     // cible dans son element. Absente quand rien n'est pose, pour que le
     // solveur n'ait rien a multiplier.
     cible: cibleDe(etat),
+    // Exos que le solveur a le droit de poser, en plus de ceux du joueur.
+    exosLibres: exosLibresDe(etat),
     spells: sortsCalcules(etat),
     // Le solveur ajoute lui-meme l'attaque de l'arme de chaque build essaye.
     useWeapon: etat.options.arme,
@@ -296,7 +321,7 @@ export function valeurDeReference(etat, catalogue) {
 
   const { stats } = computeBuild({
     items, level: etat.niveau, allocation: etat.allocation, scrolls: etat.scrolls,
-    passives: passifsActifs(etat), profile: profilDe(etat),
+    passives: passifsActifs(etat), exos: exosDe(etat), profile: profilDe(etat),
   }, catalogue.setById);
 
   const detail = scoreAffiche(etat, stats);

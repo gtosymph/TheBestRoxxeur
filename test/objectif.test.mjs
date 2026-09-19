@@ -95,6 +95,12 @@ test('objectif', async (t) => {
     assert.equal(objectif({ ...sansSort, mode: 'endurance' }).mode, SEARCH_MODES.STATS);
   });
 
+  await t.test('le budget d\'exos libres voyage dans l\'objectif', () => {
+    assert.equal(objectif(etatInitial()).exosLibres, null, 'sans budget, rien ne part');
+    const avec = objectif(etatAvecSort({ exosPa: 1, exosPo: 2 }));
+    assert.deepEqual(avec.exosLibres, { pa: 1, pm: 0, po: 2 });
+  });
+
   await t.test('les bornes de l\'arme ne partent que si l\'arme compte', () => {
     assert.equal(objectif(etatAvecSort({ armePaMin: 5 })).arme, null);
     const bornes = objectif(etatAvecSort({ arme: true, armePaMin: 5, armePorteeMin: 3 })).arme;

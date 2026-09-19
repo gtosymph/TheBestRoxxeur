@@ -82,6 +82,7 @@ import { borneDegats } from '../../src/solver/borne.mjs';
 import { paliersUtiles, renderPaliers, renderReglageProximite } from '../proximite-panel.mjs';
 import { renderAnalyse } from '../analyse-panel.mjs';
 import { equiperDans, remplacer, remplacementAuChoix } from '../equipement.mjs';
+import { basculerExoRare, decrireExos, mettreOver } from '../exos-piece.mjs';
 
 const { $, muets } = creerPont({ racine: document, fabrique: (t) => document.createElement(t) });
 
@@ -1003,6 +1004,21 @@ function ouvrirFicheDe(cle, item) {
     banni: etat.bannis.has(item.id),
     onPosseder: () => gestes.basculerPossedee(item),
     possedee: etat.possedees.has(item.id),
+    // Forgemagie : la fiche se rouvre sur le nouvel etat, pour que le geste
+    // se lise tout de suite.
+    exo: etat.exos[item.id] ?? null,
+    onExoRare: (exoCle) => {
+      try {
+        setEtat({ exos: basculerExoRare(etat.exos, item.id, exoCle, item) });
+        ouvrirFicheDe(cle, item);
+      } catch (erreur) {
+        message(erreur.message, 'erreur');
+      }
+    },
+    onOver: (stat, valeur) => {
+      setEtat({ exos: mettreOver(etat.exos, item.id, stat, valeur) });
+      ouvrirFicheDe(cle, item);
+    },
   });
 }
 

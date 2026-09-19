@@ -4,6 +4,7 @@
 import { SLOTS } from '../src/data/slots.mjs';
 import { conditionValue } from '../src/solver/condition-value.mjs';
 import { LIBELLE_CASE } from './layout.mjs';
+import { decrireExos } from './exos-piece.mjs';
 import { iconeStat } from './icons.mjs';
 import { cacherBulle, montrerBulle, suivreBulle } from './hover-card.mjs';
 import { COULEUR_ELEMENT, iconeElement } from './icons.mjs';
@@ -744,6 +745,12 @@ export function renderCandidats(root, candidats, { portes, itemById, porte, onPo
         aMettre.map((id) => vignette(id, 'entrante')),
         aEnlever.length > 0 ? el('span', { class: 'candidat-legende', text: 'a enlever' }) : null,
         aEnlever.map((id) => vignette(id, 'sortante'))),
+
+      // Les exos que le solveur a poses : sans cette ligne, le joueur porterait
+      // le build et n'obtiendrait pas les degats annonces.
+      candidat.exos?.length
+        ? el('div', { class: 'candidat-exos', text: decrireExos(candidat.exos, itemById) })
+        : null,
     );
   }));
 }

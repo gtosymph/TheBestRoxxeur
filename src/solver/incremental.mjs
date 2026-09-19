@@ -12,7 +12,10 @@
  * Toutes les valeurs sont entieres, les additions sont donc exactes.
  * Le test test/incremental.test.mjs verifie l'equivalence stricte.
  */
-import { aggregate, countSetPieces, derive, unequipableItems } from '../engine/build.mjs';
+import {
+  aggregate, basesExos, countSetPieces, derive, unequipableItems,
+} from '../engine/build.mjs';
+import { placerExos } from '../engine/exos.mjs';
 import { EMPTY, decode } from './genome.mjs';
 
 /**
@@ -55,12 +58,16 @@ function retirer(cible, source) {
  * @param {{classe?: number, sexe?: number}} [contexte.profile]
  * @param {{coup: number, plafond: number, position: boolean}} [contexte.menace]
  *   Modele d'adversaire des points de vie effectifs.
+ * @param {Map<number, Record<string, number>>|null} [contexte.exos] Forgemagie par piece.
+ * @param {Record<string, number>|null} [contexte.exosLibres] Exos que le solveur peut poser.
  * @returns {{rebaser: (genome: number[]) => void,
  *            calculer: (genome: number[]) => {stats: any, raw: any, items: any[], invalid: any[]}}}
  */
 export function createIncrementalBuild({
   pools, setById, level, porteur, scrolls, passives, profile = {}, menace = undefined,
+  exos = null, exosLibres = null,
 }) {
+  const bases = basesExos(level);
   let genomeBase = null;
   let rawBase = null;
   let setCountsBase = null;
@@ -68,7 +75,7 @@ export function createIncrementalBuild({
   function rebaser(genome) {
     const items = decode(genome, pools);
     const agrege = aggregate(
-      { items, level, allocation: porteur.allocation, scrolls, passives },
+      { items, level, allocation: porteur.allocation, scrolls, passives, exos },
       setById,
     );
     genomeBase = [...genome];
@@ -103,6 +110,8 @@ export function createIncrementalBuild({
         }
         const passif = passives?.get(sortant.id);
         if (passif) retirer(raw, passif);
+        const exo = exos?.get(sortant.id);
+        if (exo) retirer(raw, exo);
       }
       if (entrant) {
         if (entrant.stats) ajouter(raw, entrant.stats);
@@ -111,6 +120,8 @@ export function createIncrementalBuild({
         }
         const passif = passives?.get(entrant.id);
         if (passif) ajouter(raw, passif);
+        const exo = exos?.get(entrant.id);
+        if (exo) ajouter(raw, exo);
       }
     }
 
@@ -128,10 +139,13 @@ export function createIncrementalBuild({
     }
 
     const items = decode(genome, pools);
-    const stats = derive(raw, level, menace);
+    // Les exos libres se posent apres les deltas : ils dependent des pieces
+    // presentes et du plafond atteint, pas de la base.
+    const { raw: complet } = placerExos({ items, raw, bases, budget: exosLibres, exos });
+    const stats = derive(complet, level, menace);
     const invalid = unequipableItems(items, stats, profile);
 
-    return { stats, raw, items, invalid };
+    return { stats, raw: complet, items, invalid };
   }
 
   return { rebaser, calculer };

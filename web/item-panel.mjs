@@ -9,6 +9,7 @@ import { STAT_LABELS } from '../src/data/stats.mjs';
 import { passifDe } from '../src/data/passives-defaults.mjs';
 import { libelleCriteria } from '../src/data/criteria.mjs';
 import { piegerFocus } from './focus-piege.mjs';
+import { blocExosRares, listeStats } from './fiche-forge.mjs';
 
 /** Racine de la fiche, creee une seule fois. */
 let racine = null;
@@ -16,7 +17,6 @@ let racine = null;
 /** Libere le clavier quand la fiche se ferme. */
 let libererFocus = null;
 
-const nombre = (v) => (v > 0 ? `+${Math.round(v)}` : String(Math.round(v)));
 const entier = (v) => Math.floor(v).toLocaleString('fr-FR');
 
 /**
@@ -85,15 +85,13 @@ export function fermerFiche() {
  * Ouvre la fiche d'un item.
  * @param {any} item
  * @param {{onEquip?: () => void, onRemove?: () => void, onBan?: () => void,
- *   banni?: boolean, onPosseder?: () => void, possedee?: boolean}} [actions]
+ *   banni?: boolean, onPosseder?: () => void, possedee?: boolean,
+ *   exo?: any, onExoRare?: (cle: string) => void,
+ *   onOver?: (stat: string, valeur: string) => void}} [actions]
  */
 export function ouvrirFiche(item, actions = {}) {
   if (!item) return;
   const fond = assurerRacine();
-
-  const lignes = Object.entries(item.stats ?? {})
-    .filter(([, v]) => v !== 0)
-    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
 
   fond.replaceChildren(el('div', { class: 'fiche', role: 'dialog', 'aria-label': item.fr },
     el('div', { class: 'fiche-tete' },
@@ -126,17 +124,10 @@ export function ouvrirFiche(item, actions = {}) {
 
     blocPassif(item),
 
-    lignes.length === 0
-      ? el('p', { class: 'note', text: 'Cette pièce ne porte aucune statistique.' })
-      : el('dl', { class: 'fiche-stats' }, lignes.flatMap(([cle, valeur]) => {
-          const icone = iconeStat(cle);
-          return [
-            el('dt', {},
-              icone ? el('img', { src: icone, alt: '', decoding: 'async' }) : null,
-              el('span', { text: STAT_LABELS[cle] ?? cle })),
-            el('dd', { class: valeur > 0 ? 'pos' : 'neg', text: nombre(valeur) }),
-          ];
-        })),
+    // Une piece portee se forgemage depuis sa fiche ; une piece du catalogue
+    // ne montre que ses lignes.
+    actions.onExoRare ? blocExosRares(item, actions.exo ?? null, actions.onExoRare) : null,
+    listeStats(item, actions.exo ?? null, actions.onOver ?? null),
 
     el('div', { class: 'fiche-actions' },
       actions.onEquip

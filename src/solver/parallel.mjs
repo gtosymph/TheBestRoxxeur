@@ -120,6 +120,7 @@ function creerFil(url, config) {
  * @param {Record<string, number>} [input.allocation]
  * @param {Record<string, boolean>} [input.scrolls]
  * @param {object} [input.passivesConfig]
+ * @param {object} [input.exosConfig] Forgemagie posee par le joueur, par identifiant de piece.
  * @param {number[]} [input.bannedIds]
  * @param {string[]} [input.allowedSlots]
  * @param {object} [options] Reglages du solveur, dont threadCount et waves.

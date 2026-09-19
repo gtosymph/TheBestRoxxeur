@@ -9,6 +9,7 @@
  * reste tel quel dans l'historique d'annulation.
  */
 import { SLOTS } from '../src/data/slots.mjs';
+import { poserExosLibres } from './exos-piece.mjs';
 
 /**
  * Enleve une piece de toutes les cases qui la portent.
@@ -257,7 +258,8 @@ export function posseder(etat, items, actif) {
  * repartition des points suit le build quand il en apporte une.
  *
  * @param {any} etat
- * @param {{itemIds: number[], allocation?: Record<string, number>}} resultat
+ * @param {{itemIds: number[], allocation?: Record<string, number>,
+ *   exos?: {id: number, cle: string}[]}} resultat
  * @param {Map<number, any>} itemById
  */
 export function appliquerBuild(etat, resultat, itemById) {
@@ -280,5 +282,8 @@ export function appliquerBuild(etat, resultat, itemById) {
     posees: new Set(),
     verrous: new Set([...etat.verrous].filter((id) => portes.has(id))),
     ...(resultat.allocation ? { allocation: { ...etat.allocation, ...resultat.allocation } } : {}),
+    // Les exos que le solveur a poses deviennent ceux du joueur : le build
+    // applique vaut alors ce que le solveur a annonce.
+    ...(resultat.exos?.length ? { exos: poserExosLibres(etat.exos ?? {}, resultat.exos) } : {}),
   };
 }

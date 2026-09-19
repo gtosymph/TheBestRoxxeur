@@ -22,7 +22,7 @@ globalThis.localStorage = new Rangement();
 
 const {
   echantillonner, lireResultat, migrerLimites, POINTS_GARDES, reprendreEtat,
-  sauverEtat, sauverResultat, serialiserEtat, VERSION_LIMITES,
+  appliquerRange, sauverEtat, sauverResultat, serialiserEtat, VERSION_LIMITES,
 } = await import('../web/etat-stockage.mjs');
 const { etatInitial } = await import('../web/reglages.mjs');
 const { CLES } = await import('../web/stockage.mjs');
@@ -58,6 +58,7 @@ test('l\'etat range se relit tel quel', () => {
   etat.reference = { itemIds: [EPEE.id], date: '2026-01-01' };
   etat.changementsMax = 3;
   etat.limites = { ...etat.limites, vitalite: 0, force: 40 };
+  etat.exos = { [EPEE.id]: { pa: 1, over: { vitalite: 30 } } };
 
   sauverEtat(etat);
   const relu = reprendreEtat(etatInitial(), CATALOGUE);
@@ -74,6 +75,12 @@ test('l\'etat range se relit tel quel', () => {
   // Zero reste zero : le format range porte sa version.
   assert.equal(relu.limites.vitalite, 0);
   assert.equal(relu.limites.force, 40);
+  assert.deepEqual(relu.exos, { [EPEE.id]: { pa: 1, over: { vitalite: 30 } } });
+});
+
+test('un etat range avant la forgemagie se relit sans exo', () => {
+  const relu = appliquerRange(etatInitial(), { niveau: 150 }, CATALOGUE);
+  assert.deepEqual(relu.exos, {});
 });
 
 test('la forme rangee porte la version des limites', () => {
