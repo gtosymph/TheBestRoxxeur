@@ -105,6 +105,16 @@ export const OPTIONS = Object.freeze([
     aide: 'Compte vos résistances mêlée et distance, moitié chacune : votre\n'
       + 'adversaire frappe tantôt au contact, tantôt de loin.\n'
       + 'Décoche : seuls les cinq éléments comptent.' },
+  { cle: 'forgeAuto', groupe: 'forge', libelle: 'Forgemagie automatique',
+    aide: 'Le moteur forge lui-meme chaque piece : il pousse la ligne qui paie\n'
+      + 'le plus votre objectif, sous le poids que le jeu accepte.\n'
+      + 'Une piece n\'accepte que 101 de poids d\'over et d\'exo reunis :\n'
+      + '101 points de force, ou 505 de vitalité, ou 5 de dommages.\n'
+      + 'Vos propres exos comptent dans ce poids.' },
+  { cle: 'forgePoids', groupe: 'forge', libelle: 'Poids forgé par pièce', type: 'nombre', min: 0, max: 101,
+    aide: 'Poids que le moteur pose au plus sur chaque pièce. 101 est la limite\n'
+      + 'du jeu, et le stuff rendu coûte alors une fortune en runes.\n'
+      + 'Baissez-le pour chercher un stuff que votre bourse paie vraiment.' },
   { cle: 'exosPa', groupe: 'forge', libelle: 'Exos PA libres', type: 'nombre', min: 0, max: 3,
     aide: 'Nombre d\'exos PA que le solveur peut poser lui-même, une par pièce\n'
       + 'sans PA natif, sans dépasser 12 PA. Vos propres exos comptent en plus.' },
@@ -113,6 +123,9 @@ export const OPTIONS = Object.freeze([
   { cle: 'exosPo', groupe: 'forge', libelle: 'Exos portée libres', type: 'nombre', min: 0, max: 3,
     aide: 'Nombre d\'exos portée que le solveur peut poser lui-même, sans dépasser 6 de portée.' },
 ]);
+
+/** Options qui n'ont de sens que quand la forgemagie automatique est active. */
+const OPTIONS_DE_LA_FORGE = new Set(['forgePoids']);
 
 /** Options numeriques qui n'ont de sens que quand le combo est actif. */
 const OPTIONS_DU_COMBO = new Set(['paReserves', 'comboElements']);
@@ -137,6 +150,8 @@ export function optionsAffichees(options) {
     ...(OPTIONS_DU_COMBO.has(o.cle) ? { inactif: !options.combo } : {}),
     // Les bornes de l'arme ne servent que si l'arme compte dans les degats.
     ...(OPTIONS_DE_L_ARME.has(o.cle) ? { inactif: !options.arme } : {}),
+    // Le poids forge ne sert que si le moteur a le droit de forger.
+    ...(OPTIONS_DE_LA_FORGE.has(o.cle) ? { inactif: !options.forgeAuto } : {}),
   }));
 }
 
@@ -211,6 +226,7 @@ export function etatInitial() {
       armeElementsMin: 0, armeElementsMax: 0,
       // Modele d'adversaire qui sert aux points de vie effectifs.
       menaceCoup: 300, menacePlafond: 50, menacePosition: true,
+      forgeAuto: false, forgePoids: 101,
       exosPa: 0, exosPm: 0, exosPo: 0,
     },
     // Forgemagie posee par le joueur, par identifiant de piece : elle suit la

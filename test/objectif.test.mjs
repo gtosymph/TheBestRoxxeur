@@ -9,8 +9,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  attaqueArme, attaquesAffichees, buildCourant, itemsFiltres, objectif, sortsCalcules,
-  valeurDeReference,
+  attaqueArme, attaquesAffichees, budgetForge, buildCourant, exosDe, forgeDe, itemsFiltres,
+  objectif, sortsCalcules, valeurDeReference,
 } from '../web/objectif.mjs';
 import { etatInitial } from '../web/reglages.mjs';
 import { SEARCH_MODES } from '../src/solver/score.mjs';
@@ -203,5 +203,68 @@ test('valeurDeReference', async (t) => {
     // Les conditions de depart (12 PA) ne tiennent pas avec un anneau seul.
     assert.equal(valeur.satisfied, false);
     assert.ok(valeur.score < 0, 'un score de penalite');
+  });
+});
+
+/* ============================================ La forgemagie automatique === */
+
+/** Une piece a force, et une panoplie qui rend la vitalite demandee. */
+const PANOPLIE = { id: 77, fr: 'Panoplie d essai', tiers: [null, { vitalite: 2000 }] };
+const CASQUE = { id: 20, slot: 'chapeau', fr: 'Casque', level: 190, typeFr: 'Casque', setId: 77, stats: { force: 60 } };
+const PLASTRON = { id: 21, slot: 'cape', fr: 'Cape', level: 190, typeFr: 'Cape', setId: 77, stats: { force: 40 } };
+
+const CATALOGUE_PANOPLIE = {
+  items: [CASQUE, PLASTRON],
+  itemById: new Map([CASQUE, PLASTRON].map((i) => [i.id, i])),
+  setById: new Map([[77, PANOPLIE]]),
+};
+
+/** Etat qui porte la panoplie, avec un minimum de vitalite que seule elle tient. */
+function etatPanoplie(options = {}) {
+  const etat = etatAvecSort({ forgeAuto: true, forgePoids: 101, ...options });
+  return {
+    ...etat,
+    equipped: new Map([['chapeau:0', CASQUE], ['cape:0', PLASTRON]]),
+    conditions: [{ stat: 'vitalite', target: 2000, weight: 1, max: null }],
+  };
+}
+
+test('forgemagie automatique', async (t) => {
+  await t.test('eteinte, elle ne pose rien', () => {
+    const etat = { ...etatPanoplie(), options: { ...etatPanoplie().options, forgeAuto: false } };
+    assert.equal(forgeDe(etat, CATALOGUE_PANOPLIE), null);
+    assert.equal(exosDe(etat, CATALOGUE_PANOPLIE).size, 0);
+    assert.equal(objectif(etat, CATALOGUE_PANOPLIE).forge, undefined);
+  });
+
+  await t.test('allumee, elle pousse la ligne que les sorts paient', () => {
+    const table = exosDe(etatPanoplie(), CATALOGUE_PANOPLIE);
+    // Le sort est de feu : ni la force ni la vitalite ne le font monter, et
+    // la piece ne porte que de la force. Rien ne se pose.
+    assert.equal(table.size, 0);
+  });
+
+  await t.test('la panoplie compte dans la reference', () => {
+    // Sans elle, le minimum de vitalite passerait pour non tenu, et la
+    // forgemagie paierait la vitalite au lieu de ce que l'objectif demande.
+    // C'est le defaut que ce test empeche de revenir.
+    const valeurs = forgeDe(etatPanoplie(), CATALOGUE_PANOPLIE).valeurs;
+    assert.equal(valeurs.vitalite, undefined, 'la vitalite est deja tenue par la panoplie');
+
+    const sansPanoplie = forgeDe(etatPanoplie(), { ...CATALOGUE_PANOPLIE, setById: new Map() }).valeurs;
+    assert.ok(sansPanoplie.vitalite > 0, 'sans la panoplie, le minimum tombe et la vitalite paie');
+  });
+
+  await t.test('le poids demande borne ce que le moteur pose', () => {
+    assert.equal(budgetForge(etatPanoplie()), 101);
+    assert.equal(budgetForge(etatPanoplie({ forgePoids: 40 })), 40);
+    assert.equal(budgetForge(etatPanoplie({ forgePoids: 500 })), 101, 'le jeu n accepte pas plus de 101');
+    assert.equal(budgetForge(etatPanoplie({ forgePoids: -3 })), 0);
+  });
+
+  await t.test('l objectif porte le mode quand il est allume', () => {
+    const cible = objectif(etatPanoplie(), CATALOGUE_PANOPLIE);
+    assert.equal(cible.forge.budget, 101);
+    assert.equal(typeof cible.forge.valeurs, 'object');
   });
 });

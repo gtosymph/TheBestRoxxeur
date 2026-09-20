@@ -11,7 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  libellesExos, lignesComparaison, mesuresDegats, nomDeColonne, ordonnerPieces, valeursDegats,
+  libellesExos, libellesForge, lignesComparaison, mesuresDegats, nomDeColonne, ordonnerPieces, valeursDegats,
 } from '../web/v2/comparaison.mjs';
 
 const MESURES = [
@@ -143,4 +143,26 @@ test('libellesExos rend une liste vide sans exo ou sans piece', () => {
   assert.deepEqual(libellesExos({}, [{ id: 1, slot: 'cape' }]), []);
   assert.deepEqual(libellesExos(null, []), []);
   assert.deepEqual(libellesExos({ 9: { pm: 1 } }, [{ id: 1, slot: 'cape' }]), []);
+});
+
+test('libellesForge lit la table normalisee, overs puis exos rares', () => {
+  const pieces = [
+    { id: 1, slot: 'amulette', fr: 'Amu' },
+    { id: 2, slot: 'ceinture', fr: 'Ceinture' },
+  ];
+  const table = new Map([
+    [1, { intelligence: 101 }],
+    [2, { pa: 1, vitalite: 50 }],
+  ]);
+  assert.deepEqual(libellesForge(table, pieces), [
+    'Intelligence +101 · Amulette',
+    'Vitalité +50 · Ceinture',
+    'Exo PA · Ceinture',
+  ]);
+});
+
+test('libellesForge rend une liste vide sans table ni piece', () => {
+  assert.deepEqual(libellesForge(null, [{ id: 1, slot: 'cape' }]), []);
+  assert.deepEqual(libellesForge(new Map(), [{ id: 1, slot: 'cape' }]), []);
+  assert.deepEqual(libellesForge(new Map([[9, { force: 10 }]]), [{ id: 1, slot: 'cape' }]), []);
 });
