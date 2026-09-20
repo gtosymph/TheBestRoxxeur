@@ -12,6 +12,10 @@ import { normaliserMenace } from '../src/engine/defense.mjs';
 import { estVide, resistancesCible } from '../src/engine/cible.mjs';
 import { weaponAttack } from '../src/engine/damage.mjs';
 import { normaliserExos } from '../src/engine/exos.mjs';
+import { BUDGET_POIDS } from '../src/engine/runes.mjs';
+import { forgerAuto, fusionnerExos } from '../src/engine/forge-auto.mjs';
+import { valeursForge } from '../src/solver/forge-valeurs.mjs';
+import { aggregate } from '../src/engine/build.mjs';
 import { normalizePassives } from '../src/data/passives.mjs';
 import { configPassifsDefaut } from '../src/data/passives-defaults.mjs';
 import { scoreBuild, SEARCH_MODES } from '../src/solver/score.mjs';
@@ -70,8 +74,70 @@ export function passifsActifs(etat) {
  * Forgemagie du joueur, telle que le moteur la lit.
  * @param {any} etat
  */
-export function exosDe(etat) {
-  return normaliserExos(etat.exos ?? {}, new Set(STAT_KEYS));
+export function exosDe(etat, catalogue = null) {
+  const poses = normaliserExos(etat.exos ?? {}, new Set(STAT_KEYS));
+  const forge = forgeDe(etat, catalogue, poses);
+  if (!forge) return poses;
+
+  // Le stuff porte se lit forge, comme le solveur le lira : sans cela, la
+  // fiche annoncerait un score que la recherche ne retrouverait pas.
+  const { table } = forgerAuto({
+    items: [...etat.equipped.values()], valeurs: forge.valeurs, budget: forge.budget, exos: poses,
+  });
+  return fusionnerExos(poses, table);
+}
+
+/**
+ * Poids de forgemagie que le moteur peut poser par piece, ou zero.
+ *
+ * Cent un est la limite du jeu, pas un reglage : une piece n'accepte pas plus
+ * d'over et d'exo reunis. Le joueur peut descendre sous cette limite pour
+ * chercher un stuff que sa bourse paie vraiment.
+ *
+ * @param {any} etat
+ */
+export function budgetForge(etat) {
+  if (!etat.options.forgeAuto) return 0;
+  const demande = Number(etat.options.forgePoids);
+  if (!Number.isFinite(demande)) return BUDGET_POIDS;
+  return Math.max(0, Math.min(BUDGET_POIDS, Math.trunc(demande)));
+}
+
+/**
+ * Le mode forgemagie automatique, tel que le moteur le lit.
+ *
+ * Il porte deux choses : le poids permis par piece, et ce que chaque ligne
+ * vaut pour l'objectif du moment. La valeur se mesure sur le stuff porte —
+ * une reference suffit, le classement des lignes qui paient ne change pas
+ * d'un build a l'autre.
+ *
+ * @param {any} etat
+ * @param {{setById: Map<number, any>}|null} [catalogue] Pour lire les panoplies
+ *   de la reference. Sans lui, une panoplie manquante ferait passer une
+ *   condition pour non tenue, et la mesure paierait la mauvaise ligne.
+ * @param {Map<number, Record<string, number>>} [poses] Exos deja poses a la main.
+ * @returns {{budget: number, valeurs: Record<string, number>}|null}
+ */
+export function forgeDe(etat, catalogue = null, poses = null) {
+  const budget = budgetForge(etat);
+  if (budget <= 0) return null;
+
+  const exos = poses ?? normaliserExos(etat.exos ?? {}, new Set(STAT_KEYS));
+  const { stats: raw } = aggregate({
+    items: [...etat.equipped.values()],
+    level: etat.niveau,
+    allocation: etat.allocation,
+    scrolls: etat.scrolls,
+    passives: passifsActifs(etat),
+    exos,
+  }, catalogue?.setById ?? new Map());
+
+  return {
+    budget,
+    valeurs: valeursForge({
+      raw, level: etat.niveau, objective: objectifSansForge(etat), budget, menace: menaceDe(etat),
+    }),
+  };
 }
 
 /**
@@ -129,7 +195,7 @@ export function buildCourant(etat, catalogue) {
       allocation: etat.allocation,
       scrolls: etat.scrolls,
       passives: passifsActifs(etat),
-      exos: exosDe(etat),
+      exos: exosDe(etat, catalogue),
       profile: profilDe(etat),
       menace: menaceDe(etat),
     },
@@ -166,8 +232,26 @@ export function cibleDe(etat) {
 /**
  * Objectif remis au solveur.
  * @param {any} etat
+ * @param {{setById: Map<number, any>}|null} [catalogue]
  */
-export function objectif(etat) {
+export function objectif(etat, catalogue = null) {
+  const base = objectifSansForge(etat);
+  const forge = forgeDe(etat, catalogue);
+  // Le mode forgemagie voyage avec l'objectif : il dit ce que la recherche a
+  // le droit de forger, comme le budget d'exos libres dit ce qu'elle a le
+  // droit d'exoter.
+  return forge ? { ...base, forge } : base;
+}
+
+/**
+ * L'objectif, sans le mode forgemagie.
+ *
+ * Il existe a part parce que mesurer ce que vaut une ligne demande deja un
+ * objectif : sans cette coupure, l'objectif s'appellerait lui-meme.
+ *
+ * @param {any} etat
+ */
+function objectifSansForge(etat) {
   // Le joueur choisit ce que la recherche maximise. Sans sort ni arme, il n'y
   // a pourtant aucun degat a compter : la recherche retombe alors sur les
   // caracteristiques plutot que de rendre n'importe quoi. L'interface le dit
@@ -321,7 +405,7 @@ export function valeurDeReference(etat, catalogue) {
 
   const { stats } = computeBuild({
     items, level: etat.niveau, allocation: etat.allocation, scrolls: etat.scrolls,
-    passives: passifsActifs(etat), exos: exosDe(etat), profile: profilDe(etat),
+    passives: passifsActifs(etat), exos: exosDe(etat, catalogue), profile: profilDe(etat),
   }, catalogue.setById);
 
   const detail = scoreAffiche(etat, stats);

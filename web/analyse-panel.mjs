@@ -46,9 +46,12 @@ function remplacementsMemo(pieces, etat, catalogue, contexte) {
  * @param {object} donnees.cible Objectif du score affiche.
  * @param {boolean} donnees.tenu Vrai quand le build tient ses conditions.
  * @param {object} donnees.contexte Niveau, points, parchemins, passifs, profil, panoplies.
+ * @param {boolean} [donnees.enRecherche] Vrai tant qu'une recherche tourne.
  * @param {(proposition: any) => void} donnees.onRemplacer
  */
-export function renderAnalyse(racines, { etat, catalogue, stats, cible, tenu, contexte, onRemplacer }) {
+export function renderAnalyse(
+  racines, { etat, catalogue, stats, cible, tenu, contexte, enRecherche = false, onRemplacer },
+) {
   const pieces = [...etat.equipped.values()];
   const complet = { ...contexte, objective: cible };
 
@@ -58,6 +61,17 @@ export function renderAnalyse(racines, { etat, catalogue, stats, cible, tenu, co
     itemById: catalogue.itemById,
     libelles: STAT_LABELS,
   });
+
+  // Pendant une recherche, le build change plusieurs fois par seconde : la
+  // signature ne vaut jamais deux fois, le calcul repart a chaque repeint, et
+  // ses cinquante millisecondes prennent le fil principal a chaque fois. Le
+  // conseil rendu serait de toute facon perime avant d'etre lu.
+  if (enRecherche) {
+    racines.remplacements.replaceChildren(vue.el('p', { class: 'note',
+      text: 'Les remplacements se calculent a la pause : pendant la recherche, '
+        + 'le stuff change plusieurs fois par seconde.' }));
+    return;
+  }
 
   renderRemplacements(racines.remplacements, remplacementsMemo(pieces, etat, catalogue, complet), {
     tenu, onEquiper: onRemplacer,

@@ -22,9 +22,8 @@ import { etatInitial, optionsAffichees } from '../reglages.mjs';
 import { etatRange, reprendreEtat, sauverEtat } from '../etat-stockage.mjs';
 import { adopter, reglageDuFragment, resume } from '../partage-lien.mjs';
 import {
-  attaqueArme, attaquesAffichees, buildCourant, cibleAffichee, cibleDe, objectif, passifsActifs,
-  profilDe,
-  scoreAffiche, sortsCalcules, valeurDeReference,
+  attaqueArme, attaquesAffichees, buildCourant, cibleAffichee, cibleDe, exosDe, objectif,
+  passifsActifs, profilDe, scoreAffiche, sortsCalcules, valeurDeReference,
 } from '../objectif.mjs';
 import { appliquerBuild } from '../equipement.mjs';
 import { enrichirSorts } from '../sorts-migration.mjs';
@@ -55,7 +54,7 @@ import { garderSignature, reglagesChanges, reprendreSignature } from './perempti
 import { ouvrirIdentite } from './identite.mjs';
 import { basculerPalette, fermerPalette, paletteOuverte } from './palette.mjs';
 import { comparaisonOuverte, fermerComparaison, ouvrirComparaison } from './vue-comparaison.mjs';
-import { libellesExos, mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
+import { libellesForge, mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
 import { basculerChoix, cleDeChoix, rafraichirChoix } from './choix-comparaison.mjs';
 import { FAMILLES } from './fiche.mjs';
 import { fermerPoints, ouvrirPoints, pointsOuverts } from './vue-points.mjs';
@@ -209,6 +208,9 @@ function message(texte, type = 'info') {
 
 const recherche = creerRecherche({
   $, lireEtat, setEtat, message,
+  // Le catalogue se lit au moment ou la recherche part, pas ici : il arrive
+  // apres le premier rendu.
+  lireCatalogue: () => catalogue,
   appliquer: (resultat, aussi = null) => setEtat(
     { ...appliquerBuild(etat, resultat, catalogue.itemById), ...(aussi ?? {}) }),
   garderSimulation: () => garderSimulation({ siNouvelle: true, silencieux: true }),
@@ -247,13 +249,28 @@ const cadence = creerCadence({
   // arriere-plan n'en produit aucune. La page s'ouvrait alors vide, et le
   // restait jusqu'a ce qu'on vienne la regarder. Le compte a rebours prend le
   // relais : le premier des deux qui arrive peint, le second ne fait rien.
-  planifier: (suite) => {
+  //
+  // Un delai demande par le rythme se tient, lui, au compte a rebours seul :
+  // une image d'ecran arriverait trop tot et annulerait l'attente.
+  planifier: (suite, delai = 0) => {
     let fait = false;
     const uneSeuleFois = () => { if (fait) return; fait = true; suite(); };
+    if (delai > 0) { setTimeout(uneSeuleFois, delai); return; }
     requestAnimationFrame(uneSeuleFois);
     setTimeout(uneSeuleFois, 120);
   },
 });
+
+/*
+ * Ecart minimal entre deux repeints PENDANT une recherche.
+ *
+ * Huit fils rendent chacun une vague par seconde, et chaque amelioration
+ * repose le build : l'ecran se repeignait jusqu'a dix fois par seconde. Un
+ * repeint complet refait dix-sept sections et recalcule l'analyse du stuff. Le
+ * fil principal n'avait plus de quoi faire defiler la page ni recevoir un
+ * clic. Quatre repeints par seconde suffisent a l'oeil, et rendent la main.
+ */
+const RYTHME_EN_RECHERCHE_MS = 250;
 
 const render = () => cadence.demander();
 
@@ -265,6 +282,9 @@ window.addEventListener('pointercancel', cadence.relacher, true);
 
 function peindre() {
   if (vierge) return;
+
+  // Le rythme suit la recherche : serre pendant qu'elle tourne, libre sinon.
+  cadence.rythme(recherche.tourne() ? RYTHME_EN_RECHERCHE_MS : 0);
 
   // Avant de dessiner : une coche dont le stuff a quitte l'ecran s'oublie,
   // sinon la comparaison compterait un stuff que plus aucune case ne montre.
@@ -365,7 +385,7 @@ function renderPlateau(stats) {
 let borneGardee = { cle: null, valeur: null };
 
 function borneCourante() {
-  const objective = objectif(etat);
+  const objective = objectif(etat, catalogue);
   const cle = JSON.stringify([etat.niveau, [...etat.bannis], etat.scrolls, etat.options.passifs,
     objective.spells, objective.cible, objective.menace]);
   if (borneGardee.cle !== cle) {
@@ -664,6 +684,7 @@ function renderAnalyseDuStuff(bilan, stats) {
       stats,
       cible: cibleAffichee(etat),
       tenu: bilan.satisfied,
+      enRecherche: recherche.tourne(),
       contexte: {
         level: etat.niveau,
         allocation: etat.allocation,
@@ -830,8 +851,8 @@ function colonneDe(nom, objet) {
     stats: { ...stats, ...valeursDegats(degats, etat.sorts.length, etat.options.arme) },
     pieces,
     // La forgemagie de la colonne : celle du joueur, plus celle que le
-    // solveur a posee sur ce stuff.
-    exos: libellesExos(etatCol.exos, pieces),
+    // moteur decide quand le mode automatique est allume.
+    exos: libellesForge(exosDe(etatCol, catalogue), pieces),
   };
 }
 

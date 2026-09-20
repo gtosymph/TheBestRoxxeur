@@ -186,3 +186,32 @@ export function libellesExos(exos, pieces) {
     return [...overs, ...rares];
   });
 }
+
+/**
+ * Ce que la forgemagie ajoute a une colonne, table normalisee en entree.
+ *
+ * Cette table dit des LIGNES, pas des gestes : « intelligence : 101 » ou
+ * « pa : 1 ». Elle reunit ce que le joueur a pose et ce que le moteur a
+ * decide, et c'est bien ce qu'il faut lire — le joueur veut savoir ce que la
+ * piece porte au-dela de son jet, pas qui l'a demande.
+ *
+ * @param {Map<number, Record<string, number>>|null} table Exos par piece.
+ * @param {{id: number, slot?: string}[]|null} pieces Pieces de la colonne, ordonnees.
+ * @returns {string[]}
+ */
+export function libellesForge(table, pieces) {
+  return (pieces ?? []).flatMap((piece) => {
+    const lignes = table?.get?.(piece.id);
+    if (!lignes) return [];
+    const ou = NOM_CASE.get(piece.slot) ?? piece.slot ?? '';
+
+    const rares = [];
+    const overs = [];
+    for (const [stat, valeur] of Object.entries(lignes)) {
+      if (!valeur) continue;
+      if (EXOS_RARES.includes(stat)) rares.push(`Exo ${LIBELLE_EXO[stat]} \u00b7 ${ou}`);
+      else overs.push(`${STAT_LABELS[stat] ?? stat} ${signe(Number(valeur))} \u00b7 ${ou}`);
+    }
+    return [...overs, ...rares];
+  });
+}

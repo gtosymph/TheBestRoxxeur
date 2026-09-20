@@ -28,15 +28,18 @@ import {
 /** Un peintre qui compte ses passages, et un planificateur qu'on declenche. */
 function banc() {
   let passages = 0;
+  let horodatage = 1000;
   const attente = [];
   const cadence = creerCadence({
     peindre: () => { passages += 1; },
     planifier: (suite) => attente.push(suite),
+    horloge: () => horodatage,
   });
   return {
     cadence,
     passages: () => passages,
     image: () => { const suites = attente.splice(0); for (const suite of suites) suite(); },
+    avancer: (ms) => { horodatage += ms; },
   };
 }
 
@@ -56,12 +59,17 @@ test('la cadence de repeint', async (t) => {
     assert.equal(passages(), 0, 'un repeint sous le doigt avale le clic');
   });
 
-  await t.test('le repeint retenu part des que le doigt se leve', () => {
+  await t.test('le repeint retenu attend la prochaine image, pas le doigt', () => {
+    // Le navigateur envoie « clic » APRES « doigt leve ». Repeindre pendant
+    // le doigt leve remplace le bouton avant le clic, et le clic se perd :
+    // c'est le defaut meme que la cadence doit enlever.
     const { cadence, passages, image } = banc();
     cadence.enfoncer();
     cadence.demander();
     image();
     cadence.relacher();
+    assert.equal(passages(), 0, 'un repeint pendant le doigt leve avale le clic');
+    image();
     assert.equal(passages(), 1);
   });
 
@@ -77,6 +85,7 @@ test('la cadence de repeint', async (t) => {
     cadence.enfoncer();
     for (let i = 0; i < 20; i += 1) { cadence.demander(); image(); }
     cadence.relacher();
+    image();
     assert.equal(passages(), 1);
   });
 
@@ -86,9 +95,32 @@ test('la cadence de repeint', async (t) => {
     cadence.demander();
     image();
     cadence.relacher();
+    image();
     cadence.demander();
     image();
     assert.equal(passages(), 2);
+  });
+
+  await t.test('un rythme impose espace deux repeints', () => {
+    const { cadence, passages, image, avancer } = banc();
+    cadence.rythme(400);
+    cadence.demander();
+    image();
+    assert.equal(passages(), 1, 'le premier repeint part tout de suite');
+
+    cadence.demander();
+    image();
+    assert.equal(passages(), 1, 'le deuxieme attend son tour');
+
+    avancer(400);
+    image();
+    assert.equal(passages(), 2);
+  });
+
+  await t.test('sans rythme impose, rien n\'attend', () => {
+    const { cadence, passages, image } = banc();
+    for (let i = 0; i < 3; i += 1) { cadence.demander(); image(); }
+    assert.equal(passages(), 3);
   });
 });
 

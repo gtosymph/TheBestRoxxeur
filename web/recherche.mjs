@@ -38,7 +38,9 @@ const nombre = (n) => n.toLocaleString('fr-FR');
  * @param {(texte: string, type?: string) => void} deps.message
  * @param {() => void} deps.garderSimulation Range le build porte, s'il est nouveau.
  */
-export function creerRecherche({ $, lireEtat, setEtat, appliquer, message, garderSimulation }) {
+export function creerRecherche({
+  $, lireEtat, setEtat, appliquer, message, garderSimulation, lireCatalogue = () => null,
+}) {
   /** Recherche en cours, ou null. */
   let recherche = null;
 
@@ -267,7 +269,7 @@ export function creerRecherche({ $, lireEtat, setEtat, appliquer, message, garde
         lockedIds: [...etat.verrous],
         // Une reprise seme le build courant ; un depart de zero ne seme rien.
         currentItemIds: deZero ? [] : [...etat.equipped.values()].map((piece) => piece.id),
-        objective: objectif(etat),
+        objective: objectif(etat, lireCatalogue()),
         intensite,
         options: { populationSize: 160 },
       },

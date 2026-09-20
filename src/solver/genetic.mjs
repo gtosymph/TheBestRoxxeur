@@ -20,6 +20,7 @@ import {
   tranchesAVisiter,
 } from './survie.mjs';
 import { SCROLLABLE as SCROLLABLE_KEYS } from '../engine/characteristics.mjs';
+import { forgerAuto, fusionnerExos } from '../engine/forge-auto.mjs';
 
 /**
  * Penalite appliquee par item dont les conditions d'equipement ne sont pas
@@ -416,11 +417,22 @@ export function preparerRecherche(input) {
     .filter(Boolean);
   const { cells: locks, missing: unplaced } = planLocks(layout, pools, lockedItems);
 
+  // Mode forgemagie : chaque piece du catalogue recoit la ligne qui paie le
+  // plus, sous le poids permis. Le choix ne depend que de la piece et de
+  // l'objectif : il se decide ici, une fois, et ne coute plus rien pendant la
+  // recherche. Ce que le joueur a deja pose se retranche de son budget.
+  const forge = objective?.forge ?? null;
+  const forges = forge
+    ? fusionnerExos(exos, forgerAuto({
+      items, valeurs: forge.valeurs, budget: forge.budget, exos,
+    }).table)
+    : exos;
+
   // La repartition des points vit dans un porteur : le solveur peut la faire
   // evoluer en cours de route, l'evaluation lit toujours la version courante.
   const porteur = { allocation: { ...allocation } };
   const evaluate = createEvaluator({
-    pools, setById, level, porteur, scrolls, passives, profile, objective, exos,
+    pools, setById, level, porteur, scrolls, passives, profile, objective, exos: forges,
   });
 
   // Repartit les points au service du meilleur genome, puis rejoue les scores
@@ -438,7 +450,7 @@ export function preparerRecherche(input) {
    */
   const allocationPour = (genome, cible = objective) => {
     const itemsRef = decode(genome, pools);
-    const { stats: raw } = aggregate({ items: itemsRef, level, allocation: {}, scrolls, passives, exos }, setById);
+    const { stats: raw } = aggregate({ items: itemsRef, level, allocation: {}, scrolls, passives, exos: forges }, setById);
     // L'arme du build de reference compte dans les degats vises par les points.
     const { allocation } = optimiserAllocation({
       raw, level, objective: { ...cible, spells: evaluate.spellsAvecArme(itemsRef) },
