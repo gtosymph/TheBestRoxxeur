@@ -47,6 +47,29 @@ export const AXE_ENDURANCE = Object.freeze({
   conditions: Object.freeze(['vitalite', 'pdv', STAT_ENDURANCE]),
 });
 
+/**
+ * Axe du mode « Monter ».
+ *
+ * La sagesse multiplie l'XP de chaque combat, les degats decident du nombre
+ * de combats. Le score les multiplie, mais le joueur veut voir le CHANGE :
+ * « si j'accepte 500 degats de moins, je gagne combien de sagesse ? ».
+ *
+ * La courbe tranche donc les DEGATS et maximise la sagesse, et non l'inverse.
+ * Le sens compte, et il a ete mesure : sur un personnage ordinaire, baisser
+ * la sagesse ne rend aucun degat — les pieces qui donnent l'une donnent
+ * souvent l'autre, et la forgemagie pousse la sagesse sans rien couter. La
+ * courbe qui tranchait la sagesse se reduisait alors a un seul point. Le
+ * change n'existe que de l'autre cote : au dela du gagnant, chaque point de
+ * sagesse se paie en degats, et c'est cela qu'il y a a montrer.
+ */
+export const AXE_XP = Object.freeze({
+  cle: 'damage',
+  valeur: 'sagesse',
+  stat: STAT_DEGATS,
+  pas: PAS_ENDURANCE,
+  conditions: Object.freeze([STAT_DEGATS]),
+});
+
 /** Axe du mode « maximiser les pdv effectifs ». */
 export const AXE_DEGATS = Object.freeze({
   cle: 'damage',
@@ -61,7 +84,27 @@ export const AXE_DEGATS = Object.freeze({
  * @param {string} [mode]
  */
 export function axeDe(mode) {
-  return mode === 'endurance' ? AXE_DEGATS : AXE_ENDURANCE;
+  if (mode === 'endurance') return AXE_DEGATS;
+  if (mode === 'xp') return AXE_XP;
+  return AXE_ENDURANCE;
+}
+
+/**
+ * Ce qu'une mesure d'axe vaut, quelle que soit la forme de la source.
+ *
+ * Deux formes circulent : l'EVALUATION du solveur, qui porte les degats dans
+ * son detail et le reste dans ses statistiques, et la DESCRIPTION d'un build,
+ * qui porte les trois a plat. Chaque endroit qui lisait un axe refaisait ce
+ * tri a la main, et un axe de plus demandait de les retrouver tous.
+ *
+ * @param {any} source Evaluation ou description de build.
+ * @param {string} cle Mesure : « damage », « endurance » ou « sagesse ».
+ * @returns {number}
+ */
+export function lireAxe(source, cle) {
+  if (cle === 'damage') return source?.detail?.damage ?? source?.damage ?? 0;
+  if (cle === 'endurance') return source?.stats?.[STAT_ENDURANCE] ?? source?.endurance ?? 0;
+  return source?.stats?.[cle] ?? source?.[cle] ?? 0;
 }
 
 /** Vrai quand la condition parle de l'axe lui-meme. */
@@ -148,7 +191,8 @@ export function creerPaliersSurvie({ pas = PAS_ENDURANCE, garde = 2, axe = AXE_E
       const cle = genome.join(',');
       if (liste.some((entree) => entree.cle === cle)) return;
 
-      liste.push({ genome: [...genome], damage: mesure.damage, endurance: mesure.endurance, cle });
+      // La mesure passe entiere : un axe de plus ne demande alors rien ici.
+      liste.push({ ...mesure, genome: [...genome], cle });
       liste.sort((a, b) => b[axe.valeur] - a[axe.valeur]);
       if (liste.length > garde) liste.length = garde;
       pretendants.set(tranche, liste);
@@ -168,9 +212,8 @@ export function creerPaliersSurvie({ pas = PAS_ENDURANCE, garde = 2, axe = AXE_E
       const meilleurs = new Map();
       for (const liste of pretendants.values()) {
         for (const pretendant of liste) {
-          const description = decrire
-            ? decrire(pretendant.genome)
-            : { damage: pretendant.damage, endurance: pretendant.endurance };
+          const { genome: _g, cle: _c, ...mesure } = pretendant;
+          const description = decrire ? decrire(pretendant.genome) : mesure;
           if (!valide(description)) continue;
 
           const tranche = trancheDe(description[axe.cle], pas);
@@ -224,11 +267,8 @@ export function frontiereSurvie(paliers, axe = AXE_ENDURANCE) {
  */
 export function noteSousPlafond(vue, plafond, pente, axe = AXE_ENDURANCE) {
   if (!estTenable(vue, axe)) return -1e9 + vue.score;
-  const sur = axe === AXE_DEGATS
-    ? { tranche: vue.detail?.damage ?? 0, note: vue.stats?.[STAT_ENDURANCE] ?? 0 }
-    : { tranche: vue.stats?.[STAT_ENDURANCE] ?? 0, note: vue.detail?.damage ?? 0 };
-  const exces = Math.max(0, sur.tranche - plafond);
-  return sur.note - exces * pente;
+  const exces = Math.max(0, lireAxe(vue, axe.cle) - plafond);
+  return lireAxe(vue, axe.valeur) - exces * pente;
 }
 
 /**
