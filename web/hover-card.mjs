@@ -6,6 +6,7 @@
  * appui ouvre directement la fiche complete.
  */
 import { el, ligneArme, resumeArme } from './render.mjs';
+import { decrireSort } from './bulle-sort.mjs';
 import { iconeStat } from './icons.mjs';
 import { computeSpellDetail, weaponAttack } from '../src/engine/damage.mjs';
 import { STAT_LABELS } from '../src/data/stats.mjs';
@@ -109,6 +110,35 @@ function garnir(noeud, item, contexte = {}) {
   noeud.replaceChildren(...enfants.filter(Boolean));
 }
 
+/** Remplit l'infobulle avec le detail d'un sort. */
+function garnirSort(noeud, sort, contexte = {}) {
+  const vue = decrireSort(sort, contexte);
+  if (!vue) return;
+
+  noeud.replaceChildren(...[
+    el('div', { class: 'bulle-tete' },
+      sort.icon ? el('img', { src: sort.icon, alt: '', decoding: 'async' }) : null,
+      el('div', {},
+        el('div', { class: 'bulle-nom', text: vue.nom }),
+        el('div', { class: 'bulle-sous', text: vue.cout.join(' · ') }))),
+
+    vue.lignes.length === 0
+      ? el('div', { class: 'bulle-vide', text: 'Ce sort ne fait aucun degat' })
+      : el('div', { class: 'bulle-arme-lignes' },
+          vue.lignes.map((ligne) => ligneArme(
+            { element: ligne.element },
+            `${ligne.normal} (${ligne.critique} crit)`
+              + (ligne.differe > 0 ? ` — dans ${ligne.differe} tour(s)` : ''),
+          ))),
+
+    vue.rendu
+      ? el('div', { class: 'bulle-arme-calc' },
+          el('div', { class: 'titre-arme-calc', text: 'Avec vos caractéristiques' }),
+          el('div', { class: 'bulle-arme-moyenne', text: vue.phrases.join(' — ') }))
+      : null,
+  ].filter(Boolean));
+}
+
 /** Place l'infobulle pres du pointeur, sans sortir de la fenetre. */
 function placer(noeud, x, y) {
   const { width, height } = noeud.getBoundingClientRect();
@@ -169,6 +199,23 @@ export function montrerBulle(item, x, y, contexte = {}) {
   if (!item) return;
   const noeud = assurerBulle();
   garnir(noeud, item, contexte);
+  ancre = contexte.ancre ?? null;
+  noeud.hidden = false;
+  placer(noeud, x, y);
+}
+
+/**
+ * Montre l'infobulle d'un sort.
+ *
+ * @param {any} sort Sort au format du moteur.
+ * @param {number} x
+ * @param {number} y
+ * @param {object} [contexte] `stats`, `cible`, `fiche` et `ancre`.
+ */
+export function montrerBulleSort(sort, x, y, contexte = {}) {
+  if (!sort) return;
+  const noeud = assurerBulle();
+  garnirSort(noeud, sort, contexte);
   ancre = contexte.ancre ?? null;
   noeud.hidden = false;
   placer(noeud, x, y);
