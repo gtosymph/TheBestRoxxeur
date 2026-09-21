@@ -20,12 +20,12 @@ const FICHE = { range: 4, minRange: 0, zone: 'cercle 2' };
 test('le cout d un sort', async (t) => {
   await t.test('il dit les PA, la portee, les lancers et le critique', () => {
     assert.deepEqual(coutDuSort(PENDULE, FICHE), [
-      '4 PA', 'portée 0–4', '2 lancers par tour', '15 % de critique', 'zone cercle 2',
+      '4 PA', 'portée 0–4', '2 lancers max par tour', '15 % de critique', 'zone cercle 2',
     ]);
   });
 
   await t.test('sans fiche, la portee se tait', () => {
-    assert.deepEqual(coutDuSort(PENDULE), ['4 PA', '2 lancers par tour', '15 % de critique']);
+    assert.deepEqual(coutDuSort(PENDULE), ['4 PA', '2 lancers max par tour', '15 % de critique']);
   });
 
   await t.test('un seul lancer se dit au singulier', () => {
@@ -73,9 +73,13 @@ test('ce que le sort rapporte ici', async (t) => {
     assert.ok(monte.moyenne > nu.moyenne);
   });
 
-  await t.test('le tour compte les lancers, le lancer ne les compte pas', () => {
-    const rendu = renduDuSort(PENDULE, { agilite: 400 });
-    assert.equal(rendu.parTour, rendu.moyenne * 2);
+  await t.test('le tour compte les lancers CHOISIS, pas la limite du jeu', () => {
+    const unSeul = renduDuSort(PENDULE, { agilite: 400 });
+    assert.equal(unSeul.parTour, unSeul.moyenne, 'sans choix, un seul lancer compte');
+
+    const deux = renduDuSort({ ...PENDULE, repeats: 2 }, { agilite: 400 });
+    assert.equal(deux.parTour, deux.moyenne * 2);
+    assert.equal(deux.comptes, 2);
   });
 
   await t.test('les degats par PA divisent par le cout', () => {
@@ -99,7 +103,7 @@ test('la description complete', async (t) => {
     assert.ok(vue.rendu.moyenne > 0);
     assert.ok(vue.phrases.some((p) => p.includes('par lancer')));
     assert.ok(vue.phrases.some((p) => p.includes('par PA')));
-    assert.ok(vue.phrases.some((p) => p.includes('sur un tour')));
+    assert.ok(vue.phrases.some((p) => p.includes('lancers possibles')));
   });
 
   await t.test('sans stuff, elle dit le sort sans rien promettre', () => {
@@ -109,10 +113,16 @@ test('la description complete', async (t) => {
     assert.equal(vue.lignes.length, 1);
   });
 
-  await t.test('un sort a un seul lancer ne repete pas son total', () => {
+  await t.test('un sort a un seul lancer ne parle pas du tour', () => {
     const unique = { ...PENDULE, castsPerTurn: 1 };
     const vue = decrireSort(unique, { stats: { agilite: 400 } });
-    assert.equal(vue.phrases.filter((p) => p.includes('sur un tour')).length, 0);
+    assert.equal(vue.phrases.filter((p) => p.includes('lancer')).length, 1);
+    assert.ok(vue.phrases.some((p) => p.includes('par lancer')));
+  });
+
+  await t.test('deux lancers choisis se disent dans le total du tour', () => {
+    const vue = decrireSort({ ...PENDULE, repeats: 2 }, { stats: { agilite: 400 } });
+    assert.ok(vue.phrases.some((p) => p.includes('sur le tour, à 2 lancers')));
   });
 
   await t.test('sans sort, il n y a rien a decrire', () => {

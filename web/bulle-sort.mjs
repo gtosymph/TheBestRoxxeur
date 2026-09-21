@@ -8,6 +8,7 @@
  * c'est ce qui permet de le verifier sans navigateur.
  */
 import { computeSpell } from '../src/engine/damage.mjs';
+import { lancersDe, limiteDe } from './lancers.mjs';
 
 const ENTIER = (v) => Math.round(v).toLocaleString('fr-FR');
 
@@ -32,8 +33,11 @@ export function coutDuSort(sort, fiche = null) {
     morceaux.push(`portée ${min === max ? max : `${min}–${max}`}`);
   }
 
-  const lancers = Number(sort?.castsPerTurn) || 1;
-  morceaux.push(lancers > 1 ? `${lancers} lancers par tour` : '1 lancer par tour');
+  // La LIMITE du jeu, pas ce que le total compte. Les deux se ressemblent
+  // et se contredisaient a l'ecran : la fiche annoncait deux lancers pendant
+  // que le score en comptait un.
+  const limite = limiteDe(sort);
+  morceaux.push(limite > 1 ? `${limite} lancers max par tour` : '1 lancer par tour');
 
   const crit = Number(sort?.baseCrit) || 0;
   if (crit > 0) morceaux.push(`${crit} % de critique`);
@@ -65,15 +69,21 @@ export function lignesDuSort(sort) {
  * @param {any} sort
  * @param {Record<string, number>|null} stats
  * @param {Record<string, number>|null} [cible] Resistances de la cible.
- * @returns {{moyenne: number, parTour: number, parPa: number|null}|null}
+ * @returns {{moyenne: number, parTour: number, parPa: number|null,
+ *   comptes: number, limite: number}|null}
  */
 export function renduDuSort(sort, stats, cible = null) {
   if (!stats || (sort?.lines ?? []).length === 0) return null;
   const detail = computeSpell(sort, stats, cible);
+  // Le tour compte les lancers CHOISIS, pas la limite du jeu : c'est ce
+  // nombre-la qui entre dans le score, et l'infobulle doit dire le meme.
+  const comptes = lancersDe(sort);
   return {
     moyenne: detail.average,
-    parTour: detail.parTour,
+    parTour: detail.average * comptes,
     parPa: detail.perAp,
+    comptes,
+    limite: limiteDe(sort),
   };
 }
 
@@ -96,7 +106,11 @@ export function decrireSort(sort, contexte = {}) {
   if (rendu) {
     phrases.push(`${ENTIER(rendu.moyenne)} en moyenne par lancer`);
     if (rendu.parPa !== null) phrases.push(`${ENTIER(rendu.parPa)} par PA`);
-    if (rendu.parTour !== rendu.moyenne) phrases.push(`${ENTIER(rendu.parTour)} sur un tour`);
+    if (rendu.comptes > 1) {
+      phrases.push(`${ENTIER(rendu.parTour)} sur le tour, à ${rendu.comptes} lancers`);
+    } else if (rendu.limite > 1) {
+      phrases.push(`compté une fois sur ${rendu.limite} lancers possibles`);
+    }
   }
 
   return {

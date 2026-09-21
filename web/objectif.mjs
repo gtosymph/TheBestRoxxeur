@@ -16,6 +16,7 @@ import { BUDGET_POIDS } from '../src/engine/runes.mjs';
 import { forgerAuto, fusionnerExos } from '../src/engine/forge-auto.mjs';
 import { valeursForge } from '../src/solver/forge-valeurs.mjs';
 import { aggregate } from '../src/engine/build.mjs';
+import { lancersDe } from './lancers.mjs';
 import { normalizePassives } from '../src/data/passives.mjs';
 import { configPassifsDefaut } from '../src/data/passives-defaults.mjs';
 import { scoreBuild, SEARCH_MODES } from '../src/solver/score.mjs';
@@ -37,6 +38,9 @@ export function sortsCalcules(etat) {
 
     return {
       ...sort,
+      // Ce que le total COMPTE, borne par la limite du jeu. Sans lui, le
+      // score comptait un lancer pendant que la fiche en annoncait deux.
+      repeats: lancersDe(sort),
       // Une ligne differee touche aux tours suivants. Elle reste dans le sort
       // pour rester lisible, et le moteur decide de la compter ou non : le
       // sort porte le choix, la ligne ne porte que le fait.
