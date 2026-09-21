@@ -47,7 +47,37 @@ export const SEARCH_MODES = Object.freeze({
    * deux modes purs en sont les bornes exactes.
    */
   MIXTE: 'mixte',
+  /**
+   * Maximiser la vitesse a laquelle le personnage monte.
+   *
+   * L'XP d'un combat se multiplie par 1 + sagesse / 100. Le nombre de combats
+   * par heure, lui, depend de la vitesse a tuer, donc des degats. Ce que le
+   * joueur gagne dans une heure vaut le PRODUIT des deux.
+   *
+   * Le produit n'est pas un detail de forme : il dit que tuer deux fois plus
+   * vite vaut exactement autant que doubler le multiplicateur. Une somme
+   * ponderee aurait demande un curseur, et ce curseur n'aurait repondu a
+   * aucune question — il n'existe pas de « bonne » proportion entre les deux,
+   * seulement leur produit.
+   */
+  XP: 'xp',
 });
+
+/**
+ * Ce que le personnage gagne par heure, a un facteur pres.
+ *
+ * La sagesse multiplie l'XP de chaque combat ; les degats decident du nombre
+ * de combats. Sans degats, rien ne meurt et aucune sagesse ne fait monter :
+ * le produit le dit tout seul.
+ *
+ * @param {number} degats Degats par tour.
+ * @param {number} sagesse
+ * @returns {number}
+ */
+export function vitesseXp(degats, sagesse) {
+  const utile = Math.max(0, Number(sagesse) || 0);
+  return degats * (1 + utile / 100);
+}
 
 /** Part des degats quand le joueur n'a rien regle : les deux a parts egales. */
 export const PART_EQUILIBRE = 0.5;
@@ -308,6 +338,23 @@ export function scoreBuild(stats, objective, options = {}) {
       penalty,
       damage,
       endurance,
+      ...(combo ? { combo } : {}),
+      satisfied,
+      unmet,
+      details,
+    };
+  }
+
+  // Mode « Monter » : la vitesse a laquelle le personnage gagne de l'XP.
+  if (mode === SEARCH_MODES.XP) {
+    const sagesse = stats.sagesse ?? 0;
+    const xp = vitesseXp(damage, sagesse);
+    return {
+      score: satisfied ? xp : -penalty,
+      penalty,
+      damage,
+      sagesse,
+      xp,
       ...(combo ? { combo } : {}),
       satisfied,
       unmet,

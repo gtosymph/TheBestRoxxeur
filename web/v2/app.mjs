@@ -30,7 +30,8 @@ import { enrichirSorts } from '../sorts-migration.mjs';
 import { creerRecherche } from '../recherche.mjs';
 import { ouvrirFiche } from '../item-panel.mjs';
 import { iconeStat } from '../icons.mjs';
-import { damageValue, SEARCH_MODES } from '../../src/solver/score.mjs';
+import { cacherBulle, montrerBulleSort, suivreBulle } from '../hover-card.mjs';
+import { damageValue, SEARCH_MODES, vitesseXp } from '../../src/solver/score.mjs';
 import { STAT_LABELS } from '../../src/data/stats.mjs';
 import { conditionValue } from '../../src/solver/condition-value.mjs';
 
@@ -229,6 +230,7 @@ const OBJECTIFS = Object.freeze([
   [SEARCH_MODES.DAMAGE, 'Frapper fort'],
   [SEARCH_MODES.ENDURANCE, 'Encaisser'],
   [SEARCH_MODES.MIXTE, 'Les deux'],
+  [SEARCH_MODES.XP, 'Monter'],
 ]);
 
 /** Vrai quand aucun sort n'est pose : tout ce qui parle de degats se tait. */
@@ -419,7 +421,18 @@ function renderVerdict(stats, degats) {
   $('degats-sans-sorts').hidden = degats !== null;
   $('degats-avec-sorts').hidden = degats === null;
   if (degats !== null) {
-    $('degats-phrase').textContent = `Vos sorts envoient ${nombre(degats)} dégâts sur un tour.`;
+    // En mode « Monter », le chiffre qui compte n'est pas les degats seuls :
+    // c'est ce qu'ils valent une fois la sagesse comptee. Le dire ici evite
+    // au joueur de chercher pourquoi le score ne ressemble pas aux degats.
+    const enXp = etat.mode === SEARCH_MODES.XP;
+    const sagesse = Number(stats.sagesse) || 0;
+    $('degats-phrase').textContent = `Vos sorts envoient ${nombre(degats)} dégâts sur un tour.`
+      + (enXp
+        ? ` Votre sagesse de ${nombre(sagesse)} multiplie l'XP par `
+          + `${(1 + Math.max(0, sagesse) / 100).toLocaleString('fr-FR', {
+            minimumFractionDigits: 2, maximumFractionDigits: 2 })} : vous montez à la vitesse de `
+          + `${nombre(Math.round(vitesseXp(degats, sagesse)))}.`
+        : '');
     renderBorne();
   }
 
@@ -450,8 +463,11 @@ function renderObjectif() {
   const muet = sansSorts();
   $('objectif').classList.toggle('inactif', muet);
   $('objectif').classList.toggle('sans-choix', etat.mode === SEARCH_MODES.STATS);
+  // La largeur vient de la feuille de style : un « flex » ecrit ici l'emportait
+  // sur elle, et le quatrieme objectif sortait du volet au lieu de passer a la
+  // ligne.
   $('objectif').replaceChildren(...OBJECTIFS.map(([cle, texte]) => el('button', {
-    type: 'button', style: 'flex:1', 'data-mode': cle,
+    type: 'button', 'data-mode': cle,
     'aria-pressed': String(etat.mode === cle),
     ...(muet ? { disabled: true } : {}),
     onClick: () => setEtat({ mode: cle }),
@@ -460,7 +476,10 @@ function renderObjectif() {
   $('aide-objectif').textContent = muet
     ? 'Sans sort, la recherche monte vos caractéristiques. Choisissez des sorts '
       + 'pour arbitrer entre frapper et encaisser.'
-    : 'La recherche fait monter cette mesure et tient les minimums demandes.';
+    : etat.mode === SEARCH_MODES.XP
+      ? 'La recherche monte la vitesse d\'XP : vos dégâts décident du nombre de '
+        + 'combats, votre sagesse multiplie l\'XP de chacun.'
+      : 'La recherche fait monter cette mesure et tient les minimums demandes.';
 }
 
 /**
@@ -491,10 +510,37 @@ function renderMelangeOuPas(bilan, stats) {
   });
 }
 
+/**
+ * La fiche d'un sort dans le catalogue, pour sa portee et sa zone.
+ * Le sort garde dans l'etat ce que le moteur lit ; le reste se relit ici.
+ */
+function ficheDuSort(id) {
+  for (const classe of classesSorts ?? []) {
+    const trouve = (classe.spells ?? []).find((sort) => sort.id === id);
+    if (trouve) return trouve;
+  }
+  return null;
+}
+
 function renderSorts() {
   const sorts = sortsCalcules(etat);
   $('compte-sorts').textContent = String(sorts.length);
-  $('chips-sorts').replaceChildren(...etat.sorts.map((sort) => el('span', { class: 'chip' },
+
+  // Le sort SURVOLE est celui que le moteur compte, options comprises : la
+  // portee, la cible telefrag et les tours suivants changent ses chiffres.
+  // Montrer le sort nu donnerait un nombre que l'ecran ne confirme nulle part.
+  const calcules = new Map(sorts.map((sort) => [sort.id, sort]));
+  const stats = buildCourant(etat, catalogue)?.stats ?? null;
+  const cible = cibleDe(etat);
+
+  $('chips-sorts').replaceChildren(...etat.sorts.map((sort) => el('span', {
+    class: 'chip',
+    onMouseenter: (ev) => montrerBulleSort(calcules.get(sort.id) ?? sort, ev.clientX, ev.clientY, {
+      stats, cible, fiche: ficheDuSort(sort.id), ancre: ev.currentTarget,
+    }),
+    onMousemove: (ev) => suivreBulle(ev.clientX, ev.clientY),
+    onMouseleave: cacherBulle,
+  },
     sort.icon ? el('img', { src: sort.icon, alt: '', decoding: 'async' }) : null,
     sort.name ?? sort.fr ?? String(sort.id),
     el('button', {

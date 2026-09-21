@@ -329,6 +329,12 @@ function modeDe(etat, aDesAttaques) {
   if (etat.mode === 'mixte') {
     return aDesAttaques ? SEARCH_MODES.MIXTE : SEARCH_MODES.STATS;
   }
+  // Monter demande de tuer : sans attaque, le produit vaut zero partout et ne
+  // departage plus rien. Le mode retombe alors sur les caracteristiques, ou
+  // la sagesse se demande comme n'importe quel minimum.
+  if (etat.mode === 'xp') {
+    return aDesAttaques ? SEARCH_MODES.XP : SEARCH_MODES.STATS;
+  }
   if (etat.mode === 'caracteristiques') return SEARCH_MODES.STATS;
   return aDesAttaques ? SEARCH_MODES.DAMAGE : SEARCH_MODES.STATS;
 }

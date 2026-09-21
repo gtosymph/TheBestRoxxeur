@@ -341,10 +341,18 @@ tr.titre th, tr.titre td {
 }
 .radios { display: inline-flex; gap: 10px; }
 
-/* Le segmente grise ses trois choix tant qu'aucun sort n'est pose : sans
-   degats a compter, aucun des trois ne veut dire quoi que ce soit. */
+/* Le segmente grise ses choix tant qu'aucun sort n'est pose : sans degats a
+   compter, aucun d'eux ne veut dire quoi que ce soit. */
 .segmente.inactif { opacity: .45; }
 .segmente.inactif button { cursor: not-allowed; }
+
+/* Les objectifs passent a la ligne plutot que de sortir du volet.
+   Le quatrieme — « Monter » — ne tenait plus sur une seule rangee dans un
+   volet de deux cent trente pixels : il se coupait au bord, et le joueur ne
+   pouvait ni le lire ni le cliquer. Deux rangees de deux valent mieux qu'un
+   choix invisible. */
+#objectif { flex-wrap: wrap; }
+#objectif button { flex: 1 1 calc(50% - 2px); min-width: 0; }
 
 .vide-mesure { color: var(--texte-3); }
 .appel {
