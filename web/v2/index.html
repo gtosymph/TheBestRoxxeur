@@ -55,7 +55,8 @@
        retrecissait, et la page entiere glissait de cote. -->
   <div class="barre-groupe barre-identite">
     <div class="marque"><i></i> <span class="marque-nom">The Best Roxxeur</span>
-      <span class="version n" id="version"></span></div>
+      <button class="version n" id="version" type="button"
+        title="Ce qui a changé, version par version"></button></div>
     <div id="menus"></div>
 
     <!-- Le soutien se tient a gauche, avec l'identite du site, et non au bout
@@ -150,6 +151,9 @@
       <div class="segmente" style="width:100%" id="objectif"></div>
       <p class="aide" id="aide-objectif"></p>
       <div id="melange" hidden></div>
+      <!-- La courbe du mode Monter. Elle vit contre le choix d'objectif :
+           c'est lui qui la fait paraitre, et elle ne dit rien ailleurs. -->
+      <div id="courbe-xp" hidden></div>
     </div>
 
     <div class="section">

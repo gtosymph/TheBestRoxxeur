@@ -1,10 +1,16 @@
 /**
- * Mise a jour des sorts enregistres avant la refonte des donnees.
+ * Mise a jour des sorts enregistres par une version passee.
  *
  * Un joueur revient avec des sorts ranges par une version passee. Deux
  * champs les trahissent : `exclusiveGroup` et `telefragCible`, absents des
  * anciens formats. Le catalogue corrige fait foi pour les reconstruire ; un
  * sort deja a jour reste intact, modifications du joueur comprises.
+ *
+ * Les LIGNES DE DEGATS se resynchronisent en plus, a chaque ouverture. Elles
+ * ne sont pas un choix du joueur : elles disent ce que le jeu fait, et une
+ * correction de donnees doit les atteindre. Sans cela, un joueur qui avait
+ * choisi Pendule avant la correction gardait un sort qui comptait son coup
+ * deux fois, pour toujours — le catalogue etait juste, son ecran mentait.
  */
 import { versSortMoteur } from './spells-data.mjs';
 
@@ -26,8 +32,39 @@ function varianteAccessible(sortCatalogue, niveau) {
 /** Vrai quand un sort porte tous les champs du format courant. */
 const complet = (s) => s.exclusiveGroup !== undefined && s.telefragCible !== undefined;
 
+/** Vrai quand deux jeux de lignes decrivent le meme coup. */
+function memesLignes(a, b) {
+  if ((a?.length ?? -1) !== b.length) return false;
+  return b.every((ligne, rang) => {
+    const mienne = a[rang];
+    return mienne
+      && mienne.element === ligne.element
+      && mienne.min === ligne.min && mienne.max === ligne.max
+      && mienne.critMin === ligne.critMin && mienne.critMax === ligne.critMax
+      && (mienne.differe ?? 0) === (ligne.differe ?? 0);
+  });
+}
+
 /**
- * Rend les sorts au format courant.
+ * Remet les lignes de degats d'un sort en accord avec le catalogue.
+ *
+ * Seules les lignes bougent : le nombre de lancers, la case « 1 max au
+ * combo » et tout ce que le joueur a regle restent. Les lignes, elles,
+ * decrivent le jeu, pas une preference.
+ */
+function resynchroniserLignes(sort, parId, niveau) {
+  const catalogue = parId.get(sort.id);
+  if (!catalogue) return sort;
+
+  const variante = varianteAccessible(catalogue, niveau) ?? (catalogue.variants ?? [])[0];
+  if (!variante) return sort;
+
+  const { lines } = versSortMoteur({ ...catalogue, ...variante, critRate: variante.critRate });
+  return memesLignes(sort.lines, lines) ? sort : { ...sort, lines };
+}
+
+/**
+ * Rend les sorts au format courant, lignes de degats comprises.
  *
  * @param {any[]} sorts Sorts de l'etat.
  * @param {any[]} classesSorts Catalogue des sorts par classe.
@@ -35,13 +72,14 @@ const complet = (s) => s.exclusiveGroup !== undefined && s.telefragCible !== und
  * @returns {{sorts: any[], changes: boolean}} Les sorts, et s'il a fallu en toucher.
  */
 export function enrichirSorts(sorts, classesSorts, niveau) {
-  if (sorts.every(complet)) return { sorts, changes: false };
-
   const parId = indexerSorts(classesSorts);
   const rafraichis = sorts
-    .map((sort) => refreshAncien(sort, parId, niveau))
-    .map((sort) => completerTelefrag(sort, parId, niveau));
-  return { sorts: rafraichis, changes: true };
+    .map((sort) => (complet(sort) ? sort : refreshAncien(sort, parId, niveau)))
+    .map((sort) => completerTelefrag(sort, parId, niveau))
+    .map((sort) => resynchroniserLignes(sort, parId, niveau));
+
+  const changes = rafraichis.some((sort, rang) => sort !== sorts[rang]);
+  return changes ? { sorts: rafraichis, changes: true } : { sorts, changes: false };
 }
 
 /**

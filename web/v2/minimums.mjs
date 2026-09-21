@@ -39,3 +39,24 @@ export function mesuresLibres(conditions, statistiques, degats) {
     ...(posees.has(degats.cle) ? [] : [[degats.cle, degats.libelle]]),
   ];
 }
+
+/**
+ * La meme liste de minimums, avec une nouvelle valeur a tenir sur l'un d'eux.
+ *
+ * Le volet de gauche montre les minimums en permanence, et c'est la qu'on
+ * veut passer de cinq PM a six. Les regler demandait d'ouvrir une feuille,
+ * de trouver la ligne et de la refermer, pour un seul chiffre.
+ *
+ * La valeur se ramene a un entier positif : un objectif negatif est tenu par
+ * n'importe quel stuff et ne veut rien dire.
+ *
+ * @param {{stat: string, target: number}[]} conditions
+ * @param {string} stat
+ * @param {unknown} valeur
+ * @returns {{stat: string, target: number}[]} Nouvelle liste ; l'ancienne ne bouge pas.
+ */
+export function avecCible(conditions, stat, valeur) {
+  const brut = Number(valeur);
+  const cible = Number.isFinite(brut) ? Math.max(0, Math.round(brut)) : 0;
+  return (conditions ?? []).map((c) => (c.stat === stat ? { ...c, target: cible } : c));
+}

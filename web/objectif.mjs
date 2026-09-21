@@ -16,6 +16,7 @@ import { BUDGET_POIDS } from '../src/engine/runes.mjs';
 import { forgerAuto, fusionnerExos } from '../src/engine/forge-auto.mjs';
 import { valeursForge } from '../src/solver/forge-valeurs.mjs';
 import { aggregate } from '../src/engine/build.mjs';
+import { lancersDe } from './lancers.mjs';
 import { normalizePassives } from '../src/data/passives.mjs';
 import { configPassifsDefaut } from '../src/data/passives-defaults.mjs';
 import { scoreBuild, SEARCH_MODES } from '../src/solver/score.mjs';
@@ -37,6 +38,9 @@ export function sortsCalcules(etat) {
 
     return {
       ...sort,
+      // Ce que le total COMPTE, borne par la limite du jeu. Sans lui, le
+      // score comptait un lancer pendant que la fiche en annoncait deux.
+      repeats: lancersDe(sort),
       // Une ligne differee touche aux tours suivants. Elle reste dans le sort
       // pour rester lisible, et le moteur decide de la compter ou non : le
       // sort porte le choix, la ligne ne porte que le fait.
@@ -328,6 +332,12 @@ function modeDe(etat, aDesAttaques) {
   // caracteristiques, comme les deux autres modes de combat.
   if (etat.mode === 'mixte') {
     return aDesAttaques ? SEARCH_MODES.MIXTE : SEARCH_MODES.STATS;
+  }
+  // Monter demande de tuer : sans attaque, le produit vaut zero partout et ne
+  // departage plus rien. Le mode retombe alors sur les caracteristiques, ou
+  // la sagesse se demande comme n'importe quel minimum.
+  if (etat.mode === 'xp') {
+    return aDesAttaques ? SEARCH_MODES.XP : SEARCH_MODES.STATS;
   }
   if (etat.mode === 'caracteristiques') return SEARCH_MODES.STATS;
   return aDesAttaques ? SEARCH_MODES.DAMAGE : SEARCH_MODES.STATS;

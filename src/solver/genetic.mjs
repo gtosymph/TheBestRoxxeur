@@ -15,7 +15,7 @@ import { createIncrementalBuild } from './incremental.mjs';
 import { creerArchive } from './candidates.mjs';
 import { creerCompteur, creerPaliers, normaliserProximite } from './proximite.mjs';
 import {
-  axeDe, creerPaliersSurvie, estTenable, noteSousPlafond, PAS_ENDURANCE, sansConditionsDAxe,
+  axeDe, creerPaliersSurvie, estTenable, lireAxe, noteSousPlafond, sansConditionsDAxe,
   STAT_ENDURANCE, trancheDe,
   tranchesAVisiter,
 } from './survie.mjs';
@@ -572,14 +572,18 @@ export function solve(input, options = {}, onProgress) {
   // mode endurance elle tranche les degats. Le moteur, lui, ne change pas.
   const axe = axeDe(input.objective?.mode);
   const survie = input.objective?.mode !== SEARCH_MODES.STATS
-    ? creerPaliersSurvie({ axe })
+    ? creerPaliersSurvie({ axe, pas: axe.pas })
     : null;
   const noterPalier = (genome) => {
     if (!paliers && !survie) return;
     const vue = evaluate(genome);
     if (paliers) paliers.proposer(genome, vue.score, vue.changements);
     if (survie && estTenable(vue, axe)) {
-      survie.proposer(genome, { damage: vue.detail.damage, endurance: vue.stats[STAT_ENDURANCE] });
+      survie.proposer(genome, {
+        damage: vue.detail.damage,
+        endurance: vue.stats[STAT_ENDURANCE],
+        sagesse: vue.stats.sagesse,
+      });
     }
   };
   let descentes = 0;
@@ -715,11 +719,9 @@ export function solve(input, options = {}, onProgress) {
   if (survie) {
     const gagnant = evaluate(best.genome);
     const pente = Math.max(1, (gagnant.detail.damage ?? 0) / 1000);
-    const depart = axe.cle === 'damage'
-      ? (gagnant.detail.damage ?? 0)
-      : (gagnant.stats[STAT_ENDURANCE] ?? 0);
-    for (const tranche of tranchesAVisiter(trancheDe(depart), TRANCHES_VISITEES)) {
-      const plafond = (tranche + 1) * PAS_ENDURANCE - 1;
+    const depart = lireAxe(gagnant, axe.cle);
+    for (const tranche of tranchesAVisiter(trancheDe(depart, axe.pas), TRANCHES_VISITEES)) {
+      const plafond = (tranche + 1) * axe.pas - 1;
       const affine = improve(best.genome, {
         ...contexteLocal,
         evaluate: (g) => ({ score: noteSousPlafond(evaluate(g), plafond, pente, axe) }),
@@ -766,6 +768,9 @@ export function solve(input, options = {}, onProgress) {
       changements: vue.changements,
       pdv: vue.stats.pdv,
       endurance: vue.stats[STAT_ENDURANCE],
+      // La sagesse est l'axe du mode « Monter » : elle voyage avec le build,
+      // comme l'endurance voyage avec la courbe de survie.
+      sagesse: vue.stats.sagesse,
       tenable: estTenable(vue, axe),
       // Les exos rares poses par le solveur : sans eux, porter ce build ne
       // rendrait pas les degats annonces.
@@ -820,7 +825,9 @@ export function solve(input, options = {}, onProgress) {
 
     const gagnant = decrireSurvie(best.genome);
     if (gagnant.tenable) {
-      survie.proposer(best.genome, { damage: gagnant.damage, endurance: gagnant.endurance });
+      survie.proposer(best.genome, {
+        damage: gagnant.damage, endurance: gagnant.endurance, sagesse: gagnant.sagesse,
+      });
     }
     parSurvie = survie
       .liste(decrireSurvie)
@@ -830,7 +837,7 @@ export function solve(input, options = {}, onProgress) {
     // de depart de la courbe : c'est de la que le joueur lache de la vie.
     const reel = definitif(best.genome);
     if (reel.tenable) {
-      const tranche = trancheDe(reel[axe.cle]);
+      const tranche = trancheDe(reel[axe.cle], axe.pas);
       const occupant = parSurvie.findIndex((palier) => palier.tranche === tranche);
       if (occupant < 0) parSurvie.push({ ...reel, tranche });
       else if (reel[axe.valeur] > parSurvie[occupant][axe.valeur]) {

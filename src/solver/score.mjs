@@ -47,7 +47,53 @@ export const SEARCH_MODES = Object.freeze({
    * deux modes purs en sont les bornes exactes.
    */
   MIXTE: 'mixte',
+  /**
+   * Maximiser la vitesse a laquelle le personnage monte.
+   *
+   * L'XP d'un combat se multiplie par 1 + sagesse / 100. Le nombre de combats
+   * par heure, lui, depend de la vitesse a tuer, donc des degats. Ce que le
+   * joueur gagne dans une heure vaut le PRODUIT des deux.
+   *
+   * Le produit n'est pas un detail de forme : il dit que tuer deux fois plus
+   * vite vaut exactement autant que doubler le multiplicateur. Une somme
+   * ponderee aurait demande un curseur, et ce curseur n'aurait repondu a
+   * aucune question — il n'existe pas de « bonne » proportion entre les deux,
+   * seulement leur produit.
+   */
+  XP: 'xp',
 });
+
+/**
+ * Ce par quoi la sagesse multiplie l'XP d'un combat.
+ *
+ * C'est le seul des deux nombres qui se lise seul : « x 9,19 » se compare a
+ * ce que le joueur connait de son personnage, alors que la vitesse d'XP n'est
+ * qu'un produit sans unite, bon a classer des stuffs et a rien d'autre.
+ *
+ * @param {number} sagesse
+ * @returns {number} Multiplicateur, jamais sous 1.
+ */
+export function multiplicateurXp(sagesse) {
+  return 1 + Math.max(0, Number(sagesse) || 0) / 100;
+}
+
+/**
+ * Ce que le personnage gagne par heure, a un facteur pres.
+ *
+ * La sagesse multiplie l'XP de chaque combat ; les degats decident du nombre
+ * de combats. Sans degats, rien ne meurt et aucune sagesse ne fait monter :
+ * le produit le dit tout seul.
+ *
+ * Ce nombre classe les stuffs, il ne se LIT pas : il n'a pas d'unite. Ce que
+ * l'ecran montre au joueur, c'est le multiplicateur.
+ *
+ * @param {number} degats Degats par tour.
+ * @param {number} sagesse
+ * @returns {number}
+ */
+export function vitesseXp(degats, sagesse) {
+  return degats * multiplicateurXp(sagesse);
+}
 
 /** Part des degats quand le joueur n'a rien regle : les deux a parts egales. */
 export const PART_EQUILIBRE = 0.5;
@@ -308,6 +354,23 @@ export function scoreBuild(stats, objective, options = {}) {
       penalty,
       damage,
       endurance,
+      ...(combo ? { combo } : {}),
+      satisfied,
+      unmet,
+      details,
+    };
+  }
+
+  // Mode « Monter » : la vitesse a laquelle le personnage gagne de l'XP.
+  if (mode === SEARCH_MODES.XP) {
+    const sagesse = stats.sagesse ?? 0;
+    const xp = vitesseXp(damage, sagesse);
+    return {
+      score: satisfied ? xp : -penalty,
+      penalty,
+      damage,
+      sagesse,
+      xp,
       ...(combo ? { combo } : {}),
       satisfied,
       unmet,

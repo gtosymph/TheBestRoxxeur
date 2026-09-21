@@ -118,8 +118,10 @@ main.volet { container-type: inline-size; container-name: scene; }
 .mini-courbe { width: 100%; height: 86px; display: block; margin-top: 10px; cursor: crosshair; }
 
 .limite {
-  display: grid; grid-template-columns: 6px 15px minmax(0, 1fr) auto 18px;
-  align-items: center; gap: 8px;
+  /* Sept colonnes : la pastille, l'icone, le nom, la valeur atteinte, la
+     barre, l'objectif reglable, la croix. */
+  display: grid; grid-template-columns: 6px 15px minmax(0, 1fr) auto auto auto 18px;
+  align-items: center; gap: 6px;
   height: 30px; padding: 0 6px; margin: 0 -6px; border-radius: var(--r);
 }
 .limite:hover { background: var(--surface-2); }
@@ -341,10 +343,18 @@ tr.titre th, tr.titre td {
 }
 .radios { display: inline-flex; gap: 10px; }
 
-/* Le segmente grise ses trois choix tant qu'aucun sort n'est pose : sans
-   degats a compter, aucun des trois ne veut dire quoi que ce soit. */
+/* Le segmente grise ses choix tant qu'aucun sort n'est pose : sans degats a
+   compter, aucun d'eux ne veut dire quoi que ce soit. */
 .segmente.inactif { opacity: .45; }
 .segmente.inactif button { cursor: not-allowed; }
+
+/* Les objectifs passent a la ligne plutot que de sortir du volet.
+   Le quatrieme — « Monter » — ne tenait plus sur une seule rangee dans un
+   volet de deux cent trente pixels : il se coupait au bord, et le joueur ne
+   pouvait ni le lire ni le cliquer. Deux rangees de deux valent mieux qu'un
+   choix invisible. */
+#objectif { flex-wrap: wrap; }
+#objectif button { flex: 1 1 calc(50% - 2px); min-width: 0; }
 
 .vide-mesure { color: var(--texte-3); }
 .appel {
@@ -1625,7 +1635,11 @@ table.conditions .mini[aria-pressed="true"] { color: var(--ambre); border-color:
 .marque .version {
   font-size: 10px; font-weight: 500; color: var(--texte-3);
   padding: 1px 5px; border: 1px solid var(--filet); border-radius: 999px;
+  background: none; cursor: pointer; font-family: var(--mono); line-height: 1.4;
 }
+/* Elle s'ouvre : le survol doit le dire, sinon elle reste une etiquette. */
+.marque .version:hover { color: var(--texte); border-color: var(--filet-clair); }
+.marque .version:focus-visible { outline: 1px solid var(--iris); outline-offset: 1px; }
 
 /* Un volet replie se voit : le bouton perd son fond, comme un interrupteur
    releve. Sans cela, rien ne dit ou est passee la colonne. */
@@ -2168,3 +2182,48 @@ table.conditions .mini[aria-pressed="true"] { color: var(--ambre); border-color:
   .import-ligne { grid-template-columns: 1fr auto; }
   .import-case { grid-column: 1 / -1; }
 }
+
+/* Combien de fois un sort part dans le tour. Le champ vit DANS la puce du
+   sort : le nombre ne veut rien dire loin du sort qu'il compte.
+   Le selecteur porte le type : la regle generale des champs le porte aussi,
+   et une classe seule passerait dessous. */
+input.chip-lancers {
+  width: 38px; height: 19px; padding: 0 0 0 4px; margin-left: 2px;
+  background: var(--fond); border: 1px solid var(--filet); border-radius: 4px;
+  color: var(--texte); font: 11px/1 var(--mono);
+  font-variant-numeric: tabular-nums; text-align: left;
+}
+input.chip-lancers:focus { outline: 1px solid var(--iris); outline-offset: 0; }
+
+/* L'objectif d'un minimum se regle sur place. La valeur atteinte reste du
+   texte : elle se lit, elle ne se decide pas. */
+.limite-barre { color: var(--texte-3); }
+input.limite-cible {
+  width: 58px; height: 21px; padding: 0 0 0 4px;
+  background: var(--fond); border: 1px solid var(--filet); border-radius: 4px;
+  color: var(--texte); font: 12px/1 var(--mono);
+  font-variant-numeric: tabular-nums; text-align: left;
+}
+input.limite-cible:focus { outline: 1px solid var(--iris); outline-offset: 0; }
+
+/* La bande du mode Monter porte trois mesures. Le libelle passe sous le
+   chiffre : cote a cote, « vitesse d'XP » se coupait au milieu du mot. */
+.consequence.trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.consequence.trois span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.consequence.trois em { margin-left: 0; }
+
+/* Le journal des versions. Il se lit de haut en bas, une version par bloc :
+   la plus recente en premier, parce que c'est celle qu'on vient chercher. */
+.feuille.journal { width: min(520px, 100%); }
+.journal-version { padding: 14px 0; border-bottom: 1px solid var(--filet); }
+.journal-version:last-child { border-bottom: 0; padding-bottom: 4px; }
+.journal-tete { display: flex; align-items: center; gap: 8px; }
+.journal-tete b { font-size: 13px; color: var(--texte); }
+.journal-ici {
+  font-size: 10px; color: var(--iris); padding: 1px 6px;
+  border: 1px solid var(--iris-sourd); border-radius: 999px;
+}
+.journal-date { font-size: 11px; color: var(--texte-3); font-variant-numeric: tabular-nums; }
+.journal-titre { margin: 4px 0 8px; font-size: 12.5px; color: var(--texte-2); }
+.journal-points { margin: 0; padding-left: 17px; display: grid; gap: 6px; }
+.journal-points li { font-size: 12px; line-height: 1.5; color: var(--texte-2); }

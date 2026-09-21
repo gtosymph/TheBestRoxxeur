@@ -46,15 +46,22 @@ const GENERATIONS_PAR_VAGUE = 40;
 
 /**
  * Seuil du garde-fou : moyenne minimale attendue sur les parametres figes.
- * Valeur mesuree le 2026-09-19 : 2565 (deterministe, graines 101 a 404),
- * depuis que le moteur plafonne les PA, les PM et la portee comme le jeu.
- * Elle valait 2868 avant ce plafond, et le banc notait alors des builds a
- * quatorze PA que personne ne peut porter : la baisse mesure une correction,
- * pas une regression. Elle valait 2488 avant le reglage de la descente locale.
+ *
+ * Valeur mesuree le 2026-09-21 : 2409 (deterministe, graines 101 a 404),
+ * depuis que Pendule ne compte plus son coup deux fois. Ce sort ouvre la
+ * liste du banc, et le jeu ecrit sur sa fiche que ses effets ne s'appliquent
+ * qu'une seule fois par lancer : la baisse mesure une correction de donnees,
+ * pas une perte de qualite de la recherche.
+ *
+ * Elle valait 2565 avant cette correction, 2868 avant que le moteur plafonne
+ * les PA, les PM et la portee comme le jeu — le banc notait alors des builds
+ * a quatorze PA que personne ne peut porter — et 2488 avant le reglage de la
+ * descente locale.
+ *
  * La marge absorbe les evolutions legitimes du moteur ; relevez le seuil
  * quand une amelioration mesuree releve durablement la moyenne.
  */
-const SEUIL_GATE = 2400;
+const SEUIL_GATE = 2250;
 const GATE = process.argv.includes('--gate');
 
 const AVEC_ARME = process.argv.includes('--arme');
