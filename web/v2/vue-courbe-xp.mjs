@@ -20,6 +20,11 @@ import {
 
 const nombre = (n) => Math.round(n).toLocaleString('fr-FR');
 
+/** Un multiplicateur, a deux decimales et avec la virgule francaise. */
+const facteur = (n) => Number(n).toLocaleString('fr-FR', {
+  minimumFractionDigits: 2, maximumFractionDigits: 2,
+});
+
 /** Ce qui est monte dans la page, pour ne pas le refaire sans raison. */
 let monte = null;
 
@@ -116,8 +121,10 @@ function construire(racine, lignes, signature, onChoisir) {
         el('em', { text: 'degats' })),
       el('span', {}, el('b', { class: 'n', text: nombre(quoi.sagesse) }),
         el('em', { text: 'sagesse' })),
-      el('span', {}, el('b', { class: 'n', text: nombre(quoi.vitesse) }),
-        el('em', { text: 'vitesse d\'XP' })),
+      // Le multiplicateur, pas la vitesse d'XP : celle-ci est un produit sans
+      // unite, bon a classer les stuffs et illisible pour qui la regarde.
+      el('span', {}, el('b', { class: 'n', text: `×${facteur(quoi.multiplicateur)}` }),
+        el('em', { text: 'XP par combat' })),
     ] : []));
   }
 

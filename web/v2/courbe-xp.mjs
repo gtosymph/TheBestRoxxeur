@@ -11,7 +11,7 @@
  * la recherche, et marque au passage le point qui gagne le produit. Cliquer
  * un point porte son stuff : chaque point EST un stuff entier.
  */
-import { vitesseXp } from '../../src/solver/score.mjs';
+import { multiplicateurXp, vitesseXp } from '../../src/solver/score.mjs';
 
 /** Les deux mesures d'un palier, lues sans surprise. */
 const mesures = (palier) => ({
@@ -45,15 +45,25 @@ export function palierXpRetenu(lignes) {
 /**
  * Ce qu'un point de la courbe annonce.
  *
+ * La vitesse d'XP sert a classer, le multiplicateur sert a LIRE : le premier
+ * est un produit sans unite, le second se compare a ce que le joueur connait
+ * de son personnage. La bande montre donc le multiplicateur.
+ *
  * @param {{palier: {damage: number, sagesse: number}}[]} lignes
  * @param {number|null} rang
- * @returns {{degats: number, sagesse: number, vitesse: number}|null}
+ * @returns {{degats: number, sagesse: number, multiplicateur: number,
+ *   vitesse: number}|null}
  */
 export function consequenceXp(lignes, rang) {
   const palier = lignes?.[rang ?? -1]?.palier;
   if (!palier) return null;
   const { degats, sagesse } = mesures(palier);
-  return { degats, sagesse, vitesse: vitesseXp(degats, sagesse) };
+  return {
+    degats,
+    sagesse,
+    multiplicateur: multiplicateurXp(sagesse),
+    vitesse: vitesseXp(degats, sagesse),
+  };
 }
 
 /**

@@ -1635,7 +1635,11 @@ table.conditions .mini[aria-pressed="true"] { color: var(--ambre); border-color:
 .marque .version {
   font-size: 10px; font-weight: 500; color: var(--texte-3);
   padding: 1px 5px; border: 1px solid var(--filet); border-radius: 999px;
+  background: none; cursor: pointer; font-family: var(--mono); line-height: 1.4;
 }
+/* Elle s'ouvre : le survol doit le dire, sinon elle reste une etiquette. */
+.marque .version:hover { color: var(--texte); border-color: var(--filet-clair); }
+.marque .version:focus-visible { outline: 1px solid var(--iris); outline-offset: 1px; }
 
 /* Un volet replie se voit : le bouton perd son fond, comme un interrupteur
    releve. Sans cela, rien ne dit ou est passee la colonne. */
@@ -2207,3 +2211,19 @@ input.limite-cible:focus { outline: 1px solid var(--iris); outline-offset: 0; }
 .consequence.trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .consequence.trois span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .consequence.trois em { margin-left: 0; }
+
+/* Le journal des versions. Il se lit de haut en bas, une version par bloc :
+   la plus recente en premier, parce que c'est celle qu'on vient chercher. */
+.feuille.journal { width: min(520px, 100%); }
+.journal-version { padding: 14px 0; border-bottom: 1px solid var(--filet); }
+.journal-version:last-child { border-bottom: 0; padding-bottom: 4px; }
+.journal-tete { display: flex; align-items: center; gap: 8px; }
+.journal-tete b { font-size: 13px; color: var(--texte); }
+.journal-ici {
+  font-size: 10px; color: var(--iris); padding: 1px 6px;
+  border: 1px solid var(--iris-sourd); border-radius: 999px;
+}
+.journal-date { font-size: 11px; color: var(--texte-3); font-variant-numeric: tabular-nums; }
+.journal-titre { margin: 4px 0 8px; font-size: 12.5px; color: var(--texte-2); }
+.journal-points { margin: 0; padding-left: 17px; display: grid; gap: 6px; }
+.journal-points li { font-size: 12px; line-height: 1.5; color: var(--texte-2); }

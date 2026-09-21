@@ -32,7 +32,7 @@ import { creerRecherche } from '../recherche.mjs';
 import { ouvrirFiche } from '../item-panel.mjs';
 import { iconeStat } from '../icons.mjs';
 import { cacherBulle, montrerBulleSort, suivreBulle } from '../hover-card.mjs';
-import { damageValue, SEARCH_MODES, vitesseXp } from '../../src/solver/score.mjs';
+import { damageValue, multiplicateurXp, SEARCH_MODES } from '../../src/solver/score.mjs';
 import { STAT_LABELS } from '../../src/data/stats.mjs';
 import { conditionValue } from '../../src/solver/condition-value.mjs';
 
@@ -81,6 +81,7 @@ import { VERSION_LUE } from '../version.mjs';
 import { fermerMinimums, minimumsOuverts, MINIMUM_NEUF, ouvrirMinimums } from './vue-minimums.mjs';
 import { avecCible } from './minimums.mjs';
 import { renderCourbeXp } from './vue-courbe-xp.mjs';
+import { fermerJournal, journalOuvert, ouvrirJournal } from './vue-journal.mjs';
 import { cibleOuverte, fermerCible, ouvrirCible, renderBlocCible } from './vue-cible.mjs';
 import { fermerImport, importOuvert, ouvrirImport } from './vue-import.mjs';
 import { resumeCible } from './cible.mjs';
@@ -93,6 +94,11 @@ import { basculerExoRare, decrireExos, mettreOver } from '../exos-piece.mjs';
 const { $, muets } = creerPont({ racine: document, fabrique: (t) => document.createElement(t) });
 
 const nombre = (n) => Math.round(n).toLocaleString('fr-FR');
+
+/** Un multiplicateur, a deux decimales et avec la virgule francaise. */
+const facteur = (n) => Number(n).toLocaleString('fr-FR', {
+  minimumFractionDigits: 2, maximumFractionDigits: 2,
+});
 
 let etat = etatInitial();
 let catalogue = null;
@@ -425,17 +431,15 @@ function renderVerdict(stats, degats) {
   $('degats-sans-sorts').hidden = degats !== null;
   $('degats-avec-sorts').hidden = degats === null;
   if (degats !== null) {
-    // En mode « Monter », le chiffre qui compte n'est pas les degats seuls :
-    // c'est ce qu'ils valent une fois la sagesse comptee. Le dire ici evite
-    // au joueur de chercher pourquoi le score ne ressemble pas aux degats.
+    // En mode « Monter », la phrase dit le MULTIPLICATEUR et rien d'autre.
+    // La vitesse d'XP est un produit sans unite : elle classe les stuffs,
+    // elle ne se lit pas. « x 9,19 » se compare a ce que le joueur connait.
     const enXp = etat.mode === SEARCH_MODES.XP;
     const sagesse = Number(stats.sagesse) || 0;
     $('degats-phrase').textContent = `Vos sorts envoient ${nombre(degats)} dégâts sur un tour.`
       + (enXp
-        ? ` Votre sagesse de ${nombre(sagesse)} multiplie l'XP par `
-          + `${(1 + Math.max(0, sagesse) / 100).toLocaleString('fr-FR', {
-            minimumFractionDigits: 2, maximumFractionDigits: 2 })} : vous montez à la vitesse de `
-          + `${nombre(Math.round(vitesseXp(degats, sagesse)))}.`
+        ? ` Votre sagesse de ${nombre(sagesse)} multiplie l'XP de chaque combat `
+          + `par ${facteur(multiplicateurXp(sagesse))}.`
         : '');
     renderBorne();
   }
@@ -904,8 +908,12 @@ function renderScore(bilan) {
   const tenus = bilan?.satisfied !== false;
   $('score').classList.toggle('pos', tenus);
   $('score').classList.toggle('neg', !tenus);
+  // En mode « Monter », le score est un produit sans unite. Seul, il ne dit
+  // rien au joueur : la note lui donne la mesure qui se lit.
+  const sagesse = Number(bilan.sagesse);
+  const enXp = etat.mode === SEARCH_MODES.XP && Number.isFinite(sagesse);
   $('score-note').textContent = tenus
-    ? 'score'
+    ? (enXp ? `score · XP ×${facteur(multiplicateurXp(sagesse))}` : 'score')
     : `${bilan.unmet.length} minimum(s) non tenu(s)`;
   recherche.dessiner();
 }
@@ -1404,6 +1412,9 @@ async function accueillirLien() {
 
 async function main() {
   $('version').textContent = VERSION_LUE;
+  // La pastille ouvre le journal : le numero seul ne dit rien de ce qui a
+  // change, et c'est pourtant la seule question qu'on lui pose.
+  $('version').onclick = ouvrirJournal;
   placerCommandes();
   montrerVolets();
 
@@ -1547,6 +1558,7 @@ window.addEventListener('keydown', (ev) => {
   else if (caseOuverte()) fermerCase();
   else if (visiteOuverte()) fermerVisite();
   else if (comparaisonOuverte()) fermerComparaison();
+  else if (journalOuvert()) fermerJournal();
   else if (minimumsOuverts()) fermerMinimums();
   else if (cibleOuverte()) fermerCible();
   else if (importOuvert()) fermerImport();

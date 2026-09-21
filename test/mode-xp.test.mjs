@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SEARCH_MODES, scoreBuild, vitesseXp } from '../src/solver/score.mjs';
+import { multiplicateurXp, SEARCH_MODES, scoreBuild, vitesseXp } from '../src/solver/score.mjs';
 
 const SORT = {
   name: 'Sort', apCost: 3, castsPerTurn: 1, baseCrit: 0,
@@ -19,6 +19,25 @@ const SORT = {
 
 const objectifXp = (conditions = []) => ({
   conditions, spells: [SORT], mode: SEARCH_MODES.XP, cible: null,
+});
+
+test('le multiplicateur d XP', async (t) => {
+  await t.test('sans sagesse, il ne multiplie rien', () => {
+    assert.equal(multiplicateurXp(0), 1);
+  });
+
+  await t.test('cent de sagesse double l XP du combat', () => {
+    assert.equal(multiplicateurXp(100), 2);
+  });
+
+  await t.test('il suit la sagesse au centieme pres', () => {
+    assert.equal(multiplicateurXp(819), 9.19);
+  });
+
+  await t.test('une sagesse absente ou negative ne retranche rien', () => {
+    assert.equal(multiplicateurXp(undefined), 1);
+    assert.equal(multiplicateurXp(-50), 1);
+  });
 });
 
 test('la vitesse d XP', async (t) => {

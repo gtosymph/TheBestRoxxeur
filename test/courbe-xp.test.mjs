@@ -44,10 +44,19 @@ test('le palier que le produit retient', async (t) => {
 test('ce qu un point annonce', async (t) => {
   const lignes = [ligne(900, 250)];
 
-  await t.test('les degats, la sagesse et la vitesse qui en sort', () => {
+  await t.test('les degats, la sagesse, le multiplicateur et la vitesse', () => {
     assert.deepEqual(consequenceXp(lignes, 0), {
-      degats: 900, sagesse: 250, vitesse: 900 * 3.5,
+      degats: 900, sagesse: 250, multiplicateur: 3.5, vitesse: 900 * 3.5,
     });
+  });
+
+  await t.test('le multiplicateur est ce qui se lit, la vitesse ce qui classe', () => {
+    // Deux stuffs a la meme vitesse d'XP n'ont pas le meme multiplicateur :
+    // c'est bien deux mesures differentes, et non deux noms de la meme.
+    const a = consequenceXp([ligne(1000, 100)], 0);
+    const b = consequenceXp([ligne(500, 300)], 0);
+    assert.equal(a.vitesse, b.vitesse);
+    assert.notEqual(a.multiplicateur, b.multiplicateur);
   });
 
   await t.test('un rang qui ne designe rien n annonce rien', () => {
