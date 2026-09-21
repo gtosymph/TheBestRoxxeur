@@ -21,7 +21,15 @@ const CATALOGUE = [{
   }],
 }];
 
-const A_JOUR = { id: 100, name: 'Flamme modifiee', exclusiveGroup: 'g1', telefragCible: null, lines: [] };
+/** Les lignes que le catalogue donne au niveau 200 : un sort a jour les porte. */
+const LIGNES_A_JOUR = [{
+  element: 'feu', min: 30, max: 34, critMin: 36, critMax: 40, source: 'sort', range: null,
+}];
+
+const A_JOUR = {
+  id: 100, name: 'Flamme modifiee', exclusiveGroup: 'g1', telefragCible: null,
+  lines: LIGNES_A_JOUR,
+};
 
 test('des sorts a jour restent la meme liste', () => {
   const sorts = [A_JOUR];
@@ -62,4 +70,38 @@ test('les sorts d\'entree ne bougent pas', () => {
   const ancien = { id: 100, name: 'Flamme' };
   enrichirSorts([ancien], CATALOGUE, 200);
   assert.deepEqual(ancien, { id: 100, name: 'Flamme' });
+});
+
+test('les lignes de degats suivent le catalogue', async (t) => {
+  await t.test('un sort qui porte de vieilles lignes les reprend', () => {
+    // C'est le cas de Pendule : le catalogue ne compte plus son coup deux
+    // fois, mais le sort garde dans l'etat du joueur le comptait encore.
+    const double = {
+      ...A_JOUR,
+      lines: [...LIGNES_A_JOUR, ...LIGNES_A_JOUR],
+    };
+    const { sorts, changes } = enrichirSorts([double], CATALOGUE, 200);
+    assert.equal(changes, true);
+    assert.equal(sorts[0].lines.length, 1);
+  });
+
+  await t.test('ce que le joueur a regle ne bouge pas', () => {
+    const regle = { ...A_JOUR, lines: [], repeats: 2, unParTour: true };
+    const [sort] = enrichirSorts([regle], CATALOGUE, 200).sorts;
+    assert.equal(sort.repeats, 2, 'le nombre de lancers reste');
+    assert.equal(sort.unParTour, true);
+    assert.equal(sort.name, 'Flamme modifiee', 'le nom reste');
+    assert.equal(sort.lines.length, 1, 'les lignes, elles, suivent le jeu');
+  });
+
+  await t.test('un sort que le catalogue ignore garde ses lignes', () => {
+    const inconnu = { id: 999, exclusiveGroup: null, telefragCible: null, lines: LIGNES_A_JOUR };
+    const [sort] = enrichirSorts([inconnu], CATALOGUE, 200).sorts;
+    assert.deepEqual(sort.lines, LIGNES_A_JOUR);
+  });
+
+  await t.test('sans catalogue charge, rien ne bouge', () => {
+    const sorts = [A_JOUR];
+    assert.equal(enrichirSorts(sorts, [], 200).sorts, sorts);
+  });
 });

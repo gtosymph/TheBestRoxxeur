@@ -13,13 +13,20 @@
  * d'erreur.
  */
 
-/** Element de chaque effet de degats (vol de vie compris). */
+/**
+ * Element de chaque effet de degats (vol de vie compris).
+ *
+ * L'effet 5 est la POUSSEE. Elle ne suit aucune caracteristique : le moteur
+ * lui applique sa propre regle (src/engine/damage.mjs). Elle reste ici parce
+ * qu'elle frappe, et que soixante-trois sorts la portent.
+ */
 export const ELEMENT_EFFET = Object.freeze({
   97: 'terre', 92: 'terre',
   99: 'feu', 94: 'feu',
   96: 'eau', 91: 'eau',
   98: 'air', 93: 'air',
   100: 'neutre', 95: 'neutre',
+  5: 'poussee',
 });
 
 /**

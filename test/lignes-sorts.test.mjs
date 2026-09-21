@@ -95,6 +95,18 @@ test('les lignes d un palier', async (t) => {
     assert.equal(lignes[0].element, 'feu', 'la plus forte fait foi');
   });
 
+  await t.test('la poussee reste une ligne de degats', () => {
+    // Elle ne suit aucune caracteristique, mais elle frappe : soixante-trois
+    // sorts la portent, et les perdre retirait leurs degats de poussee.
+    const palier = {
+      effects: [degats(98, 13, 15, 'A', CELLULE), degats(5, 1, 1, 'A', CELLULE)],
+      criticalEffect: [],
+    };
+    const lignes = lignesDuPalier(palier);
+    assert.equal(lignes.length, 2);
+    assert.equal(lignes[1].element, 'poussee');
+  });
+
   await t.test('un palier sans degats rend une liste vide', () => {
     assert.deepEqual(lignesDuPalier({ effects: [{ effectId: 950, value: 1 }] }), []);
     assert.deepEqual(lignesDuPalier({}), []);
