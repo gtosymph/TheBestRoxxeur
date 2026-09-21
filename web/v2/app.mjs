@@ -12,6 +12,7 @@
  */
 import { loadCatalog } from '../catalog-web.mjs';
 import { loadSpells } from '../spells-data.mjs';
+import { avecLancers, lancersDe, limiteDe } from '../lancers.mjs';
 import { avatarDeClasse, nomDeClasse } from '../classes.mjs';
 import {
   el, renderArme, renderCandidats, renderCases, renderCombo, renderOptions,
@@ -78,6 +79,8 @@ import { fermerVisite, ouvrirVisite, visiteOuverte } from './vue-visite.mjs';
 import { fermerSignaler, ouvrirSignaler, signalerOuvert } from './vue-signaler.mjs';
 import { VERSION_LUE } from '../version.mjs';
 import { fermerMinimums, minimumsOuverts, MINIMUM_NEUF, ouvrirMinimums } from './vue-minimums.mjs';
+import { avecCible } from './minimums.mjs';
+import { renderCourbeXp } from './vue-courbe-xp.mjs';
 import { cibleOuverte, fermerCible, ouvrirCible, renderBlocCible } from './vue-cible.mjs';
 import { fermerImport, importOuvert, ouvrirImport } from './vue-import.mjs';
 import { resumeCible } from './cible.mjs';
@@ -302,6 +305,7 @@ function peindre() {
   renderVerdict(stats, degats);
   renderObjectif();
   renderMelangeOuPas(bilan, stats);
+  renderCourbeXpOuPas(bilan, stats);
   renderSorts();
   renderAvoir(stats, degats);
   renderTrouves(bilan);
@@ -483,6 +487,31 @@ function renderObjectif() {
 }
 
 /**
+ * La courbe du mode Monter ne parait que dans ce mode.
+ *
+ * Elle repond a ce que le produit cache : ou passe le change entre les
+ * degats et la sagesse. Ailleurs, elle trancherait sur une mesure que la
+ * recherche n'optimise pas, et le trace ne voudrait rien dire.
+ */
+function renderCourbeXpOuPas(bilan, stats) {
+  const enXp = etat.mode === SEARCH_MODES.XP;
+  $('courbe-xp').hidden = !enXp;
+  if (!enXp) return;
+
+  renderCourbeXp($('courbe-xp'), {
+    paliers: etat.survie ?? [],
+    porte: bilan
+      ? { damage: bilan.damage, sagesse: Number(stats?.sagesse) || 0 }
+      : null,
+    onChoisir: (palier) => {
+      recherche.porterAlaMain(palier);
+      message(`Stuff porté : ${nombre(Math.floor(palier.damage))} de dégâts, `
+        + `${nombre(Math.floor(palier.sagesse ?? 0))} de sagesse.`);
+    },
+  });
+}
+
+/**
  * Le reglage du melange n'existe que dans le mode qui s'en sert.
  *
  * Un curseur visible dans « frapper fort » laisserait croire qu'il change
@@ -506,6 +535,32 @@ function renderMelangeOuPas(bilan, stats) {
       recherche.porterAlaMain(palier, { partDegats: part });
       message(`Stuff porté : ${nombre(Math.floor(palier.damage))} de dégâts, `
         + `${nombre(Math.floor(palier.endurance))} pdv effectifs.`);
+    },
+  });
+}
+
+/**
+ * Combien de fois ce sort part dans le tour.
+ *
+ * Le nombre entre dans le total des degats : c'est le seul endroit ou le
+ * joueur dit ce qu'il lance vraiment. Un sort que le jeu ne laisse lancer
+ * qu'une fois n'a rien a regler, et ne montre donc rien.
+ *
+ * L'optimisateur de combo garde la main quand il est actif : lui compte les
+ * PA et decide lui-meme des lancers, borne par la limite du jeu.
+ */
+function champLancers(sort) {
+  const limite = limiteDe(sort);
+  if (limite <= 1) return null;
+
+  return el('input', {
+    class: 'chip-lancers', type: 'number', min: '1', max: String(limite),
+    value: String(lancersDe(sort)),
+    'aria-label': `Lancers comptés pour ${sort.name ?? sort.fr ?? 'ce sort'}`,
+    title: `Lancers comptés dans les dégâts (${limite} au maximum dans le jeu).`,
+    onClick: (ev) => ev.stopPropagation(),
+    onChange: (ev) => {
+      setEtat({ sorts: avecLancers(etat.sorts, sort.id, Number(ev.target.value)) });
     },
   });
 }
@@ -543,6 +598,7 @@ function renderSorts() {
   },
     sort.icon ? el('img', { src: sort.icon, alt: '', decoding: 'async' }) : null,
     sort.name ?? sort.fr ?? String(sort.id),
+    champLancers(sort),
     el('button', {
       type: 'button', text: '×', title: `Enlever ${sort.name ?? sort.fr ?? 'ce sort'}`,
       onClick: () => setEtat({ sorts: etat.sorts.filter((s) => s.id !== sort.id) }),
@@ -606,23 +662,48 @@ function renderAvoir(stats, degats) {
       return { stats: b?.stats ?? null, degats: Number(bl?.damage) || 0 };
     },
   });
+  // Le champ garde le focus au travers du redessin. Sans cela, la fleche du
+  // champ posait un etat, l'application se redessinait, et le champ que le
+  // doigt tenait encore disparaissait au premier clic.
+  const tenait = document.activeElement?.dataset?.minimum ?? null;
+
   $('limites').replaceChildren(...etat.conditions.map((c) => {
     const valeur = conditionValue(c.stat, stats, degats ?? 0);
     const tenu = valeur >= c.target;
     const icone = iconeStat(c.stat);
+    const nom = STAT_LABELS[c.stat] ?? c.stat;
     return el('div', { class: `limite ${tenu ? '' : 'defaut'}`.trim() },
       el('i', { class: `etat ${tenu ? 'tenue' : 'defaut'}` }),
       icone
         ? el('img', { class: 'limite-icone', src: icone, alt: '', decoding: 'async' })
         : el('span', { class: 'limite-icone' }),
-      el('span', { class: 'limite-nom', text: STAT_LABELS[c.stat] ?? c.stat }),
-      el('b', { class: 'n', text: `${nombre(valeur)} / ${nombre(c.target)}` }),
+      el('span', { class: 'limite-nom', text: nom }),
+      // La valeur atteinte se lit, l'objectif se REGLE : passer de cinq a six
+      // PM demandait d'ouvrir une feuille, d'y trouver la ligne et de la
+      // refermer, pour un seul chiffre.
+      el('b', { class: 'n', text: nombre(valeur) }),
+      el('span', { class: 'limite-barre', text: '/' }),
+      el('input', {
+        class: 'limite-cible n', type: 'number', min: '0', step: '1',
+        value: String(c.target), 'data-minimum': c.stat,
+        'aria-label': `Minimum de ${nom.toLowerCase()}`,
+        title: `Valeur à tenir. Le reste du réglage est dans « Régler mes minimums… ».`,
+        onChange: (ev) => setEtat({
+          conditions: avecCible(etat.conditions, c.stat, ev.target.value),
+        }),
+      }),
       el('button', {
         class: 'oter', type: 'button', text: '×',
-        title: `Ne plus exiger de ${(STAT_LABELS[c.stat] ?? c.stat).toLowerCase()}`,
+        title: `Ne plus exiger de ${nom.toLowerCase()}`,
         onClick: () => enleverMinimum(c.stat),
       }));
   }));
+
+  if (tenait) {
+    const champ = $('limites').querySelector(`[data-minimum="${CSS.escape(tenait)}"]`);
+    champ?.focus();
+    champ?.select?.();
+  }
 }
 
 /**

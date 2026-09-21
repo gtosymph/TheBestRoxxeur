@@ -17,7 +17,7 @@ import { access } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 import { bornesEnPourcent, choixAuClic, signatureCourbe } from '../web/v2/melange.mjs';
-import { mesuresLibres, MINIMUM_NEUF } from '../web/v2/minimums.mjs';
+import { avecCible, mesuresLibres, MINIMUM_NEUF } from '../web/v2/minimums.mjs';
 import { THEMES_V2, THEME_V2_DEFAUT } from '../web/v2/catalogue-themes.mjs';
 import { grouperParFamille } from '../web/v2/comparaison.mjs';
 import { estPlein, PICTOGRAMMES } from '../web/v2/icones.mjs';
@@ -166,6 +166,43 @@ test('un minimum neuf est une preference, pas un couperet', () => {
   // la creation ferait chuter le score sans que personne l'ait demande.
   assert.deepEqual(MINIMUM_NEUF('pa'),
     { stat: 'pa', target: 0, weight: 1, max: null, absolute: false });
+});
+
+test('changer la valeur d un minimum', async (t) => {
+  const CONDITIONS = Object.freeze([
+    { stat: 'pm', target: 5, weight: 1 },
+    { stat: 'pa', target: 11, weight: 500 },
+  ]);
+
+  await t.test('elle ne touche que la ligne visee', () => {
+    const apres = avecCible(CONDITIONS, 'pm', 6);
+    assert.equal(apres[0].target, 6);
+    assert.equal(apres[1].target, 11);
+    assert.equal(apres[0].weight, 1, 'le reste de la ligne ne bouge pas');
+  });
+
+  await t.test('la liste d origine ne bouge pas', () => {
+    avecCible(CONDITIONS, 'pm', 6);
+    assert.equal(CONDITIONS[0].target, 5);
+  });
+
+  await t.test('une valeur illisible retombe a zero', () => {
+    for (const brut of ['', null, undefined, Number.NaN, 'six']) {
+      assert.equal(avecCible(CONDITIONS, 'pm', brut)[0].target, 0);
+    }
+  });
+
+  await t.test('un objectif negatif n existe pas', () => {
+    assert.equal(avecCible(CONDITIONS, 'pm', -4)[0].target, 0);
+  });
+
+  await t.test('une valeur a virgule s arrondit', () => {
+    assert.equal(avecCible(CONDITIONS, 'pm', 5.6)[0].target, 6);
+  });
+
+  await t.test('une mesure sans minimum laisse la liste telle quelle', () => {
+    assert.deepEqual(avecCible(CONDITIONS, 'sagesse', 300), CONDITIONS);
+  });
 });
 
 /* ------------------------------------------------ Le catalogue des themes --- */
