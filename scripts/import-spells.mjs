@@ -3,6 +3,7 @@
  * Ecrit data/spells.json au format attendu par le moteur.
  */
 import { readFile, writeFile } from 'node:fs/promises';
+import { lignesDuPalier } from '../src/data/lignes-sorts.mjs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
@@ -30,16 +31,6 @@ async function chargerTelefrag() {
     return {};
   }
 }
-
-/** Element de chaque effet de degats (vol de vie compris). */
-const ELEMENT_EFFET = Object.freeze({
-  97: 'terre', 92: 'terre',
-  99: 'feu', 94: 'feu',
-  96: 'eau', 91: 'eau',
-  98: 'air', 93: 'air',
-  100: 'neutre', 95: 'neutre',
-  5: 'poussee',
-});
 
 /** Effets "meilleur element" du Huppermage : hors du perimetre de la refonte. */
 const EFFETS_BEST = new Set([2822, 2828]);
@@ -95,96 +86,8 @@ function indexerRoxx(brut) {
   return { parId, parNom };
 }
 
-/** Decompose un masque de cible en groupes et conditions d'etat. */
-function lireMasque(masque) {
-  const jetons = String(masque ?? '').split(',').filter(Boolean);
-  const etats = jetons.filter((j) => /^E\d+$/.test(j));
-  return {
-    groupes: jetons.filter((j) => /^[A-Za-z]+$/.test(j)),
-    // E majuscule sans etoile : la ligne exige un etat sur la cible
-    // (Tempete de Puissance, Fleche Devorante). Les jetons etoiles *E<id>
-    // portent au contraire les degats de base de certains sorts (Glas).
-    exigeEtat: etats.length > 0,
-    etats,
-  };
-}
-
-/**
- * Extrait les lignes de degats d'un palier Roxx.
- *
- * Regles, verifiees sur les fiches du jeu :
- *   1. une ligne qui exige un etat (E<id>) sort du calcul de base ;
- *   2. si des lignes visent les ennemis (groupe A), les autres cibles
- *      (invocations, allies) sortent : elles doublaient les totaux ;
- *   3. des lignes identiques sous des masques differents decrivent le meme
- *      coup : une seule reste par masque. Pendule garde ses deux coups,
- *      declares sous le meme masque ;
- *   4. un delai (delay) marque la ligne comme differee : elle touche aux
- *      tours suivants.
- */
-function lignesRoxx(palier) {
-  const garde = (e) => ELEMENT_EFFET[e.effectId] !== undefined;
-  const normaux = (palier.effects ?? []).filter(garde);
-  const critiques = (palier.criticalEffect ?? []).filter(garde);
-
-  const avecDegats = normaux.map((effet, rang) => {
-    const crit = critiques[rang] ?? effet;
-    const { groupes, exigeEtat, etats } = lireMasque(effet.targetMask);
-    return {
-      element: ELEMENT_EFFET[effet.effectId],
-      min: effet.diceNum || effet.value || 0,
-      max: effet.diceSide || effet.diceNum || effet.value || 0,
-      critMin: crit.diceNum || crit.value || 0,
-      critMax: crit.diceSide || crit.diceNum || crit.value || 0,
-      differe: Number(effet.delay ?? 0),
-      groupes,
-      exigeEtat,
-      etats,
-      masque: String(effet.targetMask ?? ''),
-    };
-  }).filter((l) => l.max > 0);
-
-  // Toutes les lignes sous un etat, et plusieurs etats distincts : ce ne sont
-  // pas des conditions mais des ALTERNATIVES. Traversee et Drain Elementaire
-  // du Huppermage frappent dans l'element de la rune posee, une seule des
-  // quatre lignes s'applique. Les cumuler quadruplait leurs degats.
-  const sousEtat = avecDegats.filter((l) => l.exigeEtat);
-  const distincts = new Set(sousEtat.flatMap((l) => l.etats));
-  if (sousEtat.length === avecDegats.length && distincts.size > 1) {
-    const meilleure = [...avecDegats].sort((a, b) => (b.min + b.max) - (a.min + a.max))[0];
-    return [{
-      element: meilleure.element,
-      min: meilleure.min, max: meilleure.max,
-      critMin: meilleure.critMin, critMax: meilleure.critMax,
-      ...(meilleure.differe > 0 ? { differe: meilleure.differe } : {}),
-    }];
-  }
-
-  const brutes = avecDegats.filter((l) => !l.exigeEtat);
-
-  const surEnnemis = brutes.filter((l) => l.groupes.includes('A'));
-  const retenues = surEnnemis.length > 0 ? surEnnemis : brutes;
-
-  // Par valeurs identiques : au plus le nombre de repetitions d'un MEME masque.
-  const parCle = new Map();
-  for (const ligne of retenues) {
-    const cle = `${ligne.element}|${ligne.min}|${ligne.max}|${ligne.critMin}|${ligne.critMax}|${ligne.differe}`;
-    if (!parCle.has(cle)) parCle.set(cle, new Map());
-    const masques = parCle.get(cle);
-    masques.set(ligne.masque, [...(masques.get(ligne.masque) ?? []), ligne]);
-  }
-
-  const finales = [];
-  for (const masques of parCle.values()) {
-    const meilleures = [...masques.values()].sort((a, b) => b.length - a.length)[0];
-    finales.push(...meilleures);
-  }
-
-  return finales.map(({ element, min, max, critMin, critMax, differe }) => ({
-    element, min, max, critMin, critMax,
-    ...(differe > 0 ? { differe } : {}),
-  }));
-}
+/** Lignes de degats d'un palier Roxx : la regle vit dans src/data. */
+const lignesRoxx = (palier) => lignesDuPalier(palier);
 
 /**
  * Cout en PA et lancers par tour, lus dans la source a jour.
