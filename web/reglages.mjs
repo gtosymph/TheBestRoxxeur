@@ -193,6 +193,12 @@ export function etatInitial() {
      */
     partDegats: 0.5,
     filtre: null, filtreType: null, recherche: '', filtrePk: false,
+    /**
+     * Liste que la palette montre : 'banque', 'interdits', 'stuff', ou null
+     * pour tout le catalogue. C'est un filtre de VUE, comme la recherche : il
+     * ne s'enregistre pas dans les jeux gardes.
+     */
+    filtreAvoir: null,
     equipped: new Map(),
     posees: new Set(),
     bannis: new Set(),

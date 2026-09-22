@@ -2,7 +2,7 @@
  * Ce qui a change, version par version.
  *
  * La pastille de version disait un numero et rien d'autre. Un joueur qui
- * revient apres trois jours voit « v1.8.0 » sans savoir ce que les trois
+ * revient apres trois jours voit « v1.9.0 » sans savoir ce que les trois
  * jours ont apporte, et un joueur qui signale un defaut deja corrige ne
  * peut pas le savoir non plus.
  *
@@ -19,6 +19,23 @@
 
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
+  {
+    version: '1.9.0',
+    date: '2026-09-22',
+    titre: 'Voir ce que l\'on a deja',
+    points: [
+      'Les trois listes du joueur se LISENT enfin : la banque, les pièces '
+        + 'interdites et le stuff figé. Le volet gauche en donnait le compte, '
+        + 'et aucun chemin ne menait aux pièces elles-mêmes.',
+      'Chaque ligne de « Ce que j\'ai » ouvre sa liste dans la palette.',
+      'Les trois listes se croisent avec les filtres ordinaires : « mes '
+        + 'anneaux en banque » est une question qui se pose maintenant.',
+      'Dans une liste, un clic ouvre la fiche de la pièce — équiper, '
+        + 'interdire, je l\'ai déjà — au lieu de la poser.',
+      'Voir son stuff figé et l\'oublier sont deux gestes séparés. Un clic '
+        + 'distrait ne perd plus la référence.',
+    ],
+  },
   {
     version: '1.8.0',
     date: '2026-09-21',

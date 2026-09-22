@@ -29,7 +29,7 @@ import {
 import { appliquerBuild } from '../equipement.mjs';
 import { enrichirSorts } from '../sorts-migration.mjs';
 import { creerRecherche } from '../recherche.mjs';
-import { ouvrirFiche } from '../item-panel.mjs';
+import { fermerFiche, ouvrirFiche } from '../item-panel.mjs';
 import { iconeStat } from '../icons.mjs';
 import { cacherBulle, montrerBulleSort, suivreBulle } from '../hover-card.mjs';
 import { damageValue, multiplicateurXp, SEARCH_MODES } from '../../src/solver/score.mjs';
@@ -54,7 +54,7 @@ import { renderClasses } from './accueil.mjs';
 import { FAMILLE_CARACTERISTIQUES, lignesCompletes, lignesEssentielles } from './fiche.mjs';
 import { garderSignature, reglagesChanges, reprendreSignature } from './peremption.mjs';
 import { ouvrirIdentite } from './identite.mjs';
-import { basculerPalette, fermerPalette, paletteOuverte } from './palette.mjs';
+import { basculerPalette, fermerPalette, paletteOuverte, rafraichirPalette } from './palette.mjs';
 import { comparaisonOuverte, fermerComparaison, ouvrirComparaison } from './vue-comparaison.mjs';
 import { libellesForge, mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
 import { basculerChoix, cleDeChoix, rafraichirChoix } from './choix-comparaison.mjs';
@@ -626,29 +626,46 @@ function renderSorts() {
 }
 
 function renderAvoir(stats, degats) {
-  const ligne = (texte, valeur, actions = {}) => el(actions.onClick ? 'button' : 'div', {
-    class: 'avoir-ligne', ...(actions.onClick ? { type: 'button', onClick: actions.onClick } : {}),
-    ...(actions.title ? { title: actions.title } : {}),
-  },
-    el('span', { text: texte }), el('span', {}, el('b', { text: String(valeur) })));
+  // Un bouton ne s'imbrique pas dans un bouton : le geste de cote vit a COTE
+  // de la ligne, dans une rangee, et non dedans.
+  const ligne = (texte, valeur, actions = {}) => {
+    const corps = el(actions.onClick ? 'button' : 'div', {
+      class: 'avoir-ligne', ...(actions.onClick ? { type: 'button', onClick: actions.onClick } : {}),
+      ...(actions.title ? { title: actions.title } : {}),
+    },
+      el('span', { text: texte }), el('span', {}, el('b', { text: String(valeur) })));
+    return actions.action ? el('div', { class: 'avoir-rangee' }, corps, actions.action) : corps;
+  };
 
+  // Voir sa liste et la defaire sont deux gestes, pas un. Le clic OUVRE la
+  // liste ; figer et oublier passent par un bouton a part. Un seul clic mal
+  // place effacait la reference, sans rien pour revenir en arriere.
   const aUneReference = Boolean(etat.reference);
   $('avoir').replaceChildren(
     ligne('Mon stuff actuel', aUneReference ? etat.reference.itemIds.length : '—', {
-      onClick: () => (aUneReference
-        ? gestesReference.oublierReference()
-        : gestesReference.figerReference()),
+      onClick: aUneReference ? () => basculerPalette(liensPalette, 'stuff') : null,
       title: aUneReference
-        ? 'Oublier ce stuff : le solveur cherchera sans compter les achats.'
-        : 'Figer le stuff porté comme celui que vous avez en jeu. Les pièces '
-          + 'que le solveur propose se comptent alors en achats.',
+        ? 'Voir les pièces de ce stuff.'
+        : 'Aucun stuff figé.',
+      action: el('button', {
+        class: 'btn mini fantome', type: 'button',
+        text: aUneReference ? 'Oublier' : 'Figer',
+        title: aUneReference
+          ? 'Oublier ce stuff : le solveur cherchera sans compter les achats.'
+          : 'Figer le stuff porté comme celui que vous avez en jeu. Les pièces '
+            + 'que le solveur propose se comptent alors en achats.',
+        onClick: () => {
+          if (aUneReference) gestesReference.oublierReference();
+          else gestesReference.figerReference();
+        },
+      }),
     }),
     ligne('Pièces en banque', etat.possedees.size,
-      { onClick: () => basculerPalette(liensPalette),
-        title: 'Marquer les pièces que vous avez déjà.' }),
+      { onClick: () => basculerPalette(liensPalette, 'banque'),
+        title: 'Voir les pièces que vous avez déjà.' }),
     ligne('Pièces interdites', etat.bannis.size,
-      { onClick: () => basculerPalette(liensPalette),
-        title: 'Une pièce interdite ne sera plus proposée.' }));
+      { onClick: () => basculerPalette(liensPalette, 'interdits'),
+        title: 'Voir les pièces que le solveur ne proposera plus.' }));
 
   $('ouvrir-palette').replaceChildren('Toutes les pièces',
     el('span', { class: 'raccourci', text: raccourciPalette() }));
@@ -1530,9 +1547,34 @@ $('annuler').addEventListener('click', () => {
 $('appel-sorts').addEventListener('click', gestesSorts.ouvrir);
 $('identite').addEventListener('click', () => ouvrirIdentite({ lireEtat, setEtat }));
 
+/**
+ * La fiche d'une piece que l'on REGARDE, sans la porter.
+ *
+ * C'est le geste des trois listes : on y vient pour voir ce qu'on a, et le
+ * plus souvent pour defaire — lever une interdiction, sortir une piece de la
+ * banque. Poser la piece a la place fermerait la liste et changerait le stuff
+ * pour rien.
+ */
+function ouvrirFicheLibre(item) {
+  const build = buildCourant(etat, catalogue);
+  const relire = () => { rafraichirPalette(); ouvrirFicheLibre(item); };
+  ouvrirFiche(item, {
+    stats: build?.stats ?? null,
+    cible: cibleDe(etat),
+    onEquip: () => { fermerFiche(); fermerPalette(); poserPiece(item); },
+    onBan: () => { gestes.bannir(item); relire(); },
+    banni: etat.bannis.has(item.id),
+    onPosseder: () => { gestes.basculerPossedee(item); relire(); },
+    possedee: etat.possedees.has(item.id),
+  });
+}
+
 const liensPalette = {
   lireEtat, lireCatalogue: () => catalogue, setEtat,
-  onPiece: (item) => { fermerPalette(); poserPiece(item); },
+  // Dans une des trois listes, le clic OUVRE la piece ; ailleurs, il la pose.
+  onPiece: (item) => (etat.filtreAvoir
+    ? ouvrirFicheLibre(item)
+    : (fermerPalette(), poserPiece(item))),
 };
 $('ouvrir-palette').addEventListener('click', () => basculerPalette(liensPalette));
 

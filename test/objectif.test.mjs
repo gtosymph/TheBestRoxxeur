@@ -189,6 +189,53 @@ test('itemsFiltres', async (t) => {
   });
 });
 
+/**
+ * Voir ce que l'on a deja.
+ *
+ * Les trois listes — banque, interdits, stuff porte en jeu — se reglaient
+ * piece par piece sans jamais se LIRE : le volet gauche en donnait le compte,
+ * et rien ne disait lesquelles. Le filtre repond a la question « lesquelles ».
+ */
+test('itemsFiltres par appartenance', async (t) => {
+  const base = () => ({
+    ...etatInitial(), niveau: 200,
+    possedees: new Set([ANNEAU.id]),
+    bannis: new Set([EPEE.id]),
+    reference: { itemIds: [BOTTES.id, ANNEAU.id] },
+  });
+
+  await t.test('la banque ne garde que les pieces possedees', () => {
+    assert.deepEqual(itemsFiltres({ ...base(), filtreAvoir: 'banque' }, CATALOGUE)
+      .map((i) => i.id), [ANNEAU.id]);
+  });
+
+  await t.test('les interdits ne gardent que les pieces bannies', () => {
+    assert.deepEqual(itemsFiltres({ ...base(), filtreAvoir: 'interdits' }, CATALOGUE)
+      .map((i) => i.id), [EPEE.id]);
+  });
+
+  await t.test('le stuff ne garde que les pieces de la reference', () => {
+    assert.deepEqual(itemsFiltres({ ...base(), filtreAvoir: 'stuff' }, CATALOGUE)
+      .map((i) => i.id), [BOTTES.id, ANNEAU.id]);
+  });
+
+  await t.test('sans reference figee, le stuff ne montre rien', () => {
+    const sans = { ...base(), reference: null, filtreAvoir: 'stuff' };
+    assert.deepEqual(itemsFiltres(sans, CATALOGUE), []);
+  });
+
+  await t.test('il se croise avec la case et avec le nom', () => {
+    const etat = { ...base(), filtreAvoir: 'stuff', filtre: 'bottes' };
+    assert.deepEqual(itemsFiltres(etat, CATALOGUE).map((i) => i.id), [BOTTES.id]);
+    const parNom = { ...base(), filtreAvoir: 'stuff', recherche: 'feu' };
+    assert.deepEqual(itemsFiltres(parNom, CATALOGUE).map((i) => i.id), [ANNEAU.id]);
+  });
+
+  await t.test('sans filtre d appartenance, tout reste', () => {
+    assert.equal(itemsFiltres(base(), CATALOGUE).length, 3);
+  });
+});
+
 test('valeurDeReference', async (t) => {
   await t.test('rend null sans reference ou sans pieces connues', () => {
     assert.equal(valeurDeReference(etatAvecSort(), CATALOGUE), null);

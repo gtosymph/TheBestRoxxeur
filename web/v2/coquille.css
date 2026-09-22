@@ -150,6 +150,11 @@ main.volet { container-type: inline-size; container-name: scene; }
   padding: 7px 10px; background: var(--surface-2); border-radius: var(--r); font-size: 12px;
 }
 .avoir-ligne b { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 560; }
+/* Voir la liste et defaire la liste sont deux gestes distincts : le second
+   tient dans un bouton de cote, pour qu'un clic distrait n'efface rien. */
+.avoir-rangee { display: flex; align-items: stretch; gap: 6px; }
+.avoir-rangee > .avoir-ligne { flex: 1; min-width: 0; }
+.avoir-rangee > .btn { flex: none; align-self: stretch; }
 
 /* ---------- Centre ---------- */
 
@@ -617,6 +622,21 @@ tr.titre th, tr.titre td {
 .palette-onglets button:hover { color: var(--texte-2); border-color: var(--filet-clair); }
 .palette-onglets button[aria-pressed="true"] {
   background: var(--iris-fond); border-color: var(--iris-sourd); color: var(--texte);
+}
+
+/* Les trois listes du joueur, au-dessus des filtres ordinaires : elles se
+   croisent avec eux, elles ne les remplacent pas. */
+.palette-avoir {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 14px 0;
+}
+.palette-avoir button[aria-pressed="true"] {
+  background: var(--iris-fond); border-color: var(--iris-sourd); color: var(--texte);
+}
+.palette-avoir button[disabled] { opacity: .45; cursor: not-allowed; }
+.palette-avoir .compte {
+  margin-left: 6px; color: var(--texte-3);
+  font-variant-numeric: tabular-nums;
 }
 
 .palette-filtres {
