@@ -20,6 +20,15 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.9.1',
+    date: '2026-09-22',
+    titre: 'La fiche d\'une piece passe au-dessus',
+    points: [
+      'La fiche d\'une pièce ouverte depuis une liste s\'affichait DERRIÈRE '
+        + 'la palette : on cliquait une pièce et rien ne semblait se produire.',
+    ],
+  },
+  {
     version: '1.9.0',
     date: '2026-09-22',
     titre: 'Voir ce que l\'on a deja',
