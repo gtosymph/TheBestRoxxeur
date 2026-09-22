@@ -361,6 +361,26 @@ export function scoreAffiche(etat, stats) {
 }
 
 /**
+ * Les pieces d'une des trois listes que le joueur tient : ce qu'il a en
+ * banque, ce qu'il refuse, et ce qu'il porte en jeu.
+ *
+ * Rend `null` quand aucune liste n'est demandee, et un ensemble VIDE quand la
+ * liste existe mais ne contient rien. La difference compte : le premier cas
+ * laisse tout passer, le second ne montre rien.
+ *
+ * @param {any} etat
+ * @returns {Set<number>|null}
+ */
+function ensembleAvoir(etat) {
+  const quoi = etat?.filtreAvoir ?? null;
+  if (!quoi) return null;
+  if (quoi === 'banque') return etat.possedees ?? new Set();
+  if (quoi === 'interdits') return etat.bannis ?? new Set();
+  if (quoi === 'stuff') return new Set(etat.reference?.itemIds ?? []);
+  return null;
+}
+
+/**
  * Pieces du catalogue qui passent les filtres, de la plus haute a la plus basse.
  *
  * @param {any} etat
@@ -371,10 +391,12 @@ export function itemsFiltres(etat, catalogue) {
   if (!catalogue) return [];
   const terme = etat.recherche.trim().toLowerCase();
   const { stat, op, valeur } = etat.filtreStat;
+  const avoir = ensembleAvoir(etat);
 
   return catalogue.items
     .filter((item) => {
       if (item.level > etat.niveau) return false;
+      if (avoir && !avoir.has(item.id)) return false;
       if (etat.filtre && item.slot !== etat.filtre) return false;
       if (etat.filtreType && item.typeFr !== etat.filtreType) return false;
       // Trophees majeurs : leur condition exige moins de trois bonus de panoplie.

@@ -22,9 +22,24 @@ import { el, renderCatalogue, renderOnglets } from '../render.mjs';
 import { itemsFiltres } from '../objectif.mjs';
 import { piegerFocus } from '../focus-piege.mjs';
 import { STATS } from '../../src/data/stats.mjs';
+import { aideAvoir, basculesAvoir, suivanteAvoir } from './avoir.mjs';
 
 let racine = null;
 let libererFocus = null;
+/**
+ * Releve le filtre de liste a la fermeture.
+ *
+ * Sans cela, rouvrir la palette par le raccourci montrerait encore la banque,
+ * sans que rien n'explique pourquoi la moitie du catalogue a disparu.
+ */
+let oublierListe = null;
+/** Redessine la grille ouverte, sans toucher aux champs de saisie. */
+let redessiner = null;
+
+/** Redessine la palette si elle est ouverte. */
+export function rafraichirPalette() {
+  if (paletteOuverte()) redessiner?.();
+}
 
 /** Vrai quand la palette est ouverte. */
 export const paletteOuverte = () => Boolean(racine) && !racine.hidden;
@@ -32,15 +47,27 @@ export const paletteOuverte = () => Boolean(racine) && !racine.hidden;
 /** Ferme la palette. */
 export function fermerPalette() {
   if (!racine) return;
+  oublierListe?.();
+  oublierListe = null;
   racine.hidden = true;
   libererFocus?.();
   libererFocus = null;
 }
 
-/** Bascule la palette : la meme touche l'ouvre et la referme. */
-export function basculerPalette(liens) {
-  if (paletteOuverte()) fermerPalette();
-  else ouvrirPalette(liens);
+/**
+ * Bascule la palette : la meme touche l'ouvre et la referme.
+ *
+ * `avoir` demande une des trois listes du joueur. Ouvrir la palette deja
+ * filtree est le seul chemin qui repond a « lesquelles ? » en un clic. Quand
+ * la palette montre deja cette liste, le meme geste la referme.
+ *
+ * @param {object} liens
+ * @param {string|null} [avoir]
+ */
+export function basculerPalette(liens, avoir = null) {
+  const deja = liens.lireEtat().filtreAvoir ?? null;
+  if (paletteOuverte() && deja === avoir) fermerPalette();
+  else ouvrirPalette(liens, avoir);
 }
 
 /**
@@ -51,8 +78,9 @@ export function basculerPalette(liens) {
  * @param {() => any} liens.lireCatalogue
  * @param {(patch: object) => void} liens.setEtat
  * @param {(item: any) => void} liens.onPiece Ce qu'un clic sur une piece fait.
+ * @param {string|null} [avoir] Liste du joueur a montrer d'entree.
  */
-export function ouvrirPalette({ lireEtat, lireCatalogue, setEtat, onPiece }) {
+export function ouvrirPalette({ lireEtat, lireCatalogue, setEtat, onPiece }, avoir = null) {
   if (!racine) {
     racine = el('div', { class: 'palette-fond', hidden: true, onClick: (ev) => {
       if (ev.target === racine) fermerPalette();
@@ -60,10 +88,16 @@ export function ouvrirPalette({ lireEtat, lireCatalogue, setEtat, onPiece }) {
     document.body.append(racine);
   }
 
+  setEtat({ filtreAvoir: avoir });
+  oublierListe = () => setEtat({ filtreAvoir: null });
   const depart = lireEtat();
   const grille = el('div', { class: 'palette-grille' });
   const compte = el('p', { class: 'aide' });
   const onglets = el('div', { class: 'palette-onglets' });
+  const listes = el('div', { class: 'palette-avoir' });
+  // Le pied dit ce qu'un clic fait. Il change avec la liste montree : dans
+  // une liste, le clic OUVRE la piece au lieu de la poser.
+  const aide = el('span', { class: 'aide' });
 
   /** Redessine la grille et les onglets, sans toucher aux champs de saisie. */
   function rafraichir() {
@@ -71,8 +105,18 @@ export function ouvrirPalette({ lireEtat, lireCatalogue, setEtat, onPiece }) {
     renderOnglets(onglets, etat.filtre,
       (cle, type) => { setEtat({ filtre: cle, filtreType: type }); rafraichir(); },
       etat.filtreType);
-    renderCatalogue(grille, compte, itemsFiltres(etat, lireCatalogue()), onPiece,
-      etat.bannis, etat.possedees);
+    const montres = itemsFiltres(etat, lireCatalogue());
+    renderCatalogue(grille, compte, montres, onPiece, etat.bannis, etat.possedees);
+    aide.textContent = aideAvoir(etat.filtreAvoir ?? null, montres.length);
+    listes.replaceChildren(...basculesAvoir(etat).map((vue) => el('button', {
+      class: 'btn mini fantome', type: 'button', title: vue.titre,
+      'aria-pressed': String(vue.actif),
+      ...(vue.possible ? {} : { disabled: true }),
+      onClick: () => {
+        setEtat({ filtreAvoir: suivanteAvoir(lireEtat().filtreAvoir ?? null, vue.cle) });
+        rafraichir();
+      },
+    }, vue.libelle, el('span', { class: 'compte n', text: String(vue.compte) }))));
   }
 
   const champ = el('input', {
@@ -116,14 +160,13 @@ export function ouvrirPalette({ lireEtat, lireCatalogue, setEtat, onPiece }) {
       el('button', { class: 'btn fantome', type: 'button', text: 'Fermer',
         onClick: fermerPalette })),
     onglets,
+    listes,
     filtres,
     grille,
-    el('div', { class: 'palette-pied' }, compte,
-      el('span', { class: 'aide',
-        text: 'Cliquez une pièce pour la poser. Sa fiche porte : interdire, '
-          + 'toujours garder, je l\'ai déjà.' })),
+    el('div', { class: 'palette-pied' }, compte, aide),
   ));
 
+  redessiner = rafraichir;
   rafraichir();
   racine.hidden = false;
   libererFocus?.();
