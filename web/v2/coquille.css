@@ -695,6 +695,17 @@ tr.titre th, tr.titre td {
    Elle se pose par-dessus et se ferme : on y vient pour trancher entre deux
    ou trois stuffs, pas pour s'y installer. */
 
+/* ---------- L'ordre des couches ----------
+
+   La fiche d'une piece s'ouvre depuis N'IMPORTE laquelle des fenetres :
+   depuis le plateau, depuis la palette, depuis la comparaison. Elle passe
+   donc au-dessus de toutes. `composants.css` la pose a 80, ce qui la faisait
+   ouvrir DERRIERE la palette — on cliquait une piece du catalogue et rien ne
+   semblait se produire.
+
+   L'echelle : feuilles 84, palette 86, comparaison 88, visite 90, fiche 92. */
+.fiche-fond { z-index: 92; }
+
 .compare-fond {
   position: fixed; inset: 0; z-index: 88;
   display: grid; place-items: center; padding: 24px;
