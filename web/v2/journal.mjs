@@ -20,6 +20,21 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.10.0',
+    date: '2026-09-24',
+    titre: 'Le bonus d\'XP qui ne vient pas du stuff',
+    points: [
+      'Le mode Monter porte un champ « Bonus d\'XP hors sagesse » : étoiles '
+        + 'de la zone, challenges, idoles, almanax.',
+      'Ce bonus s\'ajoute à la sagesse dans la même parenthèse, comme dans le '
+        + 'jeu. Il n\'est donc pas un facteur constant : plus il pèse, moins la '
+        + 'sagesse du stuff compte face aux dégâts, et le stuff qui gagne change.',
+      'Le multiplicateur montré — phrase des dégâts, courbe, note du score — '
+        + 'compte maintenant ce bonus.',
+      'Le bonus se garde avec le reste des réglages et voyage dans le lien de partage.',
+    ],
+  },
+  {
     version: '1.9.1',
     date: '2026-09-22',
     titre: 'La fiche d\'une piece passe au-dessus',

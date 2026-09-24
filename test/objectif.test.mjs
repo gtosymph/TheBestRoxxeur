@@ -163,6 +163,11 @@ test('buildCourant rend null sans catalogue, un build sinon', () => {
   assert.ok(build.stats.pa >= 1, 'l\'anneau donne un PA');
 });
 
+test('l objectif porte le bonus d XP hors sagesse', () => {
+  assert.equal(objectif({ ...etatAvecSort(), mode: 'xp', bonusXp: 150 }).bonusXp, 150);
+  assert.equal(objectif(etatAvecSort()).bonusXp, 0, 'par defaut, aucun bonus');
+});
+
 test('itemsFiltres', async (t) => {
   await t.test('ecarte les pieces au-dessus du niveau', () => {
     const etat = { ...etatInitial(), niveau: 150 };

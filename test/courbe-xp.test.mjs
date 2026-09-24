@@ -101,3 +101,19 @@ test('le sens de l axe', async (t) => {
     ]);
   });
 });
+
+test('le bonus d XP hors sagesse sur la courbe', async (t) => {
+  await t.test('il peut changer le point retenu', () => {
+    const lignes = [ligne(5000, 800), ligne(2500, 1700)];
+    assert.equal(palierXpRetenu(lignes), 0, 'a egalite, le premier garde la main');
+    assert.equal(palierXpRetenu([ligne(2500, 1700), ligne(5000, 800)]), 0);
+    assert.equal(palierXpRetenu([ligne(2500, 1700), ligne(5000, 800)], 200), 1,
+      'avec le bonus, le stuff qui frappe gagne');
+  });
+
+  await t.test('le multiplicateur annonce compte le bonus', () => {
+    const quoi = consequenceXp([ligne(900, 250)], 0, 150);
+    assert.equal(quoi.multiplicateur, 5);
+    assert.equal(quoi.vitesse, 4500);
+  });
+});

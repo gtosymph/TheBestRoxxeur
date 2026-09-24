@@ -70,11 +70,32 @@ export const SEARCH_MODES = Object.freeze({
  * ce que le joueur connait de son personnage, alors que la vitesse d'XP n'est
  * qu'un produit sans unite, bon a classer des stuffs et a rien d'autre.
  *
+ * Les autres bonus d'XP — etoiles de la zone, challenges, idoles, almanax —
+ * s'ajoutent a la sagesse DANS la meme parenthese : 1 + (sagesse + bonus) / 100.
+ * Ils ne viennent pas du stuff, c'est le joueur qui les dit.
+ *
  * @param {number} sagesse
+ * @param {number} [bonus] Bonus d'XP hors sagesse, en pourcents.
  * @returns {number} Multiplicateur, jamais sous 1.
  */
-export function multiplicateurXp(sagesse) {
-  return 1 + Math.max(0, Number(sagesse) || 0) / 100;
+export function multiplicateurXp(sagesse, bonus = 0) {
+  return 1 + (positif(sagesse) + normaliserBonusXp(bonus)) / 100;
+}
+
+/** Plafond du bonus hors sagesse : au-dela, la saisie est une faute de frappe. */
+export const BONUS_XP_MAX = 1000;
+
+/** Un nombre, ramene a zero s'il est absent, negatif ou illisible. */
+const positif = (n) => Math.max(0, Number(n) || 0);
+
+/**
+ * Le bonus d'XP hors sagesse, tel que le calcul le lit.
+ *
+ * @param {unknown} bonus
+ * @returns {number} Entier entre 0 et BONUS_XP_MAX.
+ */
+export function normaliserBonusXp(bonus) {
+  return Math.min(BONUS_XP_MAX, Math.round(positif(bonus)));
 }
 
 /**
@@ -87,12 +108,17 @@ export function multiplicateurXp(sagesse) {
  * Ce nombre classe les stuffs, il ne se LIT pas : il n'a pas d'unite. Ce que
  * l'ecran montre au joueur, c'est le multiplicateur.
  *
+ * Le bonus hors sagesse n'est pas un facteur constant : il se range dans la
+ * meme parenthese que la sagesse. Plus il pese, moins la sagesse du stuff
+ * compte face aux degats, et le stuff qui gagne peut changer.
+ *
  * @param {number} degats Degats par tour.
  * @param {number} sagesse
+ * @param {number} [bonus] Bonus d'XP hors sagesse, en pourcents.
  * @returns {number}
  */
-export function vitesseXp(degats, sagesse) {
-  return degats * multiplicateurXp(sagesse);
+export function vitesseXp(degats, sagesse, bonus = 0) {
+  return degats * multiplicateurXp(sagesse, bonus);
 }
 
 /** Part des degats quand le joueur n'a rien regle : les deux a parts egales. */
@@ -364,7 +390,7 @@ export function scoreBuild(stats, objective, options = {}) {
   // Mode « Monter » : la vitesse a laquelle le personnage gagne de l'XP.
   if (mode === SEARCH_MODES.XP) {
     const sagesse = stats.sagesse ?? 0;
-    const xp = vitesseXp(damage, sagesse);
+    const xp = vitesseXp(damage, sagesse, objective.bonusXp);
     return {
       score: satisfied ? xp : -penalty,
       penalty,

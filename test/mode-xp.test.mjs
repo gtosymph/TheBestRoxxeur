@@ -96,3 +96,46 @@ test('le score du mode Monter', async (t) => {
     assert.ok(fort.score > faible.score);
   });
 });
+
+/**
+ * Les bonus d'XP qui ne viennent pas du stuff.
+ *
+ * Les etoiles de la zone, les challenges, les idoles ou l'almanax s'ajoutent
+ * a la sagesse DANS la meme parenthese : 1 + (sagesse + bonus) / 100. Ils ne
+ * sont donc pas un facteur constant. Plus ils pesent, moins la sagesse du
+ * stuff compte face aux degats — et le stuff qui gagne change.
+ */
+test('le bonus d XP hors sagesse', async (t) => {
+  await t.test('il s ajoute a la sagesse dans la meme parenthese', () => {
+    assert.equal(multiplicateurXp(800, 200), 11);
+    assert.equal(vitesseXp(1000, 800, 200), 11000);
+  });
+
+  await t.test('sans bonus, rien ne change', () => {
+    assert.equal(multiplicateurXp(819), multiplicateurXp(819, 0));
+    assert.equal(vitesseXp(1000, 100), vitesseXp(1000, 100, 0));
+  });
+
+  await t.test('un bonus absent, negatif ou illisible ne retranche rien', () => {
+    assert.equal(multiplicateurXp(100, undefined), 2);
+    assert.equal(multiplicateurXp(100, -300), 2);
+    assert.equal(multiplicateurXp(100, 'abc'), 2);
+  });
+
+  await t.test('il deplace le stuff qui gagne vers les degats', () => {
+    // A egalite sans bonus : 5 000 x 9 = 2 500 x 18.
+    const frappe = [5000, 800];
+    const sage = [2500, 1700];
+    assert.equal(vitesseXp(...frappe), vitesseXp(...sage));
+    // Une zone a 100 % et un challenge a 100 % : le stuff qui frappe l'emporte.
+    assert.ok(vitesseXp(...frappe, 200) > vitesseXp(...sage, 200));
+  });
+
+  await t.test('le score du mode Monter le lit dans l objectif', () => {
+    const stats = { intelligence: 0, sagesse: 200 };
+    const sans = scoreBuild(stats, objectifXp());
+    const avec = scoreBuild(stats, { ...objectifXp(), bonusXp: 100 });
+    assert.equal(avec.xp, avec.damage * 4);
+    assert.ok(avec.score > sans.score);
+  });
+});

@@ -32,6 +32,10 @@ test('ce qui perime les resultats', async (t) => {
     assert.equal(change({ partDegats: 0.8 }), true);
   });
 
+  await t.test('dire un autre bonus d XP hors sagesse', () => {
+    assert.equal(change({ bonusXp: 200 }), true);
+  });
+
   await t.test('modifier un minimum', () => {
     const conditions = base().conditions.map((c, i) => (i === 0 ? { ...c, target: 11 } : c));
     assert.equal(change({ conditions }), true);

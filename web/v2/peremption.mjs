@@ -29,7 +29,7 @@ const CLE = nomDeCle('copyroxx_v2_signature');
 
 /** Tout ce qui change ce que le solveur cherche. */
 const ENTREES = Object.freeze([
-  'classe', 'niveau', 'sexe', 'mode', 'partDegats', 'changementsMax',
+  'classe', 'niveau', 'sexe', 'mode', 'partDegats', 'bonusXp', 'changementsMax',
 ]);
 
 /** Reglages dont l'ordre ne compte pas : deux mêmes ensembles se valent. */
