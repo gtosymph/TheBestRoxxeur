@@ -43,6 +43,7 @@ function etatRegle() {
     sexe: 1,
     mode: 'mixte',
     partDegats: 0.62,
+    bonusXp: 120,
     changementsMax: 3,
     equipped: new Map([['arme:0', EPEE], ['anneau:0', ANNEAU]]),
     posees: new Set(['arme:0']),
@@ -80,6 +81,7 @@ test('un aller-retour rend exactement le reglage', async () => {
   assert.equal(arrivee.sexe, 1);
   assert.equal(arrivee.mode, 'mixte');
   assert.equal(arrivee.partDegats, 0.62);
+  assert.equal(arrivee.bonusXp, 120);
   assert.equal(arrivee.changementsMax, 3);
   assert.deepEqual([...arrivee.equipped.keys()], ['arme:0', 'anneau:0']);
   assert.equal(arrivee.equipped.get('arme:0').id, EPEE.id);

@@ -2237,6 +2237,21 @@ input.limite-cible {
 }
 input.limite-cible:focus { outline: 1px solid var(--iris); outline-offset: 0; }
 
+/* Le bonus d'XP hors sagesse : une ligne, le champ contre son unite. */
+.bonus-xp {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center; gap: 6px; margin-top: 8px; font-size: 12px;
+}
+.bonus-xp .aide { grid-column: 1 / -1; margin: 0; }
+.bonus-xp .unite { color: var(--texte-3); }
+input.bonus-xp-champ {
+  width: 64px; height: 22px; padding: 0 0 0 4px;
+  background: var(--fond); border: 1px solid var(--filet); border-radius: 4px;
+  color: var(--texte); font: 12px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+input.bonus-xp-champ:focus { outline: 1px solid var(--iris); outline-offset: 0; }
+
 /* La bande du mode Monter porte trois mesures. Le libelle passe sous le
    chiffre : cote a cote, « vitesse d'XP » se coupait au milieu du mot. */
 .consequence.trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }

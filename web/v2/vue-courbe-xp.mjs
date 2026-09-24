@@ -36,15 +36,16 @@ let monte = null;
  * @param {any[]} liens.paliers Paliers rendus par la derniere recherche.
  * @param {{damage: number, sagesse: number}|null} liens.porte Build porte.
  * @param {(palier: any) => void} liens.onChoisir Pose le stuff d'un point.
+ * @param {number} [liens.bonus] Bonus d'XP hors sagesse, en pourcents.
  */
-export function renderCourbeXp(racine, { paliers, porte, onChoisir }) {
+export function renderCourbeXp(racine, { paliers, porte, onChoisir, bonus = 0 }) {
   const lignes = lignesSurvie(paliers ?? [], porte, AXE_XP);
   const signature = signatureXp(lignes);
 
   if (!monte || monte.racine !== racine || monte.signature !== signature) {
     monte = construire(racine, lignes, signature, onChoisir);
   }
-  monte.maj(lignes);
+  monte.maj(lignes, bonus);
 }
 
 /** Monte le bloc une fois, et rend de quoi le mettre a jour. */
@@ -71,7 +72,7 @@ function construire(racine, lignes, signature, onChoisir) {
 
   let traces = [];
   let survole = null;
-  let vue = { courantes: lignes };
+  let vue = { courantes: lignes, bonus: 0 };
 
   /** Point sous la souris, dans le repere de la toile. */
   const sous = (ev) => {
@@ -111,10 +112,10 @@ function construire(racine, lignes, signature, onChoisir) {
    */
   const rangMontre = () => survole
     ?? rangDuPalierXp(vue.courantes, choisi)
-    ?? palierXpRetenu(vue.courantes);
+    ?? palierXpRetenu(vue.courantes, vue.bonus);
 
   function majConsequence() {
-    const quoi = consequenceXp(vue.courantes, rangMontre());
+    const quoi = consequenceXp(vue.courantes, rangMontre(), vue.bonus);
     consequence.classList.toggle('survolee', survole !== null);
     consequence.replaceChildren(...(quoi ? [
       el('span', {}, el('b', { class: 'n', text: nombre(quoi.degats) }),
@@ -139,8 +140,8 @@ function construire(racine, lignes, signature, onChoisir) {
     });
   }
 
-  function maj(courantes = lignes) {
-    vue = { courantes };
+  function maj(courantes = lignes, bonus = 0) {
+    vue = { courantes, bonus };
     redessiner();
   }
 

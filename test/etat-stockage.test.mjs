@@ -57,6 +57,7 @@ test('l\'etat range se relit tel quel', () => {
   etat.verrous.add(EPEE.id);
   etat.reference = { itemIds: [EPEE.id], date: '2026-01-01' };
   etat.changementsMax = 3;
+  etat.bonusXp = 150;
   etat.limites = { ...etat.limites, vitalite: 0, force: 40 };
   etat.exos = { [EPEE.id]: { pa: 1, over: { vitalite: 30 } } };
 
@@ -72,6 +73,7 @@ test('l\'etat range se relit tel quel', () => {
   assert.ok(relu.verrous.has(EPEE.id));
   assert.deepEqual(relu.reference, etat.reference);
   assert.equal(relu.changementsMax, 3);
+  assert.equal(relu.bonusXp, 150);
   // Zero reste zero : le format range porte sa version.
   assert.equal(relu.limites.vitalite, 0);
   assert.equal(relu.limites.force, 40);
@@ -103,6 +105,7 @@ test('reprendreEtat', async (t) => {
   await t.test('un champ mal forme ne touche pas le reglage courant', () => {
     localStorage.setItem(CLES.etat, JSON.stringify({
       niveau: 'deux cents', conditions: 'aucune', bannis: { a: 1 }, reference: { sans: 'pieces' },
+      bonusXp: 'beaucoup',
     }));
     const depart = etatInitial();
     const relu = reprendreEtat(depart, CATALOGUE);
@@ -110,6 +113,7 @@ test('reprendreEtat', async (t) => {
     assert.equal(relu.conditions, depart.conditions);
     assert.equal(relu.bannis.size, 0);
     assert.equal(relu.reference, null);
+    assert.equal(relu.bonusXp, depart.bonusXp);
   });
 
   await t.test('les options rangees se posent sur les options par defaut', () => {

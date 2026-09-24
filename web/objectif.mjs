@@ -19,7 +19,7 @@ import { aggregate } from '../src/engine/build.mjs';
 import { lancersDe } from './lancers.mjs';
 import { normalizePassives } from '../src/data/passives.mjs';
 import { configPassifsDefaut } from '../src/data/passives-defaults.mjs';
-import { scoreBuild, SEARCH_MODES } from '../src/solver/score.mjs';
+import { normaliserBonusXp, scoreBuild, SEARCH_MODES } from '../src/solver/score.mjs';
 
 /**
  * Applique les options aux lignes des sorts.
@@ -316,6 +316,8 @@ function objectifSansForge(etat) {
     // Le mode mixte seul la lit ; la passer toujours evite un cas particulier
     // de plus dans le solveur.
     partDegats: etat.partDegats,
+    // Le mode Monter seul le lit, pour la meme raison.
+    bonusXp: normaliserBonusXp(etat.bonusXp),
   };
 }
 

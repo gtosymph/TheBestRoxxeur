@@ -32,7 +32,9 @@ import { creerRecherche } from '../recherche.mjs';
 import { fermerFiche, ouvrirFiche } from '../item-panel.mjs';
 import { iconeStat } from '../icons.mjs';
 import { cacherBulle, montrerBulleSort, suivreBulle } from '../hover-card.mjs';
-import { damageValue, multiplicateurXp, SEARCH_MODES } from '../../src/solver/score.mjs';
+import {
+  damageValue, multiplicateurXp, normaliserBonusXp, SEARCH_MODES,
+} from '../../src/solver/score.mjs';
 import { STAT_LABELS } from '../../src/data/stats.mjs';
 import { conditionValue } from '../../src/solver/condition-value.mjs';
 
@@ -436,10 +438,14 @@ function renderVerdict(stats, degats) {
     // elle ne se lit pas. « x 9,19 » se compare a ce que le joueur connait.
     const enXp = etat.mode === SEARCH_MODES.XP;
     const sagesse = Number(stats.sagesse) || 0;
+    const bonus = normaliserBonusXp(etat.bonusXp);
+    const quiMultiplie = bonus > 0
+      ? `Votre sagesse de ${nombre(sagesse)} et vos ${nombre(bonus)} % de bonus multiplient`
+      : `Votre sagesse de ${nombre(sagesse)} multiplie`;
     $('degats-phrase').textContent = `Vos sorts envoient ${nombre(degats)} dégâts sur un tour.`
       + (enXp
-        ? ` Votre sagesse de ${nombre(sagesse)} multiplie l'XP de chaque combat `
-          + `par ${facteur(multiplicateurXp(sagesse))}.`
+        ? ` ${quiMultiplie} l'XP de chaque combat `
+          + `par ${facteur(multiplicateurXp(sagesse, bonus))}.`
         : '');
     renderBorne();
   }
@@ -488,6 +494,20 @@ function renderObjectif() {
       ? 'La recherche monte la vitesse d\'XP : vos dégâts décident du nombre de '
         + 'combats, votre sagesse multiplie l\'XP de chacun.'
       : 'La recherche fait monter cette mesure et tient les minimums demandes.';
+  renderBonusXp();
+}
+
+/**
+ * Le champ du bonus d'XP hors sagesse, en mode Monter seulement.
+ *
+ * La valeur ne se repose pas pendant que le joueur ecrit : un redessin au
+ * milieu de la frappe remplacerait « 15 » par « 1 » avant le second chiffre.
+ */
+function renderBonusXp() {
+  const enXp = !sansSorts() && etat.mode === SEARCH_MODES.XP;
+  $('bonus-xp').hidden = !enXp;
+  const champ = $('bonus-xp-valeur');
+  if (document.activeElement !== champ) champ.value = String(normaliserBonusXp(etat.bonusXp));
 }
 
 /**
@@ -507,6 +527,7 @@ function renderCourbeXpOuPas(bilan, stats) {
     porte: bilan
       ? { damage: bilan.damage, sagesse: Number(stats?.sagesse) || 0 }
       : null,
+    bonus: normaliserBonusXp(etat.bonusXp),
     onChoisir: (palier) => {
       recherche.porterAlaMain(palier);
       message(`Stuff porté : ${nombre(Math.floor(palier.damage))} de dégâts, `
@@ -930,7 +951,7 @@ function renderScore(bilan) {
   const sagesse = Number(bilan.sagesse);
   const enXp = etat.mode === SEARCH_MODES.XP && Number.isFinite(sagesse);
   $('score-note').textContent = tenus
-    ? (enXp ? `score · XP ×${facteur(multiplicateurXp(sagesse))}` : 'score')
+    ? (enXp ? `score · XP ×${facteur(multiplicateurXp(sagesse, etat.bonusXp))}` : 'score')
     : `${bilan.unmet.length} minimum(s) non tenu(s)`;
   recherche.dessiner();
 }
@@ -1577,6 +1598,11 @@ const liensPalette = {
     : (fermerPalette(), poserPiece(item))),
 };
 $('ouvrir-palette').addEventListener('click', () => basculerPalette(liensPalette));
+$('bonus-xp-valeur').addEventListener('change', (ev) => {
+  const bonus = normaliserBonusXp(ev.target.value);
+  ev.target.value = String(bonus);
+  setEtat({ bonusXp: bonus });
+});
 
 // La palette s'ouvre a la touche, partout — sauf quand le joueur ecrit
 // ailleurs, ou le raccourci lui volerait sa frappe.

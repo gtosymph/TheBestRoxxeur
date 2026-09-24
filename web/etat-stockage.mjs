@@ -9,6 +9,7 @@
 import { classeConnue } from './classes.mjs';
 import { CLES, ecrireJson, lireJson } from './stockage.mjs';
 import { normaliserCible } from '../src/engine/cible.mjs';
+import { normaliserBonusXp } from '../src/solver/score.mjs';
 
 /**
  * Version du format des limites de caracteristique.
@@ -69,7 +70,7 @@ export function serialiserEtat(etat) {
   return {
     niveau: etat.niveau, classe: etat.classe, sexe: etat.sexe,
     conditions: etat.conditions, sorts: etat.sorts, options: etat.options,
-    mode: etat.mode, partDegats: etat.partDegats,
+    mode: etat.mode, partDegats: etat.partDegats, bonusXp: etat.bonusXp,
     allocation: etat.allocation, scrolls: etat.scrolls,
     limites: etat.limites, limitesVersion: VERSION_LIMITES,
     bannis: [...etat.bannis],
@@ -157,6 +158,7 @@ export function appliquerRange(etat, data, catalogue) {
     // Le mode mixte n'existait pas : un etat range avant lui n'a pas de part,
     // et garde donc l'equilibre de l'etat initial.
     ...(Number.isFinite(data.partDegats) ? { partDegats: data.partDegats } : {}),
+    ...(Number.isFinite(data.bonusXp) ? { bonusXp: normaliserBonusXp(data.bonusXp) } : {}),
     ...(data.options ? { options: { ...etat.options, ...data.options } } : {}),
     ...(data.allocation ? { allocation: { ...etat.allocation, ...data.allocation } } : {}),
     ...(data.scrolls ? { scrolls: { ...etat.scrolls, ...data.scrolls } } : {}),

@@ -192,6 +192,12 @@ export function etatInitial() {
      * que le mode, pas une case a cocher qui change un calcul.
      */
     partDegats: 0.5,
+    /**
+     * Bonus d'XP qui ne viennent pas du stuff, en pourcents : etoiles de la
+     * zone, challenges, idoles, almanax. Ils s'ajoutent a la sagesse dans la
+     * meme parenthese, et changent donc le stuff qui fait monter le plus vite.
+     */
+    bonusXp: 0,
     filtre: null, filtreType: null, recherche: '', filtrePk: false,
     /**
      * Liste que la palette montre : 'banque', 'interdits', 'stuff', ou null

@@ -26,16 +26,20 @@ const mesures = (palier) => ({
  * aussi vite sont interchangeables, et changer d'avis a chaque redessin ferait
  * sauter le marqueur sans raison.
  *
+ * Le bonus hors sagesse compte : il se range dans la meme parenthese que la
+ * sagesse, et peut faire gagner un point plus riche en degats.
+ *
  * @param {{palier: {damage: number, sagesse: number}}[]} lignes
+ * @param {number} [bonus] Bonus d'XP hors sagesse, en pourcents.
  * @returns {number|null}
  */
-export function palierXpRetenu(lignes) {
+export function palierXpRetenu(lignes, bonus = 0) {
   let rang = null;
   let meilleure = Number.NEGATIVE_INFINITY;
 
   for (let i = 0; i < (lignes?.length ?? 0); i += 1) {
     const { degats, sagesse } = mesures(lignes[i]?.palier);
-    const vitesse = vitesseXp(degats, sagesse);
+    const vitesse = vitesseXp(degats, sagesse, bonus);
     if (vitesse > meilleure) { meilleure = vitesse; rang = i; }
   }
 
@@ -51,18 +55,19 @@ export function palierXpRetenu(lignes) {
  *
  * @param {{palier: {damage: number, sagesse: number}}[]} lignes
  * @param {number|null} rang
+ * @param {number} [bonus] Bonus d'XP hors sagesse, en pourcents.
  * @returns {{degats: number, sagesse: number, multiplicateur: number,
  *   vitesse: number}|null}
  */
-export function consequenceXp(lignes, rang) {
+export function consequenceXp(lignes, rang, bonus = 0) {
   const palier = lignes?.[rang ?? -1]?.palier;
   if (!palier) return null;
   const { degats, sagesse } = mesures(palier);
   return {
     degats,
     sagesse,
-    multiplicateur: multiplicateurXp(sagesse),
-    vitesse: vitesseXp(degats, sagesse),
+    multiplicateur: multiplicateurXp(sagesse, bonus),
+    vitesse: vitesseXp(degats, sagesse, bonus),
   };
 }
 

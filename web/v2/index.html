@@ -150,6 +150,16 @@
       <p class="chapeau pliable">Ce que je veux</p>
       <div class="segmente" style="width:100%" id="objectif"></div>
       <p class="aide" id="aide-objectif"></p>
+      <!-- Le bonus d'XP qui ne vient pas du stuff. Il ne sert qu'au mode
+           Monter : il se range dans la meme parenthese que la sagesse, et
+           change donc le stuff qui fait monter le plus vite. -->
+      <div class="bonus-xp" id="bonus-xp" hidden>
+        <label for="bonus-xp-valeur">Bonus d'XP hors sagesse</label>
+        <input class="bonus-xp-champ n" id="bonus-xp-valeur" type="number"
+          min="0" max="1000" step="10" inputmode="numeric">
+        <span class="unite">%</span>
+        <p class="aide">Étoiles de la zone, challenges, idoles, almanax. Laissez 0 si vous ne savez pas.</p>
+      </div>
       <div id="melange" hidden></div>
       <!-- La courbe du mode Monter. Elle vit contre le choix d'objectif :
            c'est lui qui la fait paraitre, et elle ne dit rien ailleurs. -->
