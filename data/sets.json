@@ -54164,5 +54164,27 @@
       34561
     ],
     "effects": []
+  },
+  {
+    "id": 1108,
+    "fr": "Panoplie d'apparat de Porcelune",
+    "itemIds": [
+      34606,
+      34607,
+      34608,
+      34609,
+      34610,
+      34645
+    ],
+    "effects": []
+  },
+  {
+    "id": 1110,
+    "fr": "Panoplie d'apparat de Welsh et Shedar",
+    "itemIds": [
+      34622,
+      34623
+    ],
+    "effects": []
   }
 ]
