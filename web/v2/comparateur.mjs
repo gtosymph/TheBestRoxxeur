@@ -14,7 +14,9 @@ import { damageValue } from '../../src/solver/score.mjs';
 
 import { ouvrirComparaison } from './vue-comparaison.mjs';
 import { libellesForge, mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
-import { basculerChoix, cleDeChoix, rafraichirChoix } from './choix-comparaison.mjs';
+import {
+  basculerChoix, cleDeChoix, colonnesAComparer, rafraichirChoix,
+} from './choix-comparaison.mjs';
 import { FAMILLES } from './fiche.mjs';
 
 /**
@@ -102,26 +104,39 @@ export function creerComparateur({ lireEtat, lireCatalogue, render }) {
     };
   }
 
-  /** Ouvre la comparaison du stuff porte et des stuffs coches. */
+  /** Les colonnes du moment : le porte, le stuff actuel s'il differe, les coches. */
+  function colonnes() {
+    const etat = lireEtat();
+    return colonnesAComparer(choisis, {
+      reference: etat.reference,
+      porteIds: [...etat.equipped.values()].map((p) => p.id),
+    });
+  }
+
+  /** Ouvre la comparaison du stuff porte, du stuff actuel et des stuffs coches. */
   function comparer() {
-    if (choisis.size === 0) return;
+    const aComparer = colonnes();
+    if (aComparer.length < 2) return;
     const etat = lireEtat();
 
     ouvrirComparaison({
       mesures: [...mesuresDegats(etat.sorts, etat.options.arme), ...MESURES_COMPARABLES],
-      colonnes: [
-        colonneDe('Porté', null),
-        ...[...choisis.values()].map(({ objet, nom }) => colonneDe(nom, objet)),
-      ],
+      colonnes: aComparer.map(({ nom, objet }) => colonneDe(nom, objet)),
       minimums: new Set(etat.conditions.map((c) => c.stat)),
     });
   }
 
-  /** Le bandeau de comparaison : il ne parait qu'avec quelque chose a comparer. */
+  /**
+   * Le bandeau de comparaison : il ne parait qu'avec quelque chose a comparer.
+   *
+   * Un stuff actuel qui differe du stuff porte suffit : sans aucune coche, le
+   * joueur voit deja ce que son essai change face a ce qu'il a en jeu.
+   */
   function renderComparer(bouton) {
-    bouton.hidden = choisis.size === 0;
-    bouton.textContent = `Comparer ${choisis.size + 1}`;
-    bouton.title = 'Compare le stuff porté et les stuffs cochés, d\'où qu\'ils viennent.';
+    const nombre = colonnes().length;
+    bouton.hidden = nombre < 2;
+    bouton.textContent = `Comparer ${nombre}`;
+    bouton.title = 'Compare le stuff porté, votre stuff actuel et les stuffs cochés.';
   }
 
   return { selectionDe, rafraichir, comparer, renderComparer };
