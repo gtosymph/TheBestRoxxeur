@@ -20,6 +20,18 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.11.0',
+    date: '2026-09-24',
+    titre: 'Comparer avec son stuff actuel',
+    points: [
+      'La comparaison montre « Mon stuff actuel », le stuff figé comme celui '
+        + 'que vous portez en jeu, juste après le stuff porté.',
+      'Il suffit à ouvrir la comparaison : sans aucune coche, vous voyez ce que '
+        + 'votre essai change face à ce que vous avez vraiment.',
+      'La colonne ne paraît pas quand le stuff porté est déjà votre stuff actuel.',
+    ],
+  },
+  {
     version: '1.10.0',
     date: '2026-09-24',
     titre: 'Le bonus d\'XP qui ne vient pas du stuff',

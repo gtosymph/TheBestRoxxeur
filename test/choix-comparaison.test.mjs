@@ -7,7 +7,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { basculerChoix, cleDeChoix, rafraichirChoix } from '../web/v2/choix-comparaison.mjs';
+import {
+  basculerChoix, cleDeChoix, colonnesAComparer, rafraichirChoix,
+} from '../web/v2/choix-comparaison.mjs';
 
 test('cle de choix', async (t) => {
   await t.test('un candidat se reconnait a ses pieces, quel que soit l\'ordre', () => {
@@ -59,5 +61,51 @@ test('rafraichir', async (t) => {
     const a = { itemIds: [1] };
     const choisis = basculerChoix(new Map(), a, 'trouve', 'Trouvé 1');
     assert.equal(rafraichirChoix(choisis, [{ objet: a, famille: 'trouve' }]), choisis);
+  });
+});
+
+/**
+ * Le stuff actuel, fige comme celui porte en jeu, entre dans la comparaison.
+ *
+ * C'est la question que le joueur pose le plus : « ce stuff trouve, face a
+ * ce que j'ai vraiment ». La colonne se place juste apres le stuff porte, et
+ * se tait quand elle ne montrerait que le stuff porte une deuxieme fois.
+ */
+test('les colonnes a comparer', async (t) => {
+  const trouve = { itemIds: [7, 8] };
+  const coches = basculerChoix(new Map(), trouve, 'trouve', 'Trouvé 1');
+
+  await t.test('sans stuff actuel, le porte et les coches', () => {
+    const colonnes = colonnesAComparer(coches, { reference: null, porteIds: [1, 2] });
+    assert.deepEqual(colonnes.map((c) => c.nom), ['Porté', 'Trouvé 1']);
+    assert.equal(colonnes[0].objet, null);
+    assert.equal(colonnes[1].objet, trouve);
+  });
+
+  await t.test('le stuff actuel se place juste apres le porte', () => {
+    const colonnes = colonnesAComparer(coches, {
+      reference: { itemIds: [3, 4] }, porteIds: [1, 2],
+    });
+    assert.deepEqual(colonnes.map((c) => c.nom), ['Porté', 'Mon stuff actuel', 'Trouvé 1']);
+    assert.deepEqual(colonnes[1].objet, { itemIds: [3, 4] });
+  });
+
+  await t.test('sans coche, le stuff actuel suffit a comparer', () => {
+    const colonnes = colonnesAComparer(new Map(), {
+      reference: { itemIds: [3, 4] }, porteIds: [1, 2],
+    });
+    assert.deepEqual(colonnes.map((c) => c.nom), ['Porté', 'Mon stuff actuel']);
+  });
+
+  await t.test('le stuff actuel se tait quand il est le stuff porte', () => {
+    const colonnes = colonnesAComparer(coches, {
+      reference: { itemIds: [2, 1] }, porteIds: [1, 2],
+    });
+    assert.deepEqual(colonnes.map((c) => c.nom), ['Porté', 'Trouvé 1']);
+  });
+
+  await t.test('une seule colonne ne se compare pas', () => {
+    assert.deepEqual(colonnesAComparer(new Map(), { reference: null, porteIds: [1] })
+      .map((c) => c.nom), ['Porté']);
   });
 });

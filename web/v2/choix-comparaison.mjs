@@ -71,3 +71,31 @@ export function rafraichirChoix(choisis, vivants) {
   }
   return change ? suite : choisis;
 }
+
+/** Nom de la colonne du stuff fige comme celui porte en jeu. */
+export const NOM_STUFF_ACTUEL = 'Mon stuff actuel';
+
+/**
+ * Les colonnes de la comparaison, dans l'ordre ou elles se lisent.
+ *
+ * Le stuff porte ouvre la marche. Le stuff actuel suit, parce que c'est face
+ * a lui que le joueur decide d'un achat. Il se tait quand il porte les memes
+ * pieces que le stuff porte : la colonne repeterait la premiere. Les coches
+ * viennent ensuite, dans l'ordre ou le joueur les a posees.
+ *
+ * @param {Map<string, {objet: any, nom: string}>} choisis
+ * @param {object} contexte
+ * @param {{itemIds: number[]}|null} contexte.reference Stuff actuel, ou null.
+ * @param {number[]} contexte.porteIds Pieces du stuff porte.
+ * @returns {{nom: string, objet: any|null}[]} `objet` vaut null pour le porte.
+ */
+export function colonnesAComparer(choisis, { reference, porteIds }) {
+  const actuel = reference && idsDe(reference) !== idsDe({ itemIds: porteIds })
+    ? [{ nom: NOM_STUFF_ACTUEL, objet: { itemIds: reference.itemIds } }]
+    : [];
+  return [
+    { nom: 'Porté', objet: null },
+    ...actuel,
+    ...[...choisis.values()].map(({ objet, nom }) => ({ nom, objet })),
+  ];
+}
