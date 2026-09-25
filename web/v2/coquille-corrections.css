@@ -1,0 +1,411 @@
+/* Coquille v2, suite de coquille.css. Corrections d'ecran, barre du haut, soutien, visite, quai,
+   signalement et choix de la case.
+   Les feuilles se chargent dans l'ordre de index.html : cet ordre EST la
+   cascade, et le changer change l'ecran. */
+
+/* ==================================== Corrections d'ecran ===
+
+   Ce qui suit corrige ce que la maquette n'avait pas prevu. Chaque bloc dit
+   ce qui n'allait pas : sans cela, une regle qui a l'air arbitraire finit par
+   se faire supprimer par quelqu'un qui n'a jamais vu le defaut. */
+
+/* --- Vider est le seul geste qui detruit --- */
+
+/* Il enleve seize pieces d'un clic. Les autres boutons de la barre lancent,
+   arretent ou annulent : aucun ne fait perdre de travail. Le rouge le separe
+   d'eux, sans en faire un bouton d'alerte — il reste fantome, il ne reclame
+   pas l'attention, il previent seulement la main qui passe. */
+.btn.fantome.danger { color: color-mix(in srgb, var(--rose) 80%, var(--texte-2)); }
+.btn.fantome.danger:hover {
+  background: color-mix(in srgb, var(--rose) 14%, transparent);
+  border-color: color-mix(in srgb, var(--rose) 45%, transparent);
+  color: var(--rose);
+}
+
+/* --- Le bouton des reglages --- */
+
+/* Un « ⚙ » dans un bouton de texte sort a douze pixels, avec le dessin que
+   le systeme veut bien lui donner : sur une machine il a des dents, sur une
+   autre c'est un soleil. Le trace vient de `icones.mjs` et a la meme forme
+   partout. */
+.btn.icone {
+  width: 30px; height: 30px; padding: 0;
+  justify-content: center; flex: none;
+  background: transparent; border-color: transparent; color: var(--texte-2);
+}
+.btn.icone:hover {
+  background: var(--surface-2); border-color: var(--filet);
+  color: var(--texte);
+}
+.btn.icone .pictogramme { width: 18px; height: 18px; }
+
+/* --- Les pictogrammes de la barre ---
+
+   Deux familles : les formes PLEINES du lecteur — lire, pause, arret — qui
+   se remplissent, et les traces AU TRAIT — corbeille, retour, engrenage —
+   qui se dessinent. Les melanger sous une seule regle donnait soit des
+   triangles vides, soit une corbeille en pate. */
+.pictogramme { width: 13px; height: 13px; flex: none; display: block; }
+.pictogramme.plein { fill: currentColor; stroke: none; }
+.pictogramme.trait {
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+/* Le bouton garde son libelle : un pictogramme seul se devine, il ne se lit
+   pas. L'image le precede et respire un peu moins que du texte. */
+.btn .pictogramme + span { margin-left: -1px; }
+
+/* --- Le graphe de la recherche --- */
+
+/* Il etait colle au bas de la page, apres l'analyse : on ne le voyait qu'en
+   defilant, donc jamais pendant une recherche — c'est-a-dire exactement quand
+   il sert. Il remonte sous le verdict, dans un cadre qui le nomme. */
+.bloc-graphe {
+  margin-top: 18px; padding: 10px 12px 6px;
+  background: var(--surface); border: 1px solid var(--filet); border-radius: var(--r-lg);
+}
+.tete-graphe { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+/* Huit fils tiennent sur une ligne qui defile plutot que d'en prendre trois :
+   c'est un detail de surveillance, pas le sujet du bloc. */
+.bloc-graphe .fils {
+  display: flex; flex-wrap: nowrap; gap: 12px; margin: 2px 0 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+.bloc-graphe .fils::-webkit-scrollbar { display: none; }
+.fil {
+  display: inline-flex; align-items: baseline; gap: 4px; flex: none;
+  font: 10px/1.6 var(--mono); color: var(--texte-3); white-space: nowrap;
+}
+.fil .valeur {
+  font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--texte-2);
+}
+
+/* --- Les reglages du moteur, adoptes par la feuille --- */
+
+#reglages-moteur { display: grid; gap: 8px; }
+#reglages-moteur .reglage-moteur {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-size: 12px; color: var(--texte-2);
+}
+#reglages-moteur .reglage-moteur input { width: 64px; }
+/* Un million de generations fait sept caracteres : le champ de la limite est
+   le seul a en demander autant. */
+#reglages-moteur .reglage-moteur input#limite-generations { width: 88px; }
+#reglages-moteur .reglage-moteur select { width: 132px; }
+#reglages-moteur .btn { justify-content: center; margin-top: 2px; }
+
+/* --- Les listes gardees, sous « ce que j'ai » --- */
+
+/* Trois listes a la suite, toutes ouvertes sur « aucun » : sans etiquette,
+   rien ne disait laquelle gardait le stuff et laquelle les interdictions.
+   L'etiquette prend sa propre ligne — la ranger dans la rangee laissait
+   quatre-vingts pixels a la liste deroulante, qui ne montrait plus rien. */
+.rangee-jeux { flex-wrap: wrap; }
+.rangee-jeux + .rangee-jeux { margin-top: 8px; }
+.nom-jeu {
+  flex-basis: 100%;
+  font-size: 10px; letter-spacing: .4px; text-transform: uppercase;
+  color: var(--texte-3);
+}
+
+/* --- Le volet droit : ce que le joueur a demande, et les resistances --- */
+
+/* Une mesure qui porte un minimum se reconnait a son fond : c'est celle qu'on
+   vient verifier, et la chercher dans quarante lignes grises annulait tout
+   l'interet de la liste. */
+.ligne.exigee {
+  background: color-mix(in srgb, var(--iris) 12%, transparent);
+  box-shadow: inset 2px 0 0 var(--iris);
+}
+.ligne.exigee:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--iris) 20%, transparent);
+}
+.ligne.exigee .ligne-nom { color: var(--texte); }
+
+/* Une resistance porte deux chiffres — ce qui est retire au coup, et ce qui
+   en est retranche en pourcentage. Ils ne se lisent jamais l'un sans l'autre,
+   et les montrer sur deux lignes obligeait a les rapprocher de tete. */
+.ligne-paire {
+  display: grid; grid-template-columns: auto 44px; gap: 8px;
+  align-items: baseline; justify-items: end;
+}
+.ligne-paire b { font: 12px/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--texte); }
+.ligne-paire b.pct { color: var(--texte-2); font-size: 11px; }
+
+/* --- Le comparateur --- */
+
+.compare-nom { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.compare-icone { width: 14px; height: 14px; object-fit: contain; flex: none; }
+.compare-libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* L'intitule d'une famille separe, il ne compte pas : pas de fond de cellule,
+   un filet et une casse qui le distinguent des mesures. */
+.compare-famille th {
+  padding: 14px 10px 4px;
+  font-size: 10px; font-weight: 640; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--texte-3); background: transparent;
+  border-bottom: 1px solid var(--filet);
+}
+.compare tbody tr:first-child .compare-famille th,
+.compare-famille:first-child th { padding-top: 4px; }
+
+/* ==================================== Le telephone ===
+
+   v2 se regle au grand ecran : trois volets, un plateau, une courbe. Sur un
+   telephone l'ambition tombe a deux gestes — consulter son stuff, et porter
+   une proposition. Le reste reste atteignable, mais personne ne fera de
+   reglage fin sur quatre cents pixels.
+
+   Ce qui etait CASSE, en revanche, l'etait vraiment : la barre du haut tenait
+   sur une ligne de mille pixels, et toute la page glissait de cote. Une page
+   qui se decale a l'horizontale n'est pas une page dense, c'est une page
+   fausse. */
+
+
+
+/* ==================================== La barre du haut ===
+
+   Elle se lit en trois groupes, et chacun repond a une question : « ou
+   suis-je », « que veux-je voir », « que fait la recherche ». Une seule file
+   de dix commandes passait a la ligne des que la fenetre retrecissait, et la
+   page entiere glissait de cote.
+
+   Chaque groupe se serre pour son compte, dans cet ordre : d'abord les mots
+   qui se devinent, ensuite ceux qui se relisent ailleurs, jamais un bouton.
+   Aucune commande ne disparait a aucune largeur. */
+/* La barre passe a la ligne ENTRE deux groupes, jamais au milieu d'un
+   groupe : c'est ce qui la garde lisible quand la place manque. Sans cette
+   regle, le retour a la ligne coupait les commandes de la recherche n'importe
+   ou, ou pire — avec « nowrap » — la barre debordait, et toute la page
+   glissait de cote. */
+.barre { flex-wrap: wrap; gap: 6px 12px; }
+.barre-groupe { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; min-width: 0; }
+.barre-identite { gap: 10px; }
+.barre-recherche { gap: 8px; margin-left: auto; }
+
+/* Le pousse-a-droite etait un element vide : passe a la ligne, il ouvrait un
+   trou. La marge automatique du groupe fait le meme travail sans occuper de
+   place. */
+.barre .pousse { display: none; }
+
+.marque-nom { white-space: nowrap; }
+
+/* La version se lit contre le nom : un joueur qui signale un defaut dit
+   « v1.0.0 » au lieu de « la version d'hier ». Elle reste en retrait, parce
+   qu'elle n'est utile qu'au moment ou on la cherche. */
+.marque .version {
+  font-size: 10px; font-weight: 500; color: var(--texte-3);
+  padding: 1px 5px; border: 1px solid var(--filet); border-radius: 999px;
+  background: none; cursor: pointer; font-family: var(--mono); line-height: 1.4;
+}
+/* Elle s'ouvre : le survol doit le dire, sinon elle reste une etiquette. */
+.marque .version:hover { color: var(--texte); border-color: var(--filet-clair); }
+.marque .version:focus-visible { outline: 1px solid var(--iris); outline-offset: 1px; }
+
+/* Un volet replie se voit : le bouton perd son fond, comme un interrupteur
+   releve. Sans cela, rien ne dit ou est passee la colonne. */
+.bascule { flex: none; }
+.bascule[aria-pressed="true"] {
+  background: var(--surface-3); border-color: var(--filet-clair); color: var(--texte);
+}
+.bascule::before {
+  content: ''; width: 3px; height: 13px; border-radius: 2px;
+  background: currentColor; opacity: .35; flex: none;
+}
+.bascule[aria-pressed="true"]::before { background: var(--iris); opacity: 1; }
+#bascule-droit { flex-direction: row-reverse; }
+
+/* Le compteur de generations est le seul texte de la barre qui peut perdre
+   des caracteres sans rien perdre de son sens : il se raccourcit donc a la
+   place des autres. Sans cela, le cafe passait a la ligne tout seul, et la
+   barre prenait deux rangees pour un mot. */
+#compteur-generations {
+  font-size: 11px; color: var(--texte-3); white-space: nowrap;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
+.barre-recherche { min-width: 0; }
+.barre-recherche .btn, .score-vif { flex: none; }
+
+/* ==================================== Le soutien ===
+
+   Le site est gratuit, sans publicite et sans compte. Le seul endroit ou il
+   demande quelque chose est ce bouton-la : il porte donc ses mots en entier,
+   et la seule couleur chaude de la page. Cafe creme sur cafe : elle ne
+   ressemble a aucun autre bouton, ce qui est exactement le but — elle ne se
+   confond avec aucune commande de l'outil. */
+.kofi {
+  display: inline-flex; align-items: center; gap: 7px; flex: none;
+  height: 28px; padding: 0 13px; border-radius: 999px;
+  background: #e9d7b8; border: 1px solid #d3bb95;
+  color: #43301b; font-size: 12px; font-weight: 620; text-decoration: none;
+  white-space: nowrap;
+}
+.kofi:hover { background: #f3e4cb; border-color: #c9ad80; }
+.kofi-tasse { font-size: 13px; line-height: 1; }
+
+/* ================================================= La visite guidee ===
+
+   Le voile n'est pas une surface posee sur la page : c'est l'OMBRE de la
+   lucarne. Un cadre vide avec une ombre portee de dix mille pixels assombrit
+   tout sauf lui, sans qu'aucun calcul ne decoupe quoi que ce soit, et sans
+   les quatre bandes qu'il faudrait sinon replacer a chaque etape. */
+.visite-fond { position: fixed; inset: 0; z-index: 90; }
+
+.visite-lucarne {
+  position: fixed; border-radius: var(--r-lg);
+  box-shadow: 0 0 0 9999px var(--voile), 0 0 0 2px var(--iris) inset;
+  transition: left .18s ease, top .18s ease, width .18s ease, height .18s ease;
+  pointer-events: none;
+}
+
+/* Sans lucarne, le voile disparaitrait avec elle : le fond le reprend. */
+.visite-lucarne[hidden] + .visite-bulle { box-shadow: 0 0 0 9999px var(--voile), 0 14px 40px var(--ombre); }
+
+.visite-bulle {
+  position: fixed; width: min(340px, calc(100vw - 24px));
+  padding: 14px; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--filet-clair);
+  box-shadow: 0 14px 40px var(--ombre);
+}
+.visite-titre { margin: 0 0 6px; font-size: 14px; font-weight: 640; color: var(--texte); }
+.visite-texte { margin: 0; font-size: 12px; line-height: 1.55; color: var(--texte-2); }
+.visite-pied { display: flex; align-items: center; gap: 6px; margin-top: 14px; }
+.visite-compte { font-size: 11px; color: var(--texte-3); }
+.visite-bulle .btn[disabled] { opacity: .4; cursor: default; }
+
+/* Un ecran qui refuse les animations garde la lucarne, sans le glissement. */
+@media (prefers-reduced-motion: reduce) {
+  .visite-lucarne { transition: none; }
+}
+
+/* ==================================== La barre, quand la place manque ===
+
+   Elle se serre par paliers, et toujours dans le meme ordre : d'abord les
+   mots qui se devinent, ensuite ceux qui se relisent ailleurs dans la page,
+   jamais un bouton. Un bouton qui disparait est une commande perdue ; un
+   libelle qui disparait derriere son pictogramme reste atteignable, et son
+   infobulle dit le mot.
+
+   Chaque palier tient a ce qui deborde reellement a cette largeur-la, pas a
+   un nom d'appareil : la meme barre sert une fenetre a moitie tiree sur un
+   grand ecran et une tablette en paysage. */
+
+/* Le score se relit sous le personnage, et le compteur de generations sous
+   le trace : leurs mots partent les premiers. */
+@media (max-width: 1700px) {
+  #score-note, #compteur-generations { display: none; }
+}
+
+/* Quatre commandes de la recherche portent un dessin sans ambiguite — pause,
+   arret, corbeille, partage. Elles gardent leur infobulle. */
+@media (max-width: 1400px) {
+  #arreter span, #annuler span, #vider span, #partager span { display: none; }
+  #arreter, #annuler, #vider, #partager { padding: 0 8px; }
+}
+
+/* Le nom du site est ecrit dans l'onglet et sur le losange : a cette
+   largeur, il cede la place aux commandes. */
+@media (max-width: 1200px) {
+  .marque-nom, #identite-detail { display: none; }
+  .barre-identite { gap: 8px; }
+}
+
+/* Les deux bascules gardent leur barre de couleur, qui dit a elle seule si
+   le volet est ouvert. Le cafe garde sa tasse. */
+@media (max-width: 1200px) {
+  .bascule span, .kofi-mots { display: none; }
+  .bascule { padding: 0 9px; }
+  .kofi { padding: 0 10px; gap: 0; }
+}
+
+/* ==================================== Un bouton qui porte son etat ===
+
+   « Mode optimisateur combo de sorts » nomme le reglage ; la ligne du dessous
+   dit ou il en est. Un bouton qui porte seulement son nom oblige a l'ouvrir
+   pour savoir ce qu'il vaut, et a le refermer sans avoir rien change. */
+.bouton-reglage {
+  display: grid; gap: 2px; width: 100%; height: auto;
+  padding: 7px 10px; margin-top: 10px; text-align: left;
+}
+.bouton-reglage-nom { font-weight: 560; color: var(--texte); }
+.bouton-reglage-etat { font-size: 11px; font-weight: 400; color: var(--texte-2); }
+
+/* ==================================== Le quai du telephone ===
+
+   Le haut de l'ecran est l'endroit le plus loin du pouce, et c'est la que la
+   barre empilait treize commandes sur trois rangees. Le quai prend le bas :
+   une rangee d'action, puis les trois ecrans en onglets.
+
+   Il n'existe que sous 720 px. Plus haut, la feuille de style le cache et
+   app.mjs rend ses boutons a la barre — ce sont les memes noeuds. */
+.quai { display: none; }
+
+.quai-onglet {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; flex: 1; min-width: 0;
+  padding: 0; border: 0; background: transparent; cursor: pointer;
+  color: var(--texte-3); font: 540 10.5px/1 var(--ui);
+}
+.quai-dessin {
+  width: 20px; height: 15px; border-radius: 3px;
+  border: 1.5px solid currentColor; opacity: .75;
+}
+/* Chaque onglet porte le PLAN de son ecran : une colonne a gauche, le milieu
+   plein, une colonne a droite. Trois pictogrammes abstraits demanderaient de
+   les apprendre ; ces trois-la se lisent. */
+#onglet-gauche .quai-dessin { border-left-width: 6px; }
+#onglet-droit .quai-dessin { border-right-width: 6px; }
+#onglet-stuff .quai-dessin { border-width: 1.5px; background: currentColor; opacity: .4; }
+.quai-onglet[aria-selected="true"] { color: var(--iris-vif); }
+.quai-onglet[aria-selected="true"] .quai-dessin { opacity: 1; }
+
+/* ==================================== « ••• » ===
+
+   Ce que le quai ne porte pas : les gestes d'une fois par seance. */
+.plus-lignes { display: grid; gap: 8px; }
+.plus-ligne {
+  display: grid; gap: 2px; width: 100%;
+  padding: 12px 14px; cursor: pointer; text-align: left;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte); font: inherit;
+}
+.plus-ligne:hover { background: var(--surface-3); border-color: var(--filet-clair); }
+.plus-nom { font: 600 14px/1.3 var(--ui); }
+.plus-aide { font-size: 12px; color: var(--texte-2); }
+
+/* ==================================== Le signalement ===
+
+   Le rapport se montre en entier avant de partir. C'est la raison d'etre de
+   l'apercu : un outil qui ramasse la version, le navigateur et le reglage
+   doit le dire, et le montrer. */
+.champ-dire {
+  width: 100%; padding: 8px 10px; resize: vertical;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte); font: 13px/1.5 var(--ui);
+}
+.champ-dire:hover { border-color: var(--filet-clair); }
+
+.apercu-rapport {
+  margin: 0 0 12px; padding: 10px 12px; max-height: 210px; overflow: auto;
+  background: var(--fond); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte-2); font: 11px/1.6 var(--mono);
+  white-space: pre-wrap; word-break: break-word;
+}
+.ligne-gestes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.ligne-gestes .btn { text-decoration: none; }
+
+/* ==================================== Le choix de la case ===
+
+   Six dofus se distinguent par leur image, pas par leur rang : chaque ligne
+   porte donc la piece, pas seulement un numero. */
+.cases-choix { display: grid; gap: 6px; }
+.case-choix {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 10px; cursor: pointer; text-align: left;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte); font: 13px/1.3 var(--ui);
+}
+.case-choix:hover { background: var(--surface-3); border-color: var(--iris-sourd); }
+.case-choix img { width: 26px; height: 26px; object-fit: contain; flex: none; }
+.case-rang { width: 16px; color: var(--texte-3); font-size: 11px; flex: none; }
+.case-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.case-geste { color: var(--iris); font-size: 11px; flex: none; }

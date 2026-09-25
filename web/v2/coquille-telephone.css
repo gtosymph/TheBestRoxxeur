@@ -1,0 +1,396 @@
+/* Coquille v2, suite de coquille.css. Le telephone, la cible et l'import.
+   Les feuilles se chargent dans l'ordre de index.html : cet ordre EST la
+   cascade, et le changer change l'ecran. */
+
+/* ============================================ Le telephone ===
+
+   Ici, l'application change de nature. Les trois zones ne cohabitent plus :
+   elles deviennent trois ECRANS, et le quai du bas dit lequel on regarde. Une
+   page large repliee n'est pas une application mobile — c'est une page large
+   ou l'on defile quatre fois plus.
+
+   Trois regles tiennent tout le reste :
+
+     1. le haut ne garde que l'identite et le score ;
+     2. tout ce qui se touche fait au moins 44 px ;
+     3. rien d'important ne part avec le defilement.
+*/
+
+@media (max-width: 720px) {
+  :root {
+    /* Hauteur du quai : la rangee d'action (44 + 16 de marge + 1 de filet)
+       et les onglets. Elle sert a rendre exactement ce qui reste a
+       l'atelier, et a poser le message passager au-dessus du quai. */
+    --quai-h: 113px;
+    --barre-h: 46px;
+  }
+
+  /* --- La barre du haut : identite et score, rien d'autre ---
+
+     Les commandes sont descendues dans le quai (voir placerCommandes, dans
+     app.mjs), et ce qui sert une fois par seance vit derriere « ••• ». La
+     barre reste collante : le score est ce qu'on surveille. */
+  .barre {
+    position: sticky; top: 0;
+    flex-wrap: nowrap; padding: 6px 12px; gap: 10px;
+    height: var(--barre-h); min-height: var(--barre-h);
+  }
+  .barre-identite { flex: 0 1 auto; min-width: 0; }
+  .barre-recherche { margin-left: auto; gap: 10px; }
+
+  /* Ce qui a demenage dans le quai, ou derriere « ••• ». Les boutons
+     restent dans la page : « ••• » appuie dessus. */
+  #vider, #signaler, #visite, #reglages, .kofi, .barre-volets, .marque .version {
+    display: none;
+  }
+  .score-vif b { font-size: 19px; }
+  #identite { height: 34px; }
+
+  /* --- Un seul ecran a la fois --- */
+  .appli {
+    grid-template-columns: minmax(0, 1fr);
+    height: calc(100dvh - var(--barre-h) - var(--quai-h));
+  }
+  .appli .volet-gauche, .appli .volet-droit {
+    position: static; width: 100%; max-height: none;
+    border: 0; box-shadow: none;
+  }
+  /* Le milieu se replie quand un volet est ouvert : c'est ce qui fait de
+     trois colonnes trois ecrans, sans une ligne de script. */
+  .appli:not(.gauche-replie) main.volet,
+  .appli:not(.droit-replie) main.volet { display: none; }
+  .volets-voile { display: none; }
+
+  .scene { padding: 14px 12px 24px; }
+  .section { padding: 12px 12px 14px; }
+  .volet-gauche, .volet-droit { padding-bottom: 12px; }
+
+  /* --- Le quai --- */
+  .quai {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    display: block;
+    background: var(--surface);
+    border-top: 1px solid var(--filet);
+    /* La barre de geste d'un telephone mange le bas de l'ecran : sans cette
+       marge, le dernier onglet passe dessous et ne se touche plus. */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .quai-actions {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--filet);
+  }
+  .quai-actions .btn { height: 44px; padding: 0 14px; font-size: 13px; }
+  .quai-actions #lancer { flex: 1; justify-content: center; }
+  .quai-actions #arreter, .quai-actions #annuler, .quai-actions #partager,
+  .quai-plus { flex: none; width: 44px; padding: 0; justify-content: center; }
+  .quai-plus { height: 44px; font-size: 15px; letter-spacing: 1px; }
+  /* Dans le quai, ces trois-la n'ont que leur dessin : la place va au geste
+     principal, et l'infobulle porte le mot. */
+  .quai-actions #arreter span, .quai-actions #annuler span,
+  .quai-actions #partager span { display: none; }
+
+  .quai-onglets { display: flex; height: 52px; }
+
+  /* --- Les feuilles prennent l'ecran ---
+
+     Une boite centree de six cents pixels sur un telephone ne montre que ses
+     bords. Le corps defile, la tete reste : c'est elle qui porte « Fermer ». */
+  .feuille, .feuille.large, .compare-boite, .palette, .picker {
+    width: 100%; max-width: none; min-width: 0; height: 100%; max-height: 100%;
+    border-radius: 0;
+  }
+  /* Le fond est une grille a colonne automatique : elle se cale sur le
+     contenu le plus large. Les dix-sept filtres du catalogue, mis sur une
+     seule rangee qui defile, la faisaient gonfler a onze cents pixels — et
+     la feuille entiere sortait de l'ecran par la droite. Une colonne bornee
+     a la largeur disponible ferme la porte a ce genre de debordement, quel
+     que soit le contenu. */
+  .feuille-fond, .compare-fond, .palette-fond, .picker-fond {
+    padding: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .feuille-tete, .palette-tete { position: sticky; top: 0; z-index: 3; }
+  .feuille-tete .btn, .palette-tete .btn { height: 38px; padding: 0 14px; }
+
+  /* --- Le choix des sorts ---
+
+     Les deux rangees de filtres etaient posees sans retour a la ligne : la
+     recherche, deux cases a cocher, cinq elements et deux boutons tenaient
+     sur une seule ligne de quatre cent soixante pixels. La boite entiere
+     sortait de l'ecran par la droite, et le premier sort se lisait a moitie.
+     Elles s'enroulent maintenant, et les deux boutons d'ajout passent en
+     dessous plutot que de pousser le reste dehors. */
+  .picker-filtres { flex-wrap: wrap; padding: 10px 12px; }
+  .picker-filtres input[type="search"] { flex: 1 1 100%; min-height: 38px; }
+  .picker-filtres .option { font-size: 11.5px; }
+  .picker-elements .espace { flex-basis: 100%; height: 0; }
+  .picker-tete .mini, .picker-filtres .mini { min-height: 32px; }
+  /* Le « × » est le seul moyen de sortir de cette feuille : il se touche. */
+  .picker-tete .mini { min-width: 38px; min-height: 38px; justify-content: center; }
+  .picker-liste { padding: 10px 12px 14px; }
+  /* Une variante est une cible tactile, pas une etiquette : c'est elle qui
+     retient le sort. */
+  .variante { min-height: 34px; padding: 5px 10px; }
+
+  /* --- La liste des essais gardes ---
+
+     Cinq colonnes sur une rangee de trois cent cinquante-sept pixels : les
+     trois boutons gardaient leur taille et prenaient cent quarante-six
+     pixels, il en restait vingt-trois pour le nom. « Iop 190 » s'ecrivait
+     « Io… ». Un essai qu'on a pris la peine de renommer devient alors
+     impossible a reconnaitre — et c'est le nom qui fait tout l'interet de
+     garder un essai.
+
+     Les gestes passent donc sous la ligne, sur toute la largeur. Le nom
+     recupere la place, et les boutons deviennent touchables au passage. */
+  .simulation { grid-template-columns: auto auto auto minmax(0, 1fr); }
+  .simulation .simulation-actions {
+    grid-column: 1 / -1; justify-content: flex-end;
+  }
+  .simulation-actions .mini, .simulations .mini, .rangee-ajout .mini {
+    min-height: 32px; padding: 0 12px;
+  }
+  /* « Garder cette simulation » et « Comparer » n'ont pas les classes de v2 :
+     la regle des cibles tactiles les manquait, et ils restaient a vingt-huit
+     pixels au milieu d'une interface reglee sur trente-huit. */
+  .rangee-ajout > button { min-height: 38px; }
+
+  /* --- Les cibles tactiles ---
+
+     Quarante-quatre pixels est le minimum admis pour un doigt. En dessous, on
+     vise a cote une fois sur cinq, et l'outil parait casse alors qu'il a
+     seulement des boutons de souris. */
+  .btn { min-height: 38px; }
+  .btn.mini { min-height: 32px; padding: 0 12px; }
+  .segmente button { min-height: 38px; padding: 6px 12px; }
+  .avoir-ligne, .ligne, .case-choix, .plus-ligne { min-height: 44px; }
+  .chip { min-height: 32px; }
+
+  /* --- Les deux traces ---
+
+     Un canvas prend la largeur qu'on lui donne. Trois pour deux redonne une
+     pente lisible sur trois cent quatre-vingt-dix pixels ; la borne haute
+     evite qu'une tablette en portrait n'y consacre un tiers de l'ecran. */
+  .graphe-v2 { aspect-ratio: 3 / 2; max-height: 260px; }
+  .melange-courbe { height: 200px; }
+  .bloc-graphe { padding: 10px 10px 6px; }
+  .tete-graphe { flex-wrap: wrap; gap: 6px; }
+  .tete-graphe .fils { justify-content: flex-start; }
+
+  /* Le message passager se met au-dessus du quai, jamais dessous. */
+  .message-v2 {
+    left: 10px; right: 10px; max-width: none; text-align: center;
+    bottom: calc(var(--quai-h) + 12px);
+  }
+
+  /* --- Les minimums deviennent des cartes ---
+
+     Six colonnes sur trois cent quatre-vingt-dix pixels : la colonne du nom
+     s'ecrasait a zero et son texte debordait sous la voisine. On lisait
+     « 12 · 250 · 12 · A · 12 » sans savoir s'il s'agissait des PA ou de la
+     Sagesse — un reglage qu'on pose a l'aveugle.
+
+     Le tableau garde sa structure ; c'est la mise en page qui change. Chaque
+     cellule porte deja le nom de sa colonne (voir renderConditions, dans
+     render.mjs) : il devient l'etiquette du chiffre. */
+  table.conditions, table.conditions tbody, table.conditions tr, table.conditions td {
+    display: block; width: auto;
+  }
+  table.conditions colgroup, table.conditions thead { display: none; }
+  table.conditions tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+    padding: 12px; margin-bottom: 10px;
+    background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  }
+  /* La mesure fait le titre de la carte, et tient la ligne entiere. */
+  table.conditions td:first-child { grid-column: 1 / -1; }
+  table.conditions td[data-libelle] { display: grid; gap: 3px; }
+  table.conditions td[data-libelle]::before {
+    content: attr(data-libelle);
+    font: 640 10px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--texte-3);
+  }
+  table.conditions td input { width: 100%; height: 38px; }
+  /* Le bouton « A » garde la taille d'un bouton : etire sur toute la
+     colonne, il ressemblait a un champ, et le « × » de la ligne suivante
+     paraissait tomber dedans. */
+  table.conditions td .mini { min-height: 38px; width: 44px; }
+  /* Le « × » quitte le coin : sur une carte, il se met en bas a droite avec
+     les autres, et devient touchable. */
+  table.conditions td:last-child { display: flex; align-items: flex-end; justify-content: flex-end; }
+
+  /* --- Le catalogue devient une liste ---
+
+     Une vignette de quarante pixels sans nom se reconnait au survol. Un
+     doigt ne survole rien : la liste ecrit le nom. */
+  .palette-grille { display: block; }
+  .palette-grille .case-item {
+    display: flex; align-items: center; gap: 12px;
+    aspect-ratio: auto; width: 100%; min-height: 52px;
+    padding: 6px 10px; margin-bottom: 6px; text-align: left;
+  }
+  .palette-grille .case-item img { width: 38px; height: 38px; flex: none; }
+  .palette-grille .case-item .case-nom {
+    display: block; flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 13.5px; color: var(--texte);
+  }
+  .palette-grille .case-item .case-niveau {
+    display: block; flex: none; font-size: 11px; color: var(--texte-3);
+  }
+  /* Les dix-sept filtres prenaient quatre rangees avant la premiere piece :
+     ils defilent maintenant sur une seule. */
+  .palette-onglets {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    min-width: 0; padding-bottom: 2px;
+  }
+  .palette-onglets::-webkit-scrollbar { display: none; }
+  .palette-onglets button { flex: none; min-height: 34px; }
+  .palette-filtres { flex-wrap: wrap; }
+}
+
+/* ======================================================== La cible ===
+
+   Sous le nombre de degats, une phrase dit contre quoi il est compte. La
+   feuille qui l'ouvre tient trois choses : les monstres gardes, les cinq
+   pourcentages a la main, le bestiaire ou l'on cherche. Les pourcentages
+   s'ecrivent en chiffres a chasse fixe : « 14/17/16/29/25 % » se compare
+   d'une ligne a l'autre seulement si les barres tombent au meme endroit. */
+
+.bloc-cible { display: grid; gap: 2px; margin-top: 9px; }
+.bloc-cible .cible-phrase { color: var(--texte-2); font-variant-numeric: tabular-nums; }
+.bloc-cible .appel { margin-top: 2px; }
+
+.cible-gardes, .cible-resultats { display: grid; gap: 4px; }
+.cible-resultats { max-height: 320px; overflow-y: auto; padding-right: 4px; }
+.cible-ligne {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px;
+  padding: 5px 8px; border: 1px solid var(--filet); border-radius: 6px; background: var(--surface-2);
+  font-size: 12px;
+}
+.cible-ligne.gardee { grid-template-columns: 1fr auto auto auto; }
+.cible-ligne.dedans { opacity: .55; }
+.cible-nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--texte); }
+.cible-nom small { color: var(--texte-3); }
+.cible-res { font-family: var(--mono); font-size: 11px; color: var(--texte-2); font-variant-numeric: tabular-nums; }
+.cible-ligne select.grade { height: 24px; font-size: 11px; }
+.cible-ligne .btn { height: 24px; padding: 0 8px; font-size: 11px; }
+.cible-moyenne { margin: 6px 0 0; font-family: var(--mono); font-size: 12px; color: var(--texte); min-height: 1em; }
+
+.etiquette {
+  display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 640; letter-spacing: .5px; text-transform: uppercase;
+  background: var(--surface-3); color: var(--texte-2);
+}
+.etiquette.boss { background: var(--iris-fond); color: var(--iris); }
+
+.cible-manuel { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.cible-champ { display: grid; gap: 4px; font-size: 11px; color: var(--texte-2); }
+.cible-champ input { width: 100%; height: 26px; padding: 0 6px; text-align: right; font-family: var(--mono); }
+.cible-champ input:disabled { opacity: .5; }
+.cible-champ .unite { display: none; }
+
+.cible-filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 8px; font-size: 12px; color: var(--texte-2); }
+.cible-filtres input[type="search"] { flex: 1 1 180px; height: 28px; padding: 0 8px; }
+.cible-filtres .case { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.cible-filtres .case input { accent-color: var(--iris); margin: 0; }
+.cible-niveaux { display: inline-flex; align-items: center; gap: 4px; }
+.cible-niveaux input { width: 56px; height: 26px; padding: 0 5px; font-family: var(--mono); text-align: right; }
+
+@media (max-width: 560px) {
+  .cible-manuel { grid-template-columns: repeat(3, 1fr); }
+  .cible-ligne, .cible-ligne.gardee { grid-template-columns: 1fr auto; }
+}
+
+/* La borne haute : un chiffre qu'aucun stuff n'atteint, et qui dit combien
+   il reste a chercher. Il se lit en retrait, sous la phrase des degats, et
+   porte sa reserve en infobulle : la phrase seule ferait croire a un stuff
+   possible. */
+.borne { display: block; margin-top: 4px; color: var(--texte-3); cursor: help; font-variant-numeric: tabular-nums; }
+
+/* ====================================== L'import ===
+
+   La liste des pieces lues se montre AVANT de poser : trois colonnes, la
+   case, le nom, le niveau. La case d'abord, parce que c'est elle qui trahit
+   une mauvaise lecture — deux « Anneau 1 » ou un chapeau en cape se voient
+   d'un coup d'oeil, un nom mal lu non. */
+.import-apercu { margin-top: 14px; }
+.import-lignes {
+  display: grid; gap: 4px; margin-bottom: 10px;
+  max-height: 260px; overflow-y: auto;
+}
+.import-ligne {
+  display: grid; grid-template-columns: 110px 1fr auto; align-items: baseline; gap: 10px;
+  padding: 6px 10px; background: var(--surface-2); border: 1px solid var(--filet);
+  border-radius: var(--r); font-size: 12px;
+}
+.import-case { color: var(--texte-3); text-transform: uppercase; letter-spacing: .04em; font-size: 10px; }
+.import-nom { color: var(--texte); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-ligne small { color: var(--texte-3); font-variant-numeric: tabular-nums; }
+.champ-dire + .ligne-lien { margin-top: 8px; }
+@media (max-width: 640px) {
+  .import-ligne { grid-template-columns: 1fr auto; }
+  .import-case { grid-column: 1 / -1; }
+}
+
+/* Combien de fois un sort part dans le tour. Le champ vit DANS la puce du
+   sort : le nombre ne veut rien dire loin du sort qu'il compte.
+   Le selecteur porte le type : la regle generale des champs le porte aussi,
+   et une classe seule passerait dessous. */
+input.chip-lancers {
+  width: 38px; height: 19px; padding: 0 0 0 4px; margin-left: 2px;
+  background: var(--fond); border: 1px solid var(--filet); border-radius: 4px;
+  color: var(--texte); font: 11px/1 var(--mono);
+  font-variant-numeric: tabular-nums; text-align: left;
+}
+input.chip-lancers:focus { outline: 1px solid var(--iris); outline-offset: 0; }
+
+/* L'objectif d'un minimum se regle sur place. La valeur atteinte reste du
+   texte : elle se lit, elle ne se decide pas. */
+.limite-barre { color: var(--texte-3); }
+input.limite-cible {
+  width: 58px; height: 21px; padding: 0 0 0 4px;
+  background: var(--fond); border: 1px solid var(--filet); border-radius: 4px;
+  color: var(--texte); font: 12px/1 var(--mono);
+  font-variant-numeric: tabular-nums; text-align: left;
+}
+input.limite-cible:focus { outline: 1px solid var(--iris); outline-offset: 0; }
+
+/* Le bonus d'XP hors sagesse : une ligne, le champ contre son unite. */
+.bonus-xp {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center; gap: 6px; margin-top: 8px; font-size: 12px;
+}
+.bonus-xp .aide { grid-column: 1 / -1; margin: 0; }
+.bonus-xp .unite { color: var(--texte-3); }
+input.bonus-xp-champ {
+  width: 64px; height: 22px; padding: 0 0 0 4px;
+  background: var(--fond); border: 1px solid var(--filet); border-radius: 4px;
+  color: var(--texte); font: 12px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+input.bonus-xp-champ:focus { outline: 1px solid var(--iris); outline-offset: 0; }
+
+/* La bande du mode Monter porte trois mesures. Le libelle passe sous le
+   chiffre : cote a cote, « vitesse d'XP » se coupait au milieu du mot. */
+.consequence.trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.consequence.trois span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.consequence.trois em { margin-left: 0; }
+
+/* Le journal des versions. Il se lit de haut en bas, une version par bloc :
+   la plus recente en premier, parce que c'est celle qu'on vient chercher. */
+.feuille.journal { width: min(520px, 100%); }
+.journal-version { padding: 14px 0; border-bottom: 1px solid var(--filet); }
+.journal-version:last-child { border-bottom: 0; padding-bottom: 4px; }
+.journal-tete { display: flex; align-items: center; gap: 8px; }
+.journal-tete b { font-size: 13px; color: var(--texte); }
+.journal-ici {
+  font-size: 10px; color: var(--iris); padding: 1px 6px;
+  border: 1px solid var(--iris-sourd); border-radius: 999px;
+}
+.journal-date { font-size: 11px; color: var(--texte-3); font-variant-numeric: tabular-nums; }
+.journal-titre { margin: 4px 0 8px; font-size: 12.5px; color: var(--texte-2); }
+.journal-points { margin: 0; padding-left: 17px; display: grid; gap: 6px; }
+.journal-points li { font-size: 12px; line-height: 1.5; color: var(--texte-2); }
