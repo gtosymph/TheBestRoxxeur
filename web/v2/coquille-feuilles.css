@@ -1,0 +1,589 @@
+/* Coquille v2, suite de coquille.css. Les feuilles : personnage, palette, comparaison, points, melange,
+   options, reglages et jeux enregistres.
+   Les feuilles se chargent dans l'ordre de index.html : cet ordre EST la
+   cascade, et le changer change l'ecran. */
+
+/* ============================================ Feuille du personnage ===
+
+   Une feuille, pas un volet : trois reglages qui ne bougent presque jamais
+   ne meritent pas de place permanente, et ne meritent pas d'etre
+   introuvables. */
+
+.feuille-fond {
+  position: fixed; inset: 0; z-index: 84;
+  display: grid; place-items: center; padding: 20px;
+  background: var(--voile);
+}
+/* La feuille ne defile pas : son CORPS defile.
+
+   Elle portait le defilement elle-meme, et son bandeau partait vers le haut
+   avec le reste. Arrive au bas des reglages, le bouton « Fermer » n'etait
+   plus nulle part, et il fallait remonter pour sortir. Le bandeau reste donc
+   en place, et c'est la zone sous lui qui glisse. */
+.feuille {
+  display: flex; flex-direction: column;
+  width: min(400px, 100%); max-height: 86vh; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--filet-clair);
+  border-radius: var(--r-lg); box-shadow: 0 20px 56px var(--ombre);
+}
+.feuille-tete {
+  display: flex; align-items: center; gap: 10px; flex: none;
+  padding: 13px 16px; border-bottom: 1px solid var(--filet);
+  background: var(--surface);
+}
+.feuille-tete h2 { margin: 0; font-size: 14px; font-weight: 640; color: var(--texte); }
+.feuille-corps { padding: 16px; overflow-y: auto; flex: 1; min-height: 0; }
+/* Le portrait est un apercu, pas une illustration : il se borne en hauteur.
+   Sans `overflow`, l'avatar sort du cadre a sa taille d'origine et recouvre
+   les reglages qui le suivent. */
+.portrait {
+  display: grid; place-items: center; height: 160px; overflow: hidden;
+  margin-bottom: 14px;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r-lg);
+}
+.portrait img { max-height: 148px; max-width: 100%; object-fit: contain; }
+.rangee-reglage {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 0; border-bottom: 1px solid var(--filet);
+  font-size: 12.5px; color: var(--texte-2);
+}
+.rangee-reglage select { min-width: 150px; }
+.rangee-reglage input[type="number"] { width: 78px; }
+.rangee-reglage .segmente button { min-width: 34px; }
+
+/* Chaque chiffre de la fiche est une porte : il se clique pour en garder au
+   moins autant. La ligne devient donc un bouton, sans en avoir l'air. */
+.ligne {
+  width: 100%; text-align: left; cursor: pointer; font: inherit;
+  background: transparent; border: 0; border-radius: var(--r);
+}
+.ligne:hover:not(:disabled) { background: var(--surface-2); }
+.ligne:disabled { cursor: default; }
+.ligne.exigee .ligne-nom { color: var(--texte); }
+
+/* Ce que la repartition des points apporte, juste devant le total.
+   Discret : c'est une provenance, pas une mesure. La colonne reste en place
+   quand elle est vide, pour que les totaux s'alignent d'une ligne a l'autre. */
+.ligne-investi {
+  font: 11px/1 var(--mono); font-variant-numeric: tabular-nums;
+  color: var(--texte-3); white-space: nowrap;
+}
+
+/* Le « × » d'un minimum ne se voit qu'au survol de sa ligne : quatre croix
+   permanentes tirent l'oeil plus que les valeurs qu'elles accompagnent. */
+.limite .oter {
+  width: 18px; height: 18px; padding: 0; flex: none; cursor: pointer;
+  background: transparent; border: 0; border-radius: 999px;
+  color: var(--texte-3); font: 12px/1 var(--ui); opacity: 0;
+}
+.limite:hover .oter, .limite .oter:focus-visible { opacity: 1; }
+.limite .oter:hover { background: var(--surface-3); color: var(--rose); }
+
+/* ================================================ La palette de pieces ===
+
+   Une palette, pas une colonne : chercher une piece est ponctuel. Elle prend
+   toute la place le temps du choix, et rend l'ecran ensuite. */
+
+.palette-fond {
+  position: fixed; inset: 0; z-index: 86;
+  display: grid; place-items: start center; padding: 56px 20px 20px;
+  background: var(--voile);
+}
+.palette {
+  width: min(880px, 100%); max-height: calc(100vh - 92px);
+  display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--filet-clair);
+  border-radius: var(--r-lg); box-shadow: 0 24px 64px var(--ombre);
+}
+.palette-tete {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid var(--filet);
+}
+/* Le champ est la premiere chose que la palette montre : il occupe la
+   largeur, parce que c'est par lui qu'on arrive presque toujours. */
+.palette-tete input[type="search"] { flex: 1; min-width: 0; height: 30px; }
+
+.palette-onglets {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  padding: 10px 14px 0;
+}
+.palette-onglets button {
+  padding: 3px 9px; border-radius: 999px; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--filet);
+  color: var(--texte-3); font: 11px/1.4 var(--ui);
+}
+.palette-onglets button:hover { color: var(--texte-2); border-color: var(--filet-clair); }
+.palette-onglets button[aria-pressed="true"] {
+  background: var(--iris-fond); border-color: var(--iris-sourd); color: var(--texte);
+}
+
+/* Les trois listes du joueur, au-dessus des filtres ordinaires : elles se
+   croisent avec eux, elles ne les remplacent pas. */
+.palette-avoir {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 10px 14px 0;
+}
+.palette-avoir button[aria-pressed="true"] {
+  background: var(--iris-fond); border-color: var(--iris-sourd); color: var(--texte);
+}
+.palette-avoir button[disabled] { opacity: .45; cursor: not-allowed; }
+.palette-avoir .compte {
+  margin-left: 6px; color: var(--texte-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.palette-filtres {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 10px 14px; border-bottom: 1px solid var(--filet);
+}
+.palette-filtres input[type="number"] { width: 78px; }
+.palette-filtres .option {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: var(--texte-2); cursor: pointer;
+}
+
+.palette-grille {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 4px; padding: 12px 14px;
+  /* Les rangees s'etirent par defaut et `aspect-ratio` perd : une case
+     devient un rectangle haut, et l'icone flotte au milieu du vide. */
+  grid-auto-rows: min-content; align-items: start;
+}
+/* La vignette porte son nom et son niveau pour la LISTE du telephone.
+   Dans la grille, l'image suffit et l'infobulle dit le reste. */
+.case-item .case-nom, .case-item .case-niveau { display: none; }
+
+.case-item {
+  aspect-ratio: 1; display: grid; place-items: center; position: relative;
+  padding: 0; overflow: hidden; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: 5px;
+}
+.case-item:hover { border-color: var(--iris); background: var(--surface-3); }
+.case-item img { width: 100%; height: 100%; object-fit: contain; }
+/* Une piece interdite porte la croix EN PLUS du gris : la couleur seule ne
+   dirait rien a qui ne separe pas les gris. */
+.case-item.bannie { opacity: .35; filter: grayscale(.8); }
+.case-item.bannie::after {
+  content: '✕'; position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--rose); font-size: 15px; font-weight: 700;
+}
+.case-item.possedee::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  border: 1px solid var(--jade); border-radius: 5px;
+}
+
+.palette-pied {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 9px 14px; border-top: 1px solid var(--filet);
+}
+.palette-pied .aide:first-child { flex: none; color: var(--texte-2); }
+.palette-pied .aide { margin: 0; }
+
+/* Le raccourci se lit a cote du bouton qui l'utilise, jamais ailleurs. */
+.raccourci { margin-left: 8px; color: var(--texte-3); font-family: var(--mono); font-size: 11px; }
+
+/* ==================================================== La comparaison ===
+
+   Elle se pose par-dessus et se ferme : on y vient pour trancher entre deux
+   ou trois stuffs, pas pour s'y installer. */
+
+/* ---------- L'ordre des couches ----------
+
+   La fiche d'une piece s'ouvre depuis N'IMPORTE laquelle des fenetres :
+   depuis le plateau, depuis la palette, depuis la comparaison. Elle passe
+   donc au-dessus de toutes. `composants.css` la pose a 80, ce qui la faisait
+   ouvrir DERRIERE la palette — on cliquait une piece du catalogue et rien ne
+   semblait se produire.
+
+   L'echelle : feuilles 84, palette 86, comparaison 88, visite 90, fiche 92. */
+.fiche-fond { z-index: 92; }
+
+.compare-fond {
+  position: fixed; inset: 0; z-index: 88;
+  display: grid; place-items: center; padding: 24px;
+  background: var(--voile);
+}
+.compare-boite {
+  width: min(860px, 100%); max-height: 86vh;
+  display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--filet-clair);
+  border-radius: var(--r-lg); box-shadow: 0 24px 64px var(--ombre);
+}
+.compare-tete {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 13px 16px; border-bottom: 1px solid var(--filet);
+}
+.compare-tete h2 { margin: 0; font-size: 14px; font-weight: 640; color: var(--texte); }
+.compare-corps { flex: 1; min-height: 0; overflow: auto; }
+.compare-pied { padding: 8px 16px 12px; border-top: 1px solid var(--filet); }
+
+.compare { width: 100%; border-collapse: collapse; }
+.compare th, .compare td { padding: 6px 12px; text-align: right; }
+/* L'intitule reste lisible pendant qu'on fait defiler les colonnes. */
+.compare tbody th {
+  position: sticky; left: 0; z-index: 1;
+  text-align: left; font-weight: 500; color: var(--texte-2);
+  background: var(--surface);
+}
+.compare thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface); border-bottom: 1px solid var(--filet);
+  font-size: 10px; font-weight: 640; letter-spacing: .7px; text-transform: uppercase;
+  color: var(--texte-3);
+}
+.compare thead th:first-child { left: 0; z-index: 3; }
+.compare tbody tr:hover th, .compare tbody tr:hover td { background: var(--surface-2); }
+.compare td b { display: block; font-weight: 620; }
+.compare td small { display: block; font-size: 10px; color: var(--texte-3); }
+/* Un minimum se lit en valeur, pas en ecart : l'etiquette dit pourquoi cette
+   colonne ne montre pas de « + » comme les autres. */
+.marque-min {
+  margin-left: 7px; padding: 0 5px; border-radius: 999px;
+  border: 1px solid var(--iris-sourd); color: var(--iris);
+  font-size: 9px; text-transform: uppercase; letter-spacing: .05em;
+}
+
+/* Les pieces de chaque stuff, en tete du tableau : on voit ce qu'on compare
+   avant de lire les chiffres. */
+.compare-pieces td { padding-top: 8px; padding-bottom: 8px; vertical-align: top; }
+.compare-pieces-grille {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 3px;
+  max-width: 120px; margin-left: auto;
+}
+.compare-pieces .piece-candidat { border-radius: 4px; }
+.compare-exos td { padding-top: 4px; padding-bottom: 8px; vertical-align: top; font: 11px/1.35 var(--ui); }
+.compare-exos-liste { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.compare-exo { color: var(--jade); white-space: nowrap; }
+.compare-exo-aucun { color: var(--texte-3); }
+.compare td.compare-note { text-align: left; font: 12px/1.4 var(--ui); }
+.compare td.compare-note .aide { padding: 12px 4px; }
+
+/* Cocher un stuff trouve l'ajoute a la comparaison. */
+.candidat-cocher { display: inline-flex; align-items: center; cursor: pointer; }
+.candidat-cocher input { cursor: pointer; margin: 0; }
+
+/* Les trois lignes de « Ce que j'ai » sont des portes : elles sont devenues
+   des boutons, et un bouton porte son propre cadre. Sans cette regle, elles
+   se lisent comme trois champs de saisie vides. */
+button.avoir-ligne {
+  width: 100%; cursor: pointer; text-align: left;
+  border: 1px solid transparent; color: var(--texte-2); font: 12px/1.45 var(--ui);
+}
+button.avoir-ligne:hover { background: var(--surface-3); border-color: var(--filet-clair); }
+button.avoir-ligne b { color: var(--texte); }
+
+/* =========================================== La feuille des points ===
+
+   Six curseurs, six parchemins, six limites. Elle a besoin de largeur, donc
+   elle sort du gabarit etroit des autres feuilles. */
+
+.feuille.large { width: min(660px, 100%); }
+.points-bilan {
+  display: flex; align-items: baseline; gap: 6px;
+  padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--filet);
+}
+.points-bilan b { font: 620 15px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.points-bilan .aide { margin: 0; }
+
+.points { display: flex; flex-direction: column; gap: 6px; }
+.bandeau-points {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding-bottom: 8px; margin-bottom: 4px; border-bottom: 1px solid var(--filet);
+}
+.bandeau-points .note { flex: 1; margin: 0; font-size: 11.5px; color: var(--texte-3); }
+.bandeau-points .mini {
+  height: 24px; padding: 0 9px; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte-2); font: 11px/1 var(--ui);
+}
+.bandeau-points .mini:hover { color: var(--texte); border-color: var(--filet-clair); }
+
+/* Les points restants : un depassement n'est pas un petit nombre de plus,
+   c'est une repartition impossible. La couleur et le cadre le disent. */
+.jeton {
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--filet);
+  font: 11px/1.4 var(--mono); font-variant-numeric: tabular-nums; color: var(--texte-2);
+}
+.jeton.trop { color: var(--rose); border-color: var(--rose); }
+
+.ligne-point, .entete-points {
+  display: grid; grid-template-columns: 104px minmax(0, 1fr) 52px 30px 52px 52px;
+  gap: 8px; align-items: center;
+}
+.entete-points span {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--texte-3); text-align: right;
+}
+.entete-points span:first-child { text-align: left; }
+.nom-point { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; color: var(--texte-2); }
+.nom-point img { width: 15px; height: 15px; object-fit: contain; }
+
+.valeur-point, .limite-point {
+  height: 24px; padding: 0 5px; text-align: right;
+  font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 11.5px;
+}
+/* Une limite ne bride que la recherche : elle reste discrete tant qu'elle ne
+   mord pas, et s'allume quand elle mord. */
+.limite-point { color: var(--texte-3); }
+.limite-point.active { color: var(--ambre); border-color: var(--ambre); }
+.limite-point.depassee { color: var(--rose); border-color: var(--rose); }
+.cout-point {
+  text-align: right; font: 400 10.5px var(--mono); font-variant-numeric: tabular-nums;
+  color: var(--texte-3);
+}
+
+.curseur {
+  appearance: none; min-width: 0; height: 16px; padding: 0; border: 0; background: transparent;
+}
+/* Le socle peint la piste d'un degrade jade vers iris : il dit « encaisser
+   vers frapper », et ne veut rien dire sur un curseur de points.
+
+   Le selecteur porte le type EN PLUS de la classe, sinon il perd :
+   `input[type="range"]::-webkit-slider-runnable-track` pese (0,1,2), quand
+   `.curseur::-webkit-slider-runnable-track` ne pese que (0,1,1). */
+input[type="range"].curseur::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 999px;
+  background-image: none; background-color: var(--surface-3);
+}
+input[type="range"].curseur::-webkit-slider-thumb {
+  appearance: none; width: 13px; height: 13px; margin-top: -5px; border-radius: 50%;
+  background: var(--iris); border: 2px solid var(--surface); cursor: pointer;
+}
+input[type="range"].curseur::-moz-range-track {
+  height: 3px; border-radius: 999px;
+  background-image: none; background-color: var(--surface-3);
+}
+input[type="range"].curseur::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--iris); border: 2px solid var(--surface); cursor: pointer;
+}
+
+/* Le parchemin porte sa marque en plus de sa couleur : un jeton ambre et un
+   jeton gris ne se separent pas pour tout le monde. */
+.parcho { display: grid; place-items: center; margin: 0; cursor: pointer; position: relative; }
+.parcho input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.parcho span {
+  display: grid; place-items: center; width: 100%; height: 22px; padding: 0 4px;
+  border-radius: 5px; white-space: nowrap; font: 620 9px var(--ui);
+  background: var(--surface-2); border: 1px solid var(--filet); color: var(--texte-3);
+}
+.parcho.pris span { color: var(--ambre); border-color: var(--ambre); background: var(--iris-fond); }
+.parcho input:focus-visible + span { outline: 2px solid var(--iris); outline-offset: 2px; }
+
+/* Le bouton qui ouvre les points vit dans l'intitule de la famille qu'ils
+   commandent : c'est la qu'on se demande pourquoi une valeur est si basse. */
+.famille { display: flex; align-items: baseline; gap: 10px; }
+.famille .btn { margin-left: auto; }
+
+/* ==================================== Le curseur « les deux » et sa courbe ===
+
+   Ils se touchent parce qu'ils sont deux vues du meme reglage. */
+
+#melange { margin-top: 10px; }
+/* La piste va dans le sens du trace : l'iris des degats a gauche, le jade de
+   l'encaisse a droite, comme les deux bouts de la courbe. La regle porte le
+   selecteur d'element ET la classe, sans quoi la piste generale du socle,
+   plus specifique qu'une simple classe, gagnerait. */
+.melange-curseur { margin-top: 10px; }
+input[type="range"].melange-curseur::-webkit-slider-runnable-track {
+  background: linear-gradient(90deg, var(--iris), var(--surface-3) 50%, var(--jade));
+}
+.melange-bornes {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; color: var(--texte-3);
+  margin-top: 3px;
+}
+/* Le pourcentage explique la place du marqueur : il se lit avant le mot. */
+.melange-bornes b {
+  font: 600 11px/1 var(--mono); color: var(--texte-2);
+  font-variant-numeric: tabular-nums;
+}
+.melange-courbe { width: 100%; height: 120px; display: block; margin-top: 8px; cursor: pointer; }
+
+/* Les jetons de v1, rendus a ses modules.
+
+   Certains d'entre eux ne passent pas par la cascade : la courbe LIT les
+   variables depuis un canvas, et `renderConditions` ecrit ses couleurs en
+   style inline. Aucune regle de v2 ne peut les rattraper. Les nommer ici les
+   fait pointer sur les jetons de v2, au lieu de tomber sur des couleurs de
+   secours ou sur rien du tout. */
+:root {
+  --faible: var(--texte-3);
+  --titre: var(--texte);
+  --graphe-grille: var(--filet);
+  /* Le fond de l'etiquette du dernier point et le trait du zero. Sans eux, le
+     graphe tombait sur ses couleurs de secours — un pave presque noir, qui
+     se voit surtout sur un habillage clair. */
+  --graphe-etiquette: color-mix(in srgb, var(--surface) 88%, transparent);
+  --graphe-zero: var(--texte-3);
+  --accent: var(--iris);
+  --accent-doux: var(--iris-sourd);
+  --cyan: var(--jade);
+  --positif: var(--jade);
+  --alerte: var(--rose);
+  --alerte-bord: var(--rose);
+  --champ: var(--surface-2);
+  --carte: var(--surface);
+  --carte-haute: var(--surface-2);
+  --bord: var(--filet);
+  --bord-clair: var(--filet-clair);
+  --chiffre: var(--mono);
+  --display: var(--ui);
+}
+
+/* ======================================= Les options qui definissent un nombre ===
+
+   Elles se lisent sous le nombre qu'elles definissent. Une option numerique
+   n'est pas une case a cocher : elle porte un champ, et son libelle passe
+   devant. */
+
+.options-mesure .option.nombre, .options-mesure .option.liste {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.options-mesure .option.nombre input, .options-mesure .option.liste select {
+  width: 72px; height: 22px; padding: 0 5px; font-size: 11px;
+}
+.options-mesure .option.nombre input { text-align: right; font-family: var(--mono); }
+
+/* ==================================== La feuille des reglages de calcul ===
+
+   Seize options qu'on dit une fois, pour dire comment on joue. */
+
+.feuille .options { display: grid; gap: 16px; }
+.groupe-options { display: grid; gap: 7px; }
+.titre-groupe {
+  margin: 0; font-size: 10px; font-weight: 640; letter-spacing: .8px;
+  text-transform: uppercase; color: var(--texte-3);
+}
+.options-groupe { display: grid; gap: 6px; }
+.feuille .option.nombre, .feuille .option.liste {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.feuille .option.nombre input, .feuille .option.liste select {
+  width: 96px; height: 24px; padding: 0 6px; font-size: 11.5px;
+}
+.feuille .option.nombre input { text-align: right; font-family: var(--mono); }
+/* Une option inerte le dit : « PA a enlever » ne veut rien dire tant que le
+   combo n'est pas actif, et un champ grise se lit plus vite qu'une aide. */
+.option.off { opacity: .45; }
+
+/* ================================== Jeux enregistres, profil, repli ===
+
+   Trois conforts de v1 qui rejoignent v2. */
+
+/* Un jeu de sorts ou de minimums : la liste prend la place, les trois
+   commandes sont serrees a droite. */
+.rangee-jeux { display: flex; gap: 5px; align-items: center; margin-top: 10px; }
+.rangee-jeux select { flex: 1; min-width: 0; height: 24px; font-size: 11px; }
+.rangee-jeux .btn.mini { flex: none; }
+
+.menu-profil { position: relative; }
+.bascule-profil {
+  height: 26px; padding: 0 11px 0 24px; cursor: pointer; position: relative;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte-2); font: 12px/1 var(--ui);
+}
+.bascule-profil:hover { color: var(--texte); border-color: var(--filet-clair); }
+/* Un disque : la marque convenue d'un compte, ici d'un profil local. */
+.bascule-profil::before {
+  content: ''; position: absolute; left: 9px; top: 50%;
+  width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+.bascule-profil.alerte { color: var(--rose); border-color: var(--rose); }
+
+.panneau-profil {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 40;
+  width: 320px; max-width: calc(100vw - 24px);
+  display: grid; gap: 9px; padding: 13px;
+  background: var(--surface); border: 1px solid var(--filet-clair); border-radius: var(--r-lg);
+  box-shadow: 0 14px 36px var(--ombre);
+}
+/* « display: grid » l'emporterait sur le « display: none » de [hidden]. */
+.panneau-profil[hidden] { display: none; }
+.profil-titre {
+  font-size: 10px; font-weight: 640; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--texte-3);
+}
+.profil-place {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 11.5px; color: var(--texte-3);
+}
+.profil-place strong {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-weight: 500; color: var(--texte);
+}
+.profil-place strong.alerte { color: var(--rose); }
+.profil-note { margin: 0; font-size: 10.5px; line-height: 1.5; color: var(--texte-3); }
+.profil-alerte, .profil-succes {
+  padding: 7px 9px; border-radius: var(--r); font-size: 10.5px; line-height: 1.5;
+  border: 1px solid var(--filet);
+}
+.profil-alerte { color: var(--rose); border-color: var(--rose); }
+.profil-succes { color: var(--texte-2); }
+.profil-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.profil-actions button {
+  height: 26px; padding: 0 10px; cursor: pointer; border-radius: var(--r);
+  background: var(--surface-2); border: 1px solid var(--filet);
+  color: var(--texte); font: 11px/1 var(--ui);
+}
+.profil-actions button:hover { border-color: var(--filet-clair); }
+.profil-actions .primaire { background: var(--iris); border-color: var(--iris); color: var(--sur-iris); }
+.profil-actions .danger { grid-column: 1 / -1; color: var(--rose); }
+.profil-actions .danger:hover { border-color: var(--rose); }
+
+/* Le bac d'essai se voit : sans cela il ne protege de rien. */
+.marque.bac-essai { color: var(--ambre); }
+
+/* ---- Repli d'une section ---- */
+
+/* Le titre devient la commande ; un chevron dit dans quel sens il agit. */
+.chapeau.pliable { cursor: pointer; user-select: none; }
+.chapeau.pliable::after {
+  content: ''; flex: none; order: 10;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--texte-3);
+  border-bottom: 1.5px solid var(--texte-3);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.chapeau.pliable:hover { color: var(--texte-2); }
+.chapeau.pliable:hover::after { border-color: var(--iris); }
+.chapeau.pliable:focus-visible { outline: 2px solid var(--iris); outline-offset: 3px; }
+.chapeau.pliable[aria-expanded="false"]::after { transform: rotate(-45deg) translate(-1px, 1px); }
+
+/* Repliee, la section garde son titre et son compteur : seule la matiere
+   part. Au centre, le titre vit dans une tete : elle reste avec lui. */
+.section.replie > *:not(.chapeau):not(.tete-resultats):not(.regle) { display: none; }
+.section.replie .tete-resultats ~ * { display: none; }
+.section.nue { padding: 0; border-bottom: 0; }
+.section.vise { outline: 2px solid var(--iris); outline-offset: 6px; border-radius: var(--r); }
+
+/* Le filtre par element du choix des sorts.
+
+   Chaque pastille porte la teinte de son element, posee en variable par le
+   module : la couleur vient du jeu, pas de la feuille. */
+.chip-element {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--filet);
+  color: var(--texte-3); font: 11px/1.4 var(--ui);
+}
+.chip-element:hover { color: var(--texte-2); border-color: var(--filet-clair); }
+.chip-element img { width: 14px; height: 14px; object-fit: contain; }
+/* Un element retenu porte sa teinte sur le texte ET le cadre : la seule
+   couleur de fond ne suffirait pas a le distinguer. */
+.chip-element.actif {
+  border-color: var(--teinte); color: var(--teinte);
+  background: color-mix(in srgb, var(--teinte) 14%, transparent);
+}
+.picker-elements .espace { flex: 1; }
+.picker-filtres .mini.large {
+  width: auto; height: 24px; padding: 0 11px; white-space: nowrap; cursor: pointer;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte-2); font: 11px/1 var(--ui);
+}
+.picker-filtres .mini.large:hover { color: var(--texte); border-color: var(--filet-clair); }
+.picker-filtres .option { white-space: nowrap; }

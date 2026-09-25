@@ -1,0 +1,382 @@
+/* Coquille v2, suite de coquille.css. Les blocs : minimums, combo et arme, verdict, choix de l'habillage.
+   Les feuilles se chargent dans l'ordre de index.html : cet ordre EST la
+   cascade, et le changer change l'ecran. */
+
+/* ================================== La feuille des minimums ===
+
+   Quatre champs par ligne ne tiennent pas dans un volet de trois cents
+   pixels. Ils tiennent ici. */
+
+/* Les colonnes chiffrees sont fixes, le nom prend le reste : sans cela les
+   champs a « width: 100% » poussent la table hors de la feuille, et les trois
+   dernieres colonnes se coupent. */
+table.conditions { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.conditions col.col-nom { width: auto; }
+table.conditions col.col-chiffre { width: 74px; }
+table.conditions col.col-courte { width: 40px; }
+table.conditions col.col-atteint { width: 92px; }
+table.conditions th {
+  padding: 0 4px 7px; text-align: right;
+  font-size: 9.5px; font-weight: 640; letter-spacing: .6px; text-transform: uppercase;
+  color: var(--texte-3);
+}
+table.conditions th:first-child { text-align: left; }
+table.conditions td { padding: 3px 4px; vertical-align: middle; }
+table.conditions input[type="number"] {
+  width: 100%; min-width: 0; height: 24px; padding: 0 5px; text-align: right;
+  font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 11.5px;
+}
+table.conditions .nom-stat {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--texte-2); white-space: nowrap; padding-right: 8px;
+}
+table.conditions .nom-stat img { width: 15px; height: 15px; object-fit: contain; }
+table.conditions tr.tenue .nom-stat { color: var(--jade); }
+table.conditions tr.manquee .nom-stat { color: var(--texte); }
+/* La barre montre d'un coup d'oeil la part de l'objectif deja atteinte : un
+   minimum a moitie tenu se voit sans lire le chiffre. */
+table.conditions .barre-ecart {
+  height: 2px; margin-top: 3px; border-radius: 999px; overflow: hidden;
+  background: var(--filet);
+}
+table.conditions .barre-ecart > span { display: block; height: 100%; background: var(--jade); }
+table.conditions .barre-ecart.manque > span { background: var(--rose); }
+/* « .etat » nomme le point d'un minimum dans le socle, et la colonne
+   « Atteint » ici : la cellule reprend donc tout ce que le point lui impose,
+   sans quoi elle se dessine en pastille grise de six pixels. */
+table.conditions td.etat {
+  width: auto; height: auto; flex: initial;
+  background: none; border-radius: 0; box-shadow: none;
+  text-align: right; white-space: nowrap;
+  font: 11px/1 var(--mono); font-variant-numeric: tabular-nums;
+}
+table.conditions .etat .nul { color: var(--texte-3); }
+table.conditions .mini {
+  padding: 3px 7px; cursor: pointer; border-radius: var(--r);
+  background: none; border: 1px solid transparent;
+  color: var(--texte-3); font: 12px/1 var(--ui);
+}
+table.conditions .mini:hover { color: var(--texte); border-color: var(--filet); }
+/* « Abs » enfonce porte l'ambre : un maximum infranchissable n'est pas un
+   reglage comme un autre, il peut rendre la recherche impossible. */
+table.conditions .mini[aria-pressed="true"] { color: var(--ambre); border-color: var(--ambre); }
+
+.rangee-ajout { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 14px; }
+.rangee-ajout select { flex: 1; min-width: 0; height: 28px; }
+
+/* Les deux gestes de la liste d'essais gardaient l'habillage de v1 :
+   « Garder cette simulation » sortait en bouton du systeme, bleu et carre, et
+   « Comparer » en bouton nu. Ils ne portent pas les classes de v2 —
+   `simulations-panel.mjs` sert aussi v1 — donc c'est ici qu'ils prennent la
+   forme des autres boutons : le premier en plein, le second en creux. */
+.rangee-ajout > button {
+  appearance: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 12px;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte); font: 540 12px/1 var(--ui);
+}
+.rangee-ajout > button:hover { background: var(--surface-3); border-color: var(--filet-clair); }
+.rangee-ajout > button.primaire {
+  background: var(--iris); border-color: var(--iris); color: var(--sur-iris);
+}
+.rangee-ajout > button.primaire:hover { background: var(--iris-vif); border-color: var(--iris-vif); }
+/* « Comparer » attend deux essais coches : tant qu'il n'en a pas, il le dit
+   par sa forme, pas seulement par son infobulle. */
+.rangee-ajout > button:disabled {
+  background: var(--surface); border-color: var(--filet);
+  color: var(--texte-3); cursor: default;
+}
+.rangee-ajout > button:disabled:hover { background: var(--surface); border-color: var(--filet); }
+
+/* ================= Le combo et l'arme : d'ou viennent les degats ===
+
+   Les deux cartes repondent a la meme question — « ce 3 948, il sort d'ou ? »
+   — et se lisent donc cote a cote, dans la meme langue :
+
+     un BANDEAU qui nomme et dit ce que ca coute en PA,
+     un REGISTRE ou chaque ligne porte son chiffre dans la meme colonne,
+     une BARRE de total, qui est le chiffre qu'on etait venu chercher.
+
+   Elles ne sont pas un verdict : elles l'expliquent. Dans la colonne des
+   mesures elles ecrasaient le nombre de quarante pixels qu'elles eclairent ;
+   sous lui, bornees en largeur, elles redeviennent un detail qu'on consulte.
+
+   Rien n'y flotte au milieu : chaque bande touche les bords de la carte, et
+   les chiffres s'alignent a droite en chasse fixe. C'est ce qui permet de
+   comparer deux lignes d'un coup d'oeil sans les lire. */
+
+.detail-degats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  align-items: start; gap: 12px; margin-top: 16px;
+}
+.detail-degats:empty, .detail-degats > div:empty { display: none; }
+
+.carte-combo, .sort.arme {
+  border-radius: var(--r); overflow: hidden;
+  background: var(--surface-2); border: 1px solid var(--filet);
+}
+
+/* --- Le bandeau ------------------------------------------------------- */
+
+.carte-combo .tete-combo, .sort.arme .sort-tete {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px 6px;
+  background: var(--surface-3); border-bottom: 1px solid var(--filet);
+  box-shadow: inset 2px 0 0 var(--iris);
+}
+.sort.arme .sort-tete { box-shadow: inset 2px 0 0 var(--ambre); }
+.carte-combo .titre, .nom-arme {
+  flex: 1; min-width: 0; font-size: 12px; font-weight: 620; color: var(--texte);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Le cout en PA se lit a droite, a la meme place dans les deux cartes. */
+.carte-combo .tete-combo .pa, .meta-arme {
+  flex: none; font: 10px/1.4 var(--mono); font-variant-numeric: tabular-nums;
+  color: var(--texte-3);
+}
+.sort.arme .icone-sort { width: 20px; height: 20px; object-fit: contain; flex: none; }
+
+/* --- Le registre ------------------------------------------------------ */
+
+/* Trois colonnes fixes : ce qui est lance, ce que ca coute, ce que ca rend.
+   Le nom se tronque, jamais les chiffres. */
+.ligne-combo {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto;
+  align-items: center; gap: 8px;
+  padding: 3px 10px; font-size: 11px;
+}
+.ligne-combo:nth-of-type(odd) { background: color-mix(in srgb, var(--surface-3) 45%, transparent); }
+.ligne-combo img { width: 16px; height: 16px; border-radius: 3px; object-fit: contain; }
+.ligne-combo .nom {
+  min-width: 0; color: var(--texte-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ligne-combo .pa { font: 10px/1 var(--mono); color: var(--ambre); text-align: right; }
+.ligne-combo .deg {
+  font: 11px/1 var(--mono); font-variant-numeric: tabular-nums;
+  color: var(--jade); text-align: right; min-width: 44px;
+}
+
+/* Les elements couverts : une bande a part, sous le registre. */
+.elements-combo {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-top: 1px solid var(--filet);
+}
+.elements-combo img { width: 15px; height: 15px; object-fit: contain; }
+.elements-combo.manque img { opacity: .5; }
+.note-elements { font-size: 10px; color: var(--texte-3); }
+.elements-combo.manque .note-elements { color: var(--ambre); }
+
+/* --- L'arme : sa base, puis ce qu'elle donne une fois les stats comptees --- */
+
+/* Les deux rangees de pastilles ne disent pas la meme chose. Celle du haut
+   est la fiche de l'arme, telle que le jeu l'ecrit ; celle du bas est ce que
+   VOS caracteristiques en font. Identiques, elles se confondaient. */
+.sort.arme > .lignes-arme {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 6px 10px 0; opacity: .62;
+}
+.sort-detail { display: grid; gap: 0; }
+.sort-plages {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px;
+  align-items: baseline; padding: 7px 10px;
+}
+.sort-plages .cle { font-size: 10px; color: var(--texte-3); white-space: nowrap; }
+.sort-plages .val {
+  font: 12px/1.4 var(--mono); font-variant-numeric: tabular-nums;
+  color: var(--texte); text-align: right;
+}
+/* Le critique se distingue du coup normal : l'ambre le dit sans un mot. */
+.sort-plages .cle.crit, .sort-plages .val.crit { color: var(--ambre); }
+.sort-detail .lignes-arme {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  padding: 0 10px 7px;
+}
+
+/* Chaque pastille porte la teinte de son element, posee par le module. */
+.ligne-arme {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 7px; border-radius: 999px;
+  font: 10px/1.5 var(--mono); font-variant-numeric: tabular-nums;
+  border: 1px solid var(--teinte, var(--filet)); color: var(--teinte, var(--texte-2));
+  background: color-mix(in srgb, var(--teinte, var(--filet)) 12%, transparent);
+}
+.ligne-arme img { width: 12px; height: 12px; object-fit: contain; }
+
+/* --- La barre de total ------------------------------------------------- */
+
+.total-combo, .sort-moyennes {
+  display: flex; align-items: baseline; justify-content: space-between;
+  flex-wrap: wrap; gap: 4px 12px;
+  padding: 6px 10px; border-top: 1px solid var(--filet);
+  background: color-mix(in srgb, var(--jade) 7%, var(--surface-3));
+  font-size: 10px; color: var(--texte-3);
+}
+.total-combo .deg, .sort-moyennes b {
+  font: 620 13px/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--jade);
+}
+
+/* Les boutons du combo ferment la carte : ils touchent le bas, pas le total. */
+.actions-combo {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 7px 10px; border-top: 1px solid var(--filet);
+}
+.carte-combo .mini, .sort .mini {
+  height: 22px; padding: 0 8px; cursor: pointer; border-radius: var(--r);
+  background: var(--surface-3); border: 1px solid var(--filet);
+  color: var(--texte-2); font: 11px/1 var(--ui);
+}
+.carte-combo .note { padding: 6px 10px; font-size: 11px; color: var(--texte-3); }
+.fiche-arme.calc { padding-top: 7px; border-top: 1px solid var(--filet); }
+
+/* Les reglages du moteur : combien de fils, a quelle intensite. */
+.reglage-moteur {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--texte-3);
+}
+.reglage-moteur input { width: 44px; height: 24px; padding: 0 5px; text-align: right; }
+.reglage-moteur select { height: 24px; font-size: 11px; }
+
+/* Le bandeau de comparaison suit la page : les stuffs coches viennent des
+   trois listes, il n'appartient donc a aucune. Il se colle en bas pour
+   rester atteignable pendant qu'on fait defiler. */
+.bandeau-comparer { position: sticky; bottom: 12px; z-index: 20; display: flex; justify-content: center; }
+.bandeau-comparer .btn { box-shadow: 0 8px 24px var(--ombre); }
+.bandeau-comparer .btn[hidden] { display: none; }
+
+/* La case a cocher d'un palier, comme celle d'un stuff trouve. */
+.palier-cocher { display: inline-flex; align-items: center; cursor: pointer; }
+.palier-cocher input { margin: 0; cursor: pointer; accent-color: var(--iris); }
+.palier { grid-template-columns: auto 58px minmax(0, 1fr) auto; }
+
+/* Les reglages du moteur vivent a cote de ce qu'ils commandent : la courbe
+   et l'etat des fils. La barre haute garde les gestes, pas les rouages. */
+.rangee-moteur {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 8px;
+}
+.rangee-moteur .fils { margin: 0; }
+.rangee-moteur .btn.mini { flex: none; }
+.marque { white-space: nowrap; }
+
+/* ==================================== Le verdict encadre le personnage ===
+
+   Il s'empilait sous le plateau, alors que la place a gauche et a droite
+   restait vide : la page demandait de defiler avant de montrer un seul
+   resultat. Les trois mesures flanquent maintenant le personnage. */
+
+.verdict {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 20px; align-items: start; margin: 12px 0 0;
+}
+.verdict > div { padding: 0; border: 0; }
+.verdict-cote { display: grid; gap: 18px; align-content: start; }
+.mesure-cle { min-width: 0; }
+.verdict dt {
+  margin-bottom: 3px;
+  font-size: 9.5px; font-weight: 640; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--texte-3);
+}
+/* Le chiffre reste le plus gros de l'ecran, mais il tenait sur trente
+   pixels de haut pour rien : vingt-quatre se lisent aussi bien. */
+.verdict dd {
+  margin: 0; font: 600 24px/1.05 var(--mono);
+  font-variant-numeric: tabular-nums; letter-spacing: -.8px;
+}
+.verdict small { display: block; margin-top: 5px; font-size: 10.5px; line-height: 1.4; color: var(--texte-3); }
+.verdict .options-mesure { margin-top: 7px; gap: 4px; }
+.verdict .options-mesure .option { font-size: 10.5px; }
+.verdict .options-mesure .option.nombre input { width: 60px; height: 20px; font-size: 10.5px; }
+
+/* Le plateau garde sa taille ; c'est lui qui fixe la largeur des deux cotes.
+
+   `justify-items` n'est pas un detail ici. La rangee des artefacts traverse
+   les trois colonnes et elle est la plus large : six vignettes contre une
+   colonne, un personnage, une colonne. Les colonnes se partagent donc le
+   surplus, et chaque enfant, qui a une largeur fixe, se collait a gauche de
+   sa piste. Le personnage se retrouvait treize pixels a gauche du milieu, et
+   les deux colonnes de pieces a des distances differentes des bords : un
+   decalage qui se voit sans s'expliquer. Centre dans sa piste, chacun
+   retombe sur l'axe. */
+.plateau { gap: 8px; justify-items: center; }
+.avatar-v2 { width: 168px; height: 226px; }
+
+/* Le verdict encadre le personnage tant que la SCENE est large. Pas la
+   fenetre : la scene. Les deux ne vont plus ensemble depuis que les volets se
+   replient — une fenetre de mille pixels donne une scene de quatre cents si
+   les deux volets sont ouverts, et de mille s'ils sont replies.
+
+   Une requete de conteneur mesure ce qui compte vraiment. Une requete de
+   media, ici, se trompait dans les deux sens : elle empilait un verdict qui
+   avait toute la place, et en laissait un autre etrangle. */
+@container scene (max-width: 860px) {
+  .verdict { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .verdict-cote { grid-auto-flow: column; grid-auto-columns: 1fr; gap: 16px; }
+  .plateau { order: -1; }
+}
+
+/* Sous cette largeur, les deux mesures d'un cote ne tiennent plus cote a
+   cote non plus : elles s'empilent. */
+@container scene (max-width: 560px) {
+  .verdict { gap: 12px; }
+  .verdict-cote { grid-auto-flow: row; }
+}
+
+/* Une icone devant chaque nom : un sort et une caracteristique se
+   reconnaissent a leur image avant de se lire. */
+.chip img, .limite-icone { width: 15px; height: 15px; object-fit: contain; flex: none; }
+
+/* La consequence suit le point survole, pas seulement le point retenu : le
+   trait dit que le chiffre montre n'est pas encore celui du reglage. */
+.consequence.survolee { outline: 1px dashed var(--filet-clair); outline-offset: 2px; }
+
+/* ==================================== Le choix de l'habillage ===
+
+   Un nom ne montre pas un habillage : chaque carte porte un echantillon de
+   ses trois couleurs porteuses — le fond, la surface, l'accent — dans
+   l'ordre ou l'ecran les emploie. Le survol pose l'habillage pour de vrai ;
+   c'est l'essai avant l'achat, et il ne coute rien. */
+
+.titre-reglage {
+  margin: 18px 0 8px; font-size: 11px; font-weight: 640;
+  letter-spacing: .8px; text-transform: uppercase; color: var(--texte-3);
+}
+.feuille-corps > .titre-reglage:first-child { margin-top: 0; }
+
+.themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+.carte-theme {
+  display: grid; gap: 7px; padding: 8px; cursor: pointer; text-align: left;
+  background: var(--surface-2); border: 1px solid var(--filet); border-radius: var(--r);
+  color: var(--texte-2); font: 12px/1 var(--ui);
+}
+.carte-theme:hover { border-color: var(--filet-clair); color: var(--texte); }
+.carte-theme.actif { border-color: var(--iris); color: var(--texte); }
+
+/* Trois bandes, pas trois pastilles : un habillage se juge a la surface que
+   chaque couleur occupe, pas a sa teinte prise a part. */
+.apercu-theme {
+  display: block; height: 30px; border-radius: 4px; border: 1px solid var(--filet);
+  background: linear-gradient(90deg,
+    var(--a) 0 58%, var(--b) 58% 86%, var(--c) 86% 100%);
+}
+.nom-theme { font-weight: 560; }
+
+/* ---------------------------------------------------------- Partage ---
+   Le lien se montre en toutes lettres a cote du bouton qui le copie. Un
+   bouton seul demande de croire sur parole, et le presse-papier est refuse
+   des que la page n'est pas servie en HTTPS : le champ reste alors le seul
+   chemin. Il passe sous le bouton des que la ligne devient etroite. */
+
+.ligne-lien { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ligne-lien .btn { flex: none; }
+
+.champ-lien {
+  flex: 1 1 260px; min-width: 0;
+  padding: 7px 9px;
+  background: var(--surface-3); border: 1px solid var(--filet);
+  border-radius: var(--r); color: var(--texte-2);
+  font: 11px/1.4 var(--mono, ui-monospace, monospace);
+  /* Le lien est long par nature : il se lit d'un bout, pas en entier. */
+  text-overflow: ellipsis;
+}
+.champ-lien:focus { outline: 2px solid var(--iris); outline-offset: 1px; }

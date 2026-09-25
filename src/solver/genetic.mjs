@@ -5,15 +5,13 @@
  * conserve les meilleurs individus, croise les parents selectionnes par tournoi
  * et applique des mutations sur les emplacements.
  */
-import { aggregate, computeBuild } from '../engine/build.mjs';
-import { weaponAttack } from '../engine/damage.mjs';
-import { maxViolations, scoreBuild, SEARCH_MODES } from './score.mjs';
+import { aggregate } from '../engine/build.mjs';
+import { SEARCH_MODES } from './score.mjs';
 import { optimiserAllocation } from './allocation.mjs';
-import { EMPTY, buildPools, decode, genomeFromItems, planLocks, randomGenome, repair } from './genome.mjs';
+import { buildPools, decode, genomeFromItems, planLocks, randomGenome, repair } from './genome.mjs';
 import { buildRankings, improve, indexerPanoplies } from './local-search.mjs';
-import { createIncrementalBuild } from './incremental.mjs';
 import { creerArchive } from './candidates.mjs';
-import { creerCompteur, creerPaliers, normaliserProximite } from './proximite.mjs';
+import { creerPaliers } from './proximite.mjs';
 import {
   axeDe, creerPaliersSurvie, estTenable, lireAxe, noteSousPlafond, sansConditionsDAxe,
   STAT_ENDURANCE, trancheDe,
@@ -21,29 +19,14 @@ import {
 } from './survie.mjs';
 import { SCROLLABLE as SCROLLABLE_KEYS } from '../engine/characteristics.mjs';
 import { forgerAuto, fusionnerExos } from '../engine/forge-auto.mjs';
+import { createEvaluator } from './evaluateur.mjs';
+import {
+  applyLocksSurGraine, crossover, mutate, secouer, tournament,
+} from './operateurs.mjs';
 
-/**
- * Penalite appliquee par item dont les conditions d'equipement ne sont pas
- * remplies. Elle reste finie pour garder un gradient : un build qui porte un
- * seul item interdit doit pouvoir evoluer vers un build valide.
- */
-export const INVALID_ITEM_PENALTY = 1e6;
-
-/**
- * Penalite appliquee par maximum absolu franchi. Elle reste finie pour la
- * meme raison que la penalite d'item interdit : le solveur doit garder un
- * chemin d'amelioration.
- */
-export const MAX_VIOLATION_PENALTY = 1e6;
-
-/**
- * Penalite par piece a changer au-dela de la limite demandee.
- *
- * Elle reste finie, et plus faible que les autres : un build qui change une
- * piece de trop doit pouvoir evoluer vers un build conforme, et un build
- * conforme mais irrealisable reste pire qu'un build simplement trop cher.
- */
-export const CHANGEMENT_PENALTY = 1e5;
+export {
+  CHANGEMENT_PENALTY, createEvaluator, INVALID_ITEM_PENALTY, MAX_VIOLATION_PENALTY,
+} from './evaluateur.mjs';
 
 /** Tranches de vie sous le gagnant visitees par une descente dediee. */
 const TRANCHES_VISITEES = 4;
@@ -109,272 +92,6 @@ export function createRandom(seed) {
   };
 }
 
-/**
- * Nombre maximal de resultats gardes par le cache d'evaluation.
- * L'eviction retire l'entree la plus ancienne (ordre d'insertion du Map).
- */
-const CACHE_EVALUATIONS = 4096;
-
-/** Options de score de la boucle chaude : pas de detail par condition. */
-const SANS_DETAILS = Object.freeze({ details: false });
-
-/** Options de score des resultats rendus : detail complet. */
-const AVEC_DETAILS = Object.freeze({ details: true });
-
-/**
- * Prepare la fonction d'evaluation d'un genome.
- *
- * L'evaluation passe par un cache par genome : les elites et les doublons
- * reviennent souvent d'une generation a l'autre. Le cache DOIT etre vide par
- * `evaluate.invalidate()` quand la repartition des points change, sans quoi
- * il rendrait des scores perimes.
- *
- * `evaluate.incremental()` cree un evaluateur par delta pour la recherche
- * locale : `noter(genome)` rend le meme resultat que `evaluate(genome)`,
- * `rebaser(genome)` fige la base des deltas.
- *
- * @param {object} context
- * @returns {(genome: number[]) => {score: number, stats: any, detail: any}}
- */
-export function createEvaluator({
-  pools, setById, level, porteur, scrolls, passives, profile, objective, exos = null,
-}) {
-  // Le budget d'exos libres voyage dans l'objectif, comme la menace : il dit
-  // ce que la recherche a le droit de faire, pas ce que le personnage porte.
-  const exosLibres = objective?.exosLibres ?? null;
-  // L'attaque d'une arme se construit une seule fois par arme rencontree.
-  const attaques = new Map();
-
-  // Proximite avec le stuff porte en jeu : le compteur se prepare une fois,
-  // la boucle chaude ne fait plus que compter.
-  const proximite = normaliserProximite(objective.proximite);
-  const compterChangements = proximite ? creerCompteur(proximite) : null;
-  const spellsAvecArme = (items) => {
-    const spells = objective.spells ?? [];
-    if (!objective.useWeapon) return spells;
-    const arme = items.find((item) => item.slot === 'arme');
-    if (!arme) return spells;
-    if (!attaques.has(arme.id)) {
-      attaques.set(arme.id, weaponAttack(arme, { maitrise: objective.maitriseArme !== false }));
-    }
-    const attaque = attaques.get(arme.id);
-    return attaque ? [...spells, attaque] : spells;
-  };
-
-  // Note un build deja agrege : score des sorts et penalites.
-  // « details » reste faux : la boucle ne lit que le score, et le detail par
-  // condition coutait un objet par condition et par evaluation.
-  const noterBuild = (items, stats, invalid, options = SANS_DETAILS) => {
-    const spells = spellsAvecArme(items);
-    // Sans arme comptee, l'objectif passe tel quel : une copie par evaluation
-    // pour rien pesait sur le ramasse-miettes.
-    const cible = spells === objective.spells ? objective : { ...objective, spells };
-    const detail = scoreBuild(stats, cible, options);
-    const violations = maxViolations(objective.conditions, stats, detail.damage);
-
-    // Pieces a acheter pour porter ce build. Le compte sert deux fois : il
-    // penalise ce qui depasse la limite, et il range le build dans son palier.
-    const changements = compterChangements
-      ? compterChangements(idsDe(items))
-      : 0;
-    const enTrop = proximite ? Math.max(0, changements - proximite.max) : 0;
-
-    // Un item interdit ou un maximum franchi rend le build irrealisable en jeu.
-    const score = detail.score
-      - invalid.length * INVALID_ITEM_PENALTY
-      - violations.length * MAX_VIOLATION_PENALTY
-      - enTrop * CHANGEMENT_PENALTY;
-
-    return { score, stats, detail, items, invalid, violations, changements };
-  };
-
-  const cache = new Map();
-
-  const evaluate = function evaluate(genome) {
-    const cle = genome.join(',');
-    const connu = cache.get(cle);
-    if (connu) return connu;
-
-    const items = decode(genome, pools);
-    const { stats, invalid } = computeBuild(
-      { items, level, allocation: porteur.allocation, scrolls, passives, profile,
-        menace: objective?.menace, exos, exosLibres }, setById,
-    );
-    const resultat = noterBuild(items, stats, invalid);
-
-    if (cache.size >= CACHE_EVALUATIONS) cache.delete(cache.keys().next().value);
-    cache.set(cle, resultat);
-    return resultat;
-  };
-
-  // Les resultats rendus a l'appelant portent le detail par condition, que la
-  // boucle ne calcule pas. Le cache garde la version allegee : ce chemin la
-  // contourne, il ne sert qu'une poignee de fois par recherche.
-  evaluate.complet = (genome, allocation = porteur.allocation) => {
-    const items = decode(genome, pools);
-    const { stats, invalid, exos: places } = computeBuild(
-      { items, level, allocation, scrolls, passives, profile, menace: objective?.menace,
-        exos, exosLibres }, setById,
-    );
-    // Les exos que le solveur a poses lui-meme se rendent avec le build : le
-    // joueur doit lire « avec un exo PA sur la ceinture », pas le deviner.
-    return { ...noterBuild(items, stats, invalid, AVEC_DETAILS), exos: places };
-  };
-
-  evaluate.invalidate = () => { cache.clear(); };
-  evaluate.incremental = () => {
-    const delta = createIncrementalBuild({
-      pools, setById, level, porteur, scrolls, passives, profile, menace: objective?.menace,
-      exos, exosLibres,
-    });
-    return {
-      noter: (genome) => {
-        const { stats, items, invalid } = delta.calculer(genome);
-        return noterBuild(items, stats, invalid);
-      },
-      rebaser: (genome) => delta.rebaser(genome),
-    };
-  };
-  evaluate.spellsAvecArme = spellsAvecArme;
-  evaluate.proximite = proximite;
-  return evaluate;
-}
-
-/**
- * Identifiants des pieces d'un build, cases vides ecartees.
- * @param {any[]} items
- * @returns {number[]}
- */
-function idsDe(items) {
-  const ids = [];
-  for (const item of items) if (item) ids.push(item.id);
-  return ids;
-}
-
-/**
- * Reapplique les verrous sur une graine issue du build courant.
- * @param {number[]} graine Modifiee en place.
- */
-function applyLocksSurGraine(graine, locks, layout, pools) {
-  if (!locks || locks.size === 0) return;
-  repair(graine, layout, pools, locks);
-}
-
-/**
- * Selectionne un parent par tournoi.
- * @param {{genome: number[], score: number}[]} population
- * @param {number} size
- * @param {() => number} random
- */
-function tournament(population, size, random) {
-  let best = population[Math.floor(random() * population.length)];
-  for (let i = 1; i < size; i += 1) {
-    const challenger = population[Math.floor(random() * population.length)];
-    if (challenger.score > best.score) best = challenger;
-  }
-  return best;
-}
-
-/**
- * Croise deux genomes case par case.
- * @param {number[]} a
- * @param {number[]} b
- * @param {() => number} random
- * @returns {number[]}
- */
-function crossover(a, b, random) {
-  const child = new Array(a.length);
-  for (let i = 0; i < a.length; i += 1) {
-    child[i] = random() < 0.5 ? a[i] : b[i];
-  }
-  return child;
-}
-
-/**
- * Applique des mutations sur un genome.
- * @param {number[]} genome Modifie en place.
- * @param {any[][]} pools
- * @param {number} rate
- * @param {() => number} random
- */
-function mutate(genome, pools, rate, random, guidage = null) {
-  for (let i = 0; i < genome.length; i += 1) {
-    if (random() > rate) continue;
-
-    const pool = pools[i];
-    if (pool.length === 0) {
-      genome[i] = EMPTY;
-      continue;
-    }
-
-    // Une mutation vide parfois la case pour explorer les builds incomplets.
-    if (random() < 0.08) {
-      genome[i] = EMPTY;
-      continue;
-    }
-
-    // Une mutation orientee pioche dans la tete du classement : les pieces
-    // qui servent le mieux les conditions. Le reste du temps elle tire au
-    // hasard, ce qui preserve l'exploration.
-    const rangs = guidage?.rankings?.[i];
-    if (rangs && rangs.length > 0 && random() < guidage.rate) {
-      const tete = Math.min(guidage.size, rangs.length);
-      genome[i] = rangs[Math.floor(random() * tete)];
-      continue;
-    }
-
-    genome[i] = Math.floor(random() * pool.length);
-  }
-  return genome;
-}
-
-/**
- * Secoue un genome : deux a quatre cases changent d'un coup.
- *
- * Le tirage suit le meme guidage que les mutations orientees : la piece de
- * remplacement vient le plus souvent de la tete du classement.
- *
- * @param {number[]} genome Non modifie.
- * @returns {number[]} Une copie secouee.
- */
-function secouer(genome, pools, random, guidage, locks = null, force = 0) {
-  const copie = [...genome];
-  const nb = 2 + Math.floor(random() * 3) + force;
-
-  for (let coup = 0; coup < nb; coup += 1) {
-    const cellule = Math.floor(random() * copie.length);
-    if (locks?.has(cellule) || pools[cellule].length === 0) continue;
-
-    const rangs = guidage?.rankings?.[cellule];
-    if (rangs && rangs.length > 0 && random() < 0.7) {
-      const tete = Math.min(guidage.size, rangs.length);
-      copie[cellule] = rangs[Math.floor(random() * tete)];
-    } else {
-      copie[cellule] = Math.floor(random() * pools[cellule].length);
-    }
-  }
-
-  return copie;
-}
-
-/**
- * Lance la recherche du meilleur build.
- *
- * @param {object} input
- * @param {any[]} input.items Catalogue d'items.
- * @param {Map<number, any>} input.setById Panoplies indexees.
- * @param {number} input.level Niveau du personnage.
- * @param {object} input.objective Conditions, sorts et mode de recherche.
- * @param {Record<string, number>} [input.allocation]
- * @param {Record<string, boolean>} [input.scrolls]
- * @param {Map<number, Record<string, number>>} [input.passives] Passifs actifs.
- * @param {number[]} [input.lockedIds] Items imposes dans le build.
- * @param {Set<number>} [input.banned]
- * @param {Set<string>} [input.allowedSlots]
- * @param {Partial<typeof DEFAULT_OPTIONS>} [options]
- * @param {(progress: {generation: number, best: number}) => void} [onProgress]
- * @returns {{items: any[], stats: any, score: number, detail: any, generations: number}}
- */
 /**
  * Prepare tout ce qu'une recherche reutilise d'une vague a l'autre.
  *

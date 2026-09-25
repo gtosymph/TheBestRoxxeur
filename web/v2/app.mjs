@@ -9,98 +9,63 @@
  *
  * Ce qui lui appartient en propre : l'ecran vide, les trois volets, et l'ordre
  * dans lequel un debutant rencontre les concepts. Le reste est emprunte.
+ *
+ * Chaque section de l'ecran se dessine dans son module (`rendu-*.mjs`) ; ce
+ * fichier tient l'etat, l'annulation, la cadence du rendu et le demarrage.
  */
 import { loadCatalog } from '../catalog-web.mjs';
 import { loadSpells } from '../spells-data.mjs';
-import { avecLancers, lancersDe, limiteDe } from '../lancers.mjs';
-import { avatarDeClasse, nomDeClasse } from '../classes.mjs';
-import {
-  el, renderArme, renderCandidats, renderCases, renderCombo, renderOptions,
-  renderPanoplies,
-} from '../render.mjs';
+import { avatarDeClasse, emblemeDeClasse, nomDeClasse } from '../classes.mjs';
+import { el, renderArme, renderCases, renderCombo } from '../render.mjs';
 import { SLOTS_ARTEFACTS, SLOTS_DROITE, SLOTS_GAUCHE } from '../layout.mjs';
-import { etatInitial, optionsAffichees } from '../reglages.mjs';
+import { etatInitial, LIBELLES_OPTIONS } from '../reglages.mjs';
 import { etatRange, reprendreEtat, sauverEtat } from '../etat-stockage.mjs';
 import { adopter, reglageDuFragment, resume } from '../partage-lien.mjs';
-import {
-  attaqueArme, attaquesAffichees, buildCourant, cibleAffichee, cibleDe, exosDe, objectif,
-  passifsActifs, profilDe, scoreAffiche, sortsCalcules, valeurDeReference,
-} from '../objectif.mjs';
-import { appliquerBuild } from '../equipement.mjs';
+import { attaqueArme, buildCourant, cibleDe, scoreAffiche } from '../objectif.mjs';
+import { appliquerBuild, equiperDans, remplacementAuChoix } from '../equipement.mjs';
 import { enrichirSorts } from '../sorts-migration.mjs';
 import { creerRecherche } from '../recherche.mjs';
 import { fermerFiche, ouvrirFiche } from '../item-panel.mjs';
-import { iconeStat } from '../icons.mjs';
-import { cacherBulle, montrerBulleSort, suivreBulle } from '../hover-card.mjs';
-import {
-  damageValue, multiplicateurXp, normaliserBonusXp, SEARCH_MODES,
-} from '../../src/solver/score.mjs';
+import { normaliserBonusXp } from '../../src/solver/score.mjs';
 import { STAT_LABELS } from '../../src/data/stats.mjs';
-import { conditionValue } from '../../src/solver/condition-value.mjs';
-
+import { computeSpellDetail } from '../../src/engine/damage.mjs';
 import { creerGestesCatalogue } from '../gestes-catalogue.mjs';
 import { creerGestesSorts } from '../gestes-sorts.mjs';
-import { brancherSets } from '../branchements.mjs';
-import { enregistrerSet, lireSets } from '../presets.mjs';
-import { installerSimulations } from '../simulations-panel.mjs';
-import { ajouterSimulation, lireSimulations } from '../simulations.mjs';
-import { instantane, patchDepuisSimulation } from '../instantane.mjs';
-import { emblemeDeClasse } from '../classes.mjs';
-import { LIBELLES_OPTIONS } from '../reglages.mjs';
-import { computeSpellDetail } from '../../src/engine/damage.mjs';
 import { creerGestesReference } from '../gestes-reference.mjs';
+import { installerSimulations } from '../simulations-panel.mjs';
+import { basculerExoRare, mettreOver } from '../exos-piece.mjs';
+import { VERSION_LUE } from '../version.mjs';
 
 import { creerPont } from './pont.mjs';
 import { icone } from './icones.mjs';
 import { renderClasses } from './accueil.mjs';
-import { FAMILLE_CARACTERISTIQUES, lignesCompletes, lignesEssentielles } from './fiche.mjs';
 import { garderSignature, reglagesChanges, reprendreSignature } from './peremption.mjs';
 import { ouvrirIdentite } from './identite.mjs';
-import { basculerPalette, fermerPalette, paletteOuverte, rafraichirPalette } from './palette.mjs';
-import { comparaisonOuverte, fermerComparaison, ouvrirComparaison } from './vue-comparaison.mjs';
-import { libellesForge, mesuresDegats, ordonnerPieces, valeursDegats } from './comparaison.mjs';
-import { basculerChoix, cleDeChoix, rafraichirChoix } from './choix-comparaison.mjs';
-import { FAMILLES } from './fiche.mjs';
-import { fermerPoints, ouvrirPoints, pointsOuverts } from './vue-points.mjs';
-import { renderMelange } from './vue-melange.mjs';
-import { fermerReglages, ouvrirReglages, reglagesOuverts } from './vue-reglages.mjs';
-import {
-  fermerPartage, ouvrirPartage, partageOuvert, proposerReglage,
-} from './vue-partage.mjs';
-import { rangerOptions, resumeCombo } from './options.mjs';
+import { basculerPalette, fermerPalette, rafraichirPalette } from './palette.mjs';
+import { ouvrirReglages } from './vue-reglages.mjs';
+import { ouvrirPartage, proposerReglage } from './vue-partage.mjs';
 import { creerCadence } from './cadence.mjs';
-import { caseOuverte, fermerCase, ouvrirCase } from './vue-case.mjs';
-import {
-  basculer, choisirOnglet, classesDeVolets, garderVolets, LARGEUR_ETROITE,
-  LARGEUR_TELEPHONE, lireVolets, ongletCourant, ouvertureDepart,
-} from './volets.mjs';
-import { fermerPlus, ouvrirPlus, plusOuvert } from './vue-plus.mjs';
-import { comboOuvert, fermerCombo, ouvrirCombo } from './vue-combo.mjs';
+import { ouvrirCase } from './vue-case.mjs';
+import { ouvrirPlus } from './vue-plus.mjs';
+import { ouvrirCombo } from './vue-combo.mjs';
 import { visiteAfaire } from './visite.mjs';
-import { fermerVisite, ouvrirVisite, visiteOuverte } from './vue-visite.mjs';
-import { fermerSignaler, ouvrirSignaler, signalerOuvert } from './vue-signaler.mjs';
-import { VERSION_LUE } from '../version.mjs';
-import { fermerMinimums, minimumsOuverts, MINIMUM_NEUF, ouvrirMinimums } from './vue-minimums.mjs';
-import { avecCible } from './minimums.mjs';
-import { renderCourbeXp } from './vue-courbe-xp.mjs';
-import { fermerJournal, journalOuvert, ouvrirJournal } from './vue-journal.mjs';
-import { cibleOuverte, fermerCible, ouvrirCible, renderBlocCible } from './vue-cible.mjs';
-import { fermerImport, importOuvert, ouvrirImport } from './vue-import.mjs';
-import { resumeCible } from './cible.mjs';
-import { borneDegats } from '../../src/solver/borne.mjs';
-import { paliersUtiles, renderPaliers, renderReglageProximite } from '../proximite-panel.mjs';
-import { renderAnalyse } from '../analyse-panel.mjs';
-import { equiperDans, remplacer, remplacementAuChoix } from '../equipement.mjs';
-import { basculerExoRare, decrireExos, mettreOver } from '../exos-piece.mjs';
+import { ouvrirVisite } from './vue-visite.mjs';
+import { ouvrirSignaler } from './vue-signaler.mjs';
+import { ouvrirJournal } from './vue-journal.mjs';
+import { ouvrirImport } from './vue-import.mjs';
+import { creerRenduVerdict } from './rendu-verdict.mjs';
+import { creerRenduAvoir } from './rendu-avoir.mjs';
+import { creerRenduSorts } from './rendu-sorts.mjs';
+import { creerRenduInspecteur } from './rendu-inspecteur.mjs';
+import { creerRenduListes } from './rendu-listes.mjs';
+import { creerComparateur } from './comparateur.mjs';
+import { creerGestesMinimums } from './gestes-minimums.mjs';
+import { creerJeux } from './jeux-enregistres.mjs';
+import { creerEssais } from './essais.mjs';
+import { creerVoletsEcran } from './volets-ecran.mjs';
+import { brancherClavier } from './clavier.mjs';
 
 const { $, muets } = creerPont({ racine: document, fabrique: (t) => document.createElement(t) });
-
-const nombre = (n) => Math.round(n).toLocaleString('fr-FR');
-
-/** Un multiplicateur, a deux decimales et avec la virgule francaise. */
-const facteur = (n) => Number(n).toLocaleString('fr-FR', {
-  minimumFractionDigits: 2, maximumFractionDigits: 2,
-});
 
 let etat = etatInitial();
 let catalogue = null;
@@ -108,43 +73,6 @@ let classesSorts = null;
 
 /** Vrai tant que le joueur n'a pas choisi sa classe : l'ecran vide tient. */
 let vierge = true;
-
-/** Vrai quand « tout voir » remplace l'essentiel dans le volet d'inspection. */
-let toutVoir = false;
-
-/**
- * Stuffs coches pour la comparaison, d'ou qu'ils viennent.
- *
- * Une seule table pour les trois listes : on compare un stuff trouve avec un
- * palier d'achat et un essai garde, ce qu'aucune des trois ne permettait
- * separement. La cle est le STUFF et sa liste (`cleDeChoix`), jamais l'objet :
- * les listes recreent leurs objets a chaque dessin, et une cle par objet
- * gardait des coches que plus aucune case ne montrait.
- */
-let choisis = new Map();
-
-/** Ce que les listes montrent en ce moment, pour rafraichir les coches. */
-function stuffsVisibles() {
-  return [
-    ...(etat.candidats ?? []).map((objet) => ({ objet, famille: 'trouve' })),
-    ...(etat.paliers ?? []).map((objet) => ({ objet, famille: 'palier' })),
-    ...lireSimulations().map((objet) => ({ objet, famille: 'essai' })),
-  ];
-}
-
-/** Les coches d'une liste, telles que ses cases les lisent. */
-function selectionDe(famille, nommer) {
-  return {
-    choisis: { has: (objet) => choisis.has(cleDeChoix(objet, famille)) },
-    onBasculer: (objet) => basculerChoisi(objet, famille, nommer(objet)),
-  };
-}
-
-/** Coche ou decoche un stuff, d'ou qu'il vienne. */
-function basculerChoisi(objet, famille, nom) {
-  choisis = basculerChoix(choisis, objet, famille, nom);
-  render();
-}
 
 /**
  * Reglages qui valaient au dernier lancement, ou null si aucun n'a eu lieu.
@@ -225,27 +153,65 @@ const recherche = creerRecherche({
   lireCatalogue: () => catalogue,
   appliquer: (resultat, aussi = null) => setEtat(
     { ...appliquerBuild(etat, resultat, catalogue.itemById), ...(aussi ?? {}) }),
-  garderSimulation: () => garderSimulation({ siNouvelle: true, silencieux: true }),
+  garderSimulation: () => essais.garderSimulation({ siNouvelle: true, silencieux: true }),
 });
 
-/* ------------------------------------------------------------------ Modes --- */
+const lireCatalogue = () => catalogue;
 
-/**
- * Les trois objectifs proposes.
- *
- * « Caracteristiques » n'y figure pas : ce n'est plus un choix dans une liste,
- * c'est l'etat dans lequel l'outil se met quand il n'a aucun degat a compter.
- * Le joueur ne le choisit jamais, il le constate.
- */
-const OBJECTIFS = Object.freeze([
-  [SEARCH_MODES.DAMAGE, 'Frapper fort'],
-  [SEARCH_MODES.ENDURANCE, 'Encaisser'],
-  [SEARCH_MODES.MIXTE, 'Les deux'],
-  [SEARCH_MODES.XP, 'Monter'],
-]);
+/** Change une option de calcul. */
+const poserOption = (cle, valeur) => setEtat({ options: { ...etat.options, [cle]: valeur } });
 
-/** Vrai quand aucun sort n'est pose : tout ce qui parle de degats se tait. */
-const sansSorts = () => sortsCalcules(etat).length === 0;
+/* ---------------------------------------------------------------- Gestes --- */
+
+const gestes = creerGestesCatalogue({ lireEtat, lireCatalogue, setEtat, message });
+
+const gestesSorts = creerGestesSorts({
+  lireEtat, setEtat, message, lireClassesSorts: () => classesSorts,
+});
+
+const gestesReference = creerGestesReference({
+  lireEtat, setEtat, message, nomDeClasse, lireRecherche: () => recherche,
+});
+
+const gestesMinimums = creerGestesMinimums({ lireEtat, setEtat, message });
+
+const essais = creerEssais({
+  lireEtat, setEtat, message, lireCatalogue, lirePanneau: () => panneauSimulations,
+});
+
+const jeux = creerJeux({ $, lireEtat, setEtat, message, lireCatalogue });
+
+/* ---------------------------------------------------------------- Rendus --- */
+
+// `render` se lit au moment de l'appel : la cadence est posee plus bas.
+const comparateur = creerComparateur({ lireEtat, lireCatalogue, render: () => render() });
+
+const verdict = creerRenduVerdict({
+  $, lireEtat, setEtat, message, lireCatalogue, recherche, poserOption,
+});
+
+const avoir = creerRenduAvoir({
+  $, lireEtat, setEtat, message, lireCatalogue, gestesReference,
+  ouvrirListe: (liste) => basculerPalette(liensPalette, liste),
+  enleverMinimum: gestesMinimums.enleverMinimum,
+});
+
+const rangeeSorts = creerRenduSorts({
+  $, lireEtat, setEtat, lireCatalogue, lireClassesSorts: () => classesSorts, gestesSorts,
+});
+
+const inspecteur = creerRenduInspecteur({
+  $, lireEtat, setEtat, lireCatalogue, render: () => render(),
+  poserMinimum: gestesMinimums.poserMinimum,
+});
+
+const listes = creerRenduListes({
+  $, lireEtat, setEtat, message, lireCatalogue, recherche, gestesReference,
+  selectionDe: comparateur.selectionDe,
+  poserPiece: (item) => poserPiece(item),
+});
+
+const ecran = creerVoletsEcran({ $, lireVierge: () => vierge });
 
 /* ----------------------------------------------------------------- Rendu --- */
 
@@ -299,38 +265,31 @@ function peindre() {
   // Le rythme suit la recherche : serre pendant qu'elle tourne, libre sinon.
   cadence.rythme(recherche.tourne() ? RYTHME_EN_RECHERCHE_MS : 0);
 
-  // Avant de dessiner : une coche dont le stuff a quitte l'ecran s'oublie,
-  // sinon la comparaison compterait un stuff que plus aucune case ne montre.
-  choisis = rafraichirChoix(choisis, stuffsVisibles());
+  comparateur.rafraichir();
 
   const build = buildCourant(etat, catalogue);
   const stats = build?.stats ?? {};
   const bilan = build ? scoreAffiche(etat, stats) : null;
-  const degats = sansSorts() ? null : (Number(bilan?.damage) || 0);
+  const degats = verdict.sansSorts() ? null : (Number(bilan?.damage) || 0);
 
   renderIdentite();
   renderPlateau(stats);
-  renderVerdict(stats, degats);
-  renderObjectif();
-  renderMelangeOuPas(bilan, stats);
-  renderCourbeXpOuPas(bilan, stats);
-  renderSorts();
-  renderAvoir(stats, degats);
-  renderTrouves(bilan);
-  renderProximite();
-  renderComparer();
-  renderPanoplie(build);
-  renderAnalyseDuStuff(bilan, stats);
-  renderInspecteur(stats, degats);
-  renderScore(bilan);
+  verdict.renderVerdict(stats, degats);
+  verdict.renderObjectif();
+  verdict.renderMelangeOuPas(bilan, stats);
+  verdict.renderCourbeXpOuPas(bilan, stats);
+  rangeeSorts.renderSorts();
+  avoir.renderAvoir(stats, degats);
+  listes.renderTrouves(bilan);
+  listes.renderProximite();
+  comparateur.renderComparer($('comparer'));
+  listes.renderPanoplie(build);
+  listes.renderAnalyseDuStuff(bilan, stats);
+  inspecteur.renderInspecteur(stats, degats);
+  verdict.renderScore(bilan);
   renderCombo($('carte-combo'), bilan?.combo ?? null, {
-    onAppliquer: (combo) => {
-      const sorts = sortsDuCombo(combo);
-      if (sorts.length === 0) return;
-      setEtat({ sorts });
-      message(`La liste des sorts reprend le combo : ${sorts.length} sort(s).`);
-    },
-    onGarder: garderCombo,
+    onAppliquer: jeux.appliquerCombo,
+    onGarder: jeux.garderCombo,
   });
   const arme = attaqueArme(etat);
   renderArme($('carte-arme'), arme, arme && stats ? computeSpellDetail(arme, stats, cibleDe(etat)) : null);
@@ -392,571 +351,6 @@ function renderPlateau(stats) {
 }
 
 /**
- * La borne haute se recalcule seulement quand ce qui la fait bouger a bouge :
- * elle parcourt tout le catalogue, et un rendu par frappe au clavier ne doit
- * pas le payer.
- */
-let borneGardee = { cle: null, valeur: null };
-
-function borneCourante() {
-  const objective = objectif(etat, catalogue);
-  const cle = JSON.stringify([etat.niveau, [...etat.bannis], etat.scrolls, etat.options.passifs,
-    objective.spells, objective.cible, objective.menace]);
-  if (borneGardee.cle !== cle) {
-    borneGardee = {
-      cle,
-      valeur: borneDegats({
-        items: catalogue.items, level: etat.niveau, setById: catalogue.setById,
-        banned: etat.bannis, scrolls: etat.scrolls, objective,
-      }),
-    };
-  }
-  return borneGardee.valeur;
-}
-
-/** Sous les degats : ce qu'aucun stuff ne depasse, et pourquoi c'est au-dessus. */
-function renderBorne() {
-  const borne = borneCourante();
-  const noeud = $('borne-phrase');
-  noeud.hidden = borne === null;
-  if (borne === null) return;
-  noeud.textContent = `Borne haute : ${nombre(borne)}, qu'aucun stuff n'atteint.`;
-  noeud.title = 'Chaque emplacement prend le meilleur de chaque statistique, sans les conditions '
-    + 'ni le cumul des panoplies, et tous les points vont partout à la fois. '
-    + 'Le vrai optimum est en dessous, souvent de loin.';
-}
-
-function renderVerdict(stats, degats) {
-  const vDegats = $('v-degats');
-  vDegats.textContent = degats === null ? '—' : nombre(degats);
-  vDegats.classList.toggle('vide-mesure', degats === null);
-  $('degats-sans-sorts').hidden = degats !== null;
-  $('degats-avec-sorts').hidden = degats === null;
-  if (degats !== null) {
-    // En mode « Monter », la phrase dit le MULTIPLICATEUR et rien d'autre.
-    // La vitesse d'XP est un produit sans unite : elle classe les stuffs,
-    // elle ne se lit pas. « x 9,19 » se compare a ce que le joueur connait.
-    const enXp = etat.mode === SEARCH_MODES.XP;
-    const sagesse = Number(stats.sagesse) || 0;
-    const bonus = normaliserBonusXp(etat.bonusXp);
-    const quiMultiplie = bonus > 0
-      ? `Votre sagesse de ${nombre(sagesse)} et vos ${nombre(bonus)} % de bonus multiplient`
-      : `Votre sagesse de ${nombre(sagesse)} multiplie`;
-    $('degats-phrase').textContent = `Vos sorts envoient ${nombre(degats)} dégâts sur un tour.`
-      + (enXp
-        ? ` ${quiMultiplie} l'XP de chaque combat `
-          + `par ${facteur(multiplicateurXp(sagesse, bonus))}.`
-        : '');
-    renderBorne();
-  }
-
-  const pdv = Number(stats.pdvEffectifs) || 0;
-  $('v-pdv').textContent = nombre(pdv);
-  $('pdv-phrase').textContent = `Vous encaissez ${nombre(pdv)} dégâts bruts avant de tomber.`;
-
-  const rangees = rangerOptions(optionsAffichees(etat.options));
-  renderOptions($('options-degats'), rangees.degats, poserOption);
-  renderOptions($('options-pdv'), rangees.pdv, poserOption);
-  // Contre quoi le nombre est compte : sans la phrase, 947 ne dit rien.
-  renderBlocCible($('bloc-cible'), resumeCible(etat.cible),
-    () => ouvrirCible({ lireEtat, setEtat, message }));
-
-  // « A acheter » n'a de sens que face a un stuff de reference : sans lui, tout
-  // est un achat, et le chiffre ne dit rien.
-  const aAcheter = etat.reference
-    ? [...etat.equipped.values()].filter((item) => !etat.reference.itemIds.includes(item.id)
-        && !etat.possedees.has(item.id)).length
-    : null;
-  $('v-achats').textContent = aAcheter === null ? '—' : nombre(aAcheter);
-  $('achats-phrase').textContent = aAcheter === null
-    ? 'Dites-moi quel stuff vous portez pour compter les achats.'
-    : 'face à votre stuff actuel';
-}
-
-function renderObjectif() {
-  const muet = sansSorts();
-  $('objectif').classList.toggle('inactif', muet);
-  $('objectif').classList.toggle('sans-choix', etat.mode === SEARCH_MODES.STATS);
-  // La largeur vient de la feuille de style : un « flex » ecrit ici l'emportait
-  // sur elle, et le quatrieme objectif sortait du volet au lieu de passer a la
-  // ligne.
-  $('objectif').replaceChildren(...OBJECTIFS.map(([cle, texte]) => el('button', {
-    type: 'button', 'data-mode': cle,
-    'aria-pressed': String(etat.mode === cle),
-    ...(muet ? { disabled: true } : {}),
-    onClick: () => setEtat({ mode: cle }),
-  }, texte)));
-
-  $('aide-objectif').textContent = muet
-    ? 'Sans sort, la recherche monte vos caractéristiques. Choisissez des sorts '
-      + 'pour arbitrer entre frapper et encaisser.'
-    : etat.mode === SEARCH_MODES.XP
-      ? 'La recherche monte la vitesse d\'XP : vos dégâts décident du nombre de '
-        + 'combats, votre sagesse multiplie l\'XP de chacun.'
-      : 'La recherche fait monter cette mesure et tient les minimums demandes.';
-  renderBonusXp();
-}
-
-/**
- * Le champ du bonus d'XP hors sagesse, en mode Monter seulement.
- *
- * La valeur ne se repose pas pendant que le joueur ecrit : un redessin au
- * milieu de la frappe remplacerait « 15 » par « 1 » avant le second chiffre.
- */
-function renderBonusXp() {
-  const enXp = !sansSorts() && etat.mode === SEARCH_MODES.XP;
-  $('bonus-xp').hidden = !enXp;
-  const champ = $('bonus-xp-valeur');
-  if (document.activeElement !== champ) champ.value = String(normaliserBonusXp(etat.bonusXp));
-}
-
-/**
- * La courbe du mode Monter ne parait que dans ce mode.
- *
- * Elle repond a ce que le produit cache : ou passe le change entre les
- * degats et la sagesse. Ailleurs, elle trancherait sur une mesure que la
- * recherche n'optimise pas, et le trace ne voudrait rien dire.
- */
-function renderCourbeXpOuPas(bilan, stats) {
-  const enXp = etat.mode === SEARCH_MODES.XP;
-  $('courbe-xp').hidden = !enXp;
-  if (!enXp) return;
-
-  renderCourbeXp($('courbe-xp'), {
-    paliers: etat.survie ?? [],
-    porte: bilan
-      ? { damage: bilan.damage, sagesse: Number(stats?.sagesse) || 0 }
-      : null,
-    bonus: normaliserBonusXp(etat.bonusXp),
-    onChoisir: (palier) => {
-      recherche.porterAlaMain(palier);
-      message(`Stuff porté : ${nombre(Math.floor(palier.damage))} de dégâts, `
-        + `${nombre(Math.floor(palier.sagesse ?? 0))} de sagesse.`);
-    },
-  });
-}
-
-/**
- * Le reglage du melange n'existe que dans le mode qui s'en sert.
- *
- * Un curseur visible dans « frapper fort » laisserait croire qu'il change
- * quelque chose ; il ne changerait rien, et le joueur chercherait longtemps
- * pourquoi.
- */
-function renderMelangeOuPas(bilan, stats) {
-  const enMixte = etat.mode === SEARCH_MODES.MIXTE;
-  $('melange').hidden = !enMixte;
-  if (!enMixte) return;
-
-  renderMelange($('melange'), {
-    paliers: etat.survie ?? [],
-    // `pdv` ne vient pas du score : il vit dans les statistiques du build.
-    porte: bilan
-      ? { damage: bilan.damage, endurance: bilan.endurance, pdv: Number(stats.pdv) || 0 }
-      : null,
-    part: etat.partDegats,
-    onPart: (part) => setEtat({ partDegats: part }),
-    onChoisir: (palier, part) => {
-      recherche.porterAlaMain(palier, { partDegats: part });
-      message(`Stuff porté : ${nombre(Math.floor(palier.damage))} de dégâts, `
-        + `${nombre(Math.floor(palier.endurance))} pdv effectifs.`);
-    },
-  });
-}
-
-/**
- * Combien de fois ce sort part dans le tour.
- *
- * Le nombre entre dans le total des degats : c'est le seul endroit ou le
- * joueur dit ce qu'il lance vraiment. Un sort que le jeu ne laisse lancer
- * qu'une fois n'a rien a regler, et ne montre donc rien.
- *
- * L'optimisateur de combo garde la main quand il est actif : lui compte les
- * PA et decide lui-meme des lancers, borne par la limite du jeu.
- */
-function champLancers(sort) {
-  const limite = limiteDe(sort);
-  if (limite <= 1) return null;
-
-  return el('input', {
-    class: 'chip-lancers', type: 'number', min: '1', max: String(limite),
-    value: String(lancersDe(sort)),
-    'aria-label': `Lancers comptés pour ${sort.name ?? sort.fr ?? 'ce sort'}`,
-    title: `Lancers comptés dans les dégâts (${limite} au maximum dans le jeu).`,
-    onClick: (ev) => ev.stopPropagation(),
-    onChange: (ev) => {
-      setEtat({ sorts: avecLancers(etat.sorts, sort.id, Number(ev.target.value)) });
-    },
-  });
-}
-
-/**
- * La fiche d'un sort dans le catalogue, pour sa portee et sa zone.
- * Le sort garde dans l'etat ce que le moteur lit ; le reste se relit ici.
- */
-function ficheDuSort(id) {
-  for (const classe of classesSorts ?? []) {
-    const trouve = (classe.spells ?? []).find((sort) => sort.id === id);
-    if (trouve) return trouve;
-  }
-  return null;
-}
-
-function renderSorts() {
-  const sorts = sortsCalcules(etat);
-  $('compte-sorts').textContent = String(sorts.length);
-
-  // Le sort SURVOLE est celui que le moteur compte, options comprises : la
-  // portee, la cible telefrag et les tours suivants changent ses chiffres.
-  // Montrer le sort nu donnerait un nombre que l'ecran ne confirme nulle part.
-  const calcules = new Map(sorts.map((sort) => [sort.id, sort]));
-  const stats = buildCourant(etat, catalogue)?.stats ?? null;
-  const cible = cibleDe(etat);
-
-  $('chips-sorts').replaceChildren(...etat.sorts.map((sort) => el('span', {
-    class: 'chip',
-    onMouseenter: (ev) => montrerBulleSort(calcules.get(sort.id) ?? sort, ev.clientX, ev.clientY, {
-      stats, cible, fiche: ficheDuSort(sort.id), ancre: ev.currentTarget,
-    }),
-    onMousemove: (ev) => suivreBulle(ev.clientX, ev.clientY),
-    onMouseleave: cacherBulle,
-  },
-    sort.icon ? el('img', { src: sort.icon, alt: '', decoding: 'async' }) : null,
-    sort.name ?? sort.fr ?? String(sort.id),
-    champLancers(sort),
-    el('button', {
-      type: 'button', text: '×', title: `Enlever ${sort.name ?? sort.fr ?? 'ce sort'}`,
-      onClick: () => setEtat({ sorts: etat.sorts.filter((s) => s.id !== sort.id) }),
-    }))));
-  // Le bouton de l'enchainement porte l'etat du reglage : sans cela, il faut
-  // l'ouvrir pour savoir si le combo compte ou non.
-  $('etat-combo').textContent = resumeCombo(etat.options);
-  $('aide-sorts').replaceChildren(
-    ...(sorts.length ? [] : [
-      'Aucun sort. L\'outil n\'en pose aucun d\'office : un chiffre de dégâts '
-        + 'faux vaut moins que pas de chiffre.',
-      el('br'),
-    ]),
-    el('button', { class: 'btn mini fantome', type: 'button', style: 'padding-left:0',
-      text: sorts.length ? 'Changer mes sorts' : 'Choisir des sorts…',
-      onClick: gestesSorts.ouvrir }),
-    ...(sorts.length
-      ? [el('button', { class: 'btn mini fantome', type: 'button',
-          text: 'Tout enlever', onClick: gestesSorts.toutEnlever })]
-      : []));
-}
-
-function renderAvoir(stats, degats) {
-  // Un bouton ne s'imbrique pas dans un bouton : le geste de cote vit a COTE
-  // de la ligne, dans une rangee, et non dedans.
-  const ligne = (texte, valeur, actions = {}) => {
-    const corps = el(actions.onClick ? 'button' : 'div', {
-      class: 'avoir-ligne', ...(actions.onClick ? { type: 'button', onClick: actions.onClick } : {}),
-      ...(actions.title ? { title: actions.title } : {}),
-    },
-      el('span', { text: texte }), el('span', {}, el('b', { text: String(valeur) })));
-    return actions.action ? el('div', { class: 'avoir-rangee' }, corps, actions.action) : corps;
-  };
-
-  // Voir sa liste et la defaire sont deux gestes, pas un. Le clic OUVRE la
-  // liste ; figer et oublier passent par un bouton a part. Un seul clic mal
-  // place effacait la reference, sans rien pour revenir en arriere.
-  const aUneReference = Boolean(etat.reference);
-  $('avoir').replaceChildren(
-    ligne('Mon stuff actuel', aUneReference ? etat.reference.itemIds.length : '—', {
-      onClick: aUneReference ? () => basculerPalette(liensPalette, 'stuff') : null,
-      title: aUneReference
-        ? 'Voir les pièces de ce stuff.'
-        : 'Aucun stuff figé.',
-      action: el('button', {
-        class: 'btn mini fantome', type: 'button',
-        text: aUneReference ? 'Oublier' : 'Figer',
-        title: aUneReference
-          ? 'Oublier ce stuff : le solveur cherchera sans compter les achats.'
-          : 'Figer le stuff porté comme celui que vous avez en jeu. Les pièces '
-            + 'que le solveur propose se comptent alors en achats.',
-        onClick: () => {
-          if (aUneReference) gestesReference.oublierReference();
-          else gestesReference.figerReference();
-        },
-      }),
-    }),
-    ligne('Pièces en banque', etat.possedees.size,
-      { onClick: () => basculerPalette(liensPalette, 'banque'),
-        title: 'Voir les pièces que vous avez déjà.' }),
-    ligne('Pièces interdites', etat.bannis.size,
-      { onClick: () => basculerPalette(liensPalette, 'interdits'),
-        title: 'Voir les pièces que le solveur ne proposera plus.' }));
-
-  $('ouvrir-palette').replaceChildren('Toutes les pièces',
-    el('span', { class: 'raccourci', text: raccourciPalette() }));
-
-  // Un minimum se lit a cote de la valeur que le MOTEUR lui compare, pas de
-  // la statistique qui porte le meme nom. Une condition « Vitalite » porte sur
-  // les points de vie : montrer la caracteristique donnait un minimum tenu et
-  // pourtant rouge, et personne ne pouvait comprendre pourquoi.
-  $('compte-limites').textContent = String(etat.conditions.length);
-  $('regler-minimums').onclick = () => ouvrirMinimums({
-    lireEtat, setEtat, message,
-    lireMesures: () => {
-      const b = buildCourant(etat, catalogue);
-      const bl = b ? scoreAffiche(etat, b.stats) : null;
-      return { stats: b?.stats ?? null, degats: Number(bl?.damage) || 0 };
-    },
-  });
-  // Le champ garde le focus au travers du redessin. Sans cela, la fleche du
-  // champ posait un etat, l'application se redessinait, et le champ que le
-  // doigt tenait encore disparaissait au premier clic.
-  const tenait = document.activeElement?.dataset?.minimum ?? null;
-
-  $('limites').replaceChildren(...etat.conditions.map((c) => {
-    const valeur = conditionValue(c.stat, stats, degats ?? 0);
-    const tenu = valeur >= c.target;
-    const icone = iconeStat(c.stat);
-    const nom = STAT_LABELS[c.stat] ?? c.stat;
-    return el('div', { class: `limite ${tenu ? '' : 'defaut'}`.trim() },
-      el('i', { class: `etat ${tenu ? 'tenue' : 'defaut'}` }),
-      icone
-        ? el('img', { class: 'limite-icone', src: icone, alt: '', decoding: 'async' })
-        : el('span', { class: 'limite-icone' }),
-      el('span', { class: 'limite-nom', text: nom }),
-      // La valeur atteinte se lit, l'objectif se REGLE : passer de cinq a six
-      // PM demandait d'ouvrir une feuille, d'y trouver la ligne et de la
-      // refermer, pour un seul chiffre.
-      el('b', { class: 'n', text: nombre(valeur) }),
-      el('span', { class: 'limite-barre', text: '/' }),
-      el('input', {
-        class: 'limite-cible n', type: 'number', min: '0', step: '1',
-        value: String(c.target), 'data-minimum': c.stat,
-        'aria-label': `Minimum de ${nom.toLowerCase()}`,
-        title: `Valeur à tenir. Le reste du réglage est dans « Régler mes minimums… ».`,
-        onChange: (ev) => setEtat({
-          conditions: avecCible(etat.conditions, c.stat, ev.target.value),
-        }),
-      }),
-      el('button', {
-        class: 'oter', type: 'button', text: '×',
-        title: `Ne plus exiger de ${nom.toLowerCase()}`,
-        onClick: () => enleverMinimum(c.stat),
-      }));
-  }));
-
-  if (tenait) {
-    const champ = $('limites').querySelector(`[data-minimum="${CSS.escape(tenait)}"]`);
-    champ?.focus();
-    champ?.select?.();
-  }
-}
-
-/**
- * Les autres builds que la recherche a retenus.
- *
- * Chaque ligne se lit comme une DIFFERENCE, pas comme une fiche de plus : les
- * pieces a mettre, celles a enlever, et ce que l'echange rapporte.
- */
-function renderTrouves(bilan) {
-  const candidats = etat.candidats ?? [];
-  $('compte-trouves').textContent = String(candidats.length);
-
-  renderCandidats($('trouves'), candidats, {
-    portes: new Set([...etat.equipped.values()].map((i) => i.id)),
-    itemById: catalogue?.itemById ?? new Map(),
-    porte: bilan,
-    onPorter: (candidat) => recherche.porterAlaMain(candidat),
-    selection: selectionDe('trouve', (candidat) => `Trouvé ${candidats.indexOf(candidat) + 1}`),
-  });
-}
-
-/** Le bandeau de comparaison : il ne parait qu'avec quelque chose a comparer. */
-function renderComparer() {
-  const bouton = $('comparer');
-  bouton.hidden = choisis.size === 0;
-  bouton.textContent = `Comparer ${choisis.size + 1}`;
-  bouton.title = 'Compare le stuff porté et les stuffs cochés, d\'où qu\'ils viennent.';
-}
-
-/**
- * « Proche de mon stuff » : ce qu'une a trois pieces achetees rapportent.
- *
- * Le meilleur build du solveur demande souvent seize pieces neuves. Un joueur
- * qui equipe deja un personnage ne veut pas tout racheter. Le gain se lit face
- * au stuff de REFERENCE, jamais face au build pose : c'est l'achat qui se
- * decide, pas l'essai en cours.
- */
-function renderProximite() {
-  renderReglageProximite($('reglage-proximite'), {
-    reference: etat.reference,
-    max: etat.changementsMax,
-    possedees: etat.possedees.size,
-    portees: etat.equipped.size,
-  }, {
-    onFiger: gestesReference.figerReference,
-    onOublier: gestesReference.oublierReference,
-    onReprendre: gestesReference.reprendreReference,
-    onMax: (valeur) => setEtat({ changementsMax: valeur }),
-  });
-
-  const paliers = etat.reference ? (etat.paliers ?? []) : [];
-  const reference = valeurDeReference(etat, catalogue);
-  $('compte-paliers').textContent = String(paliersUtiles(paliers, reference).length);
-
-  renderPaliers($('paliers'), paliers, {
-    reference,
-    itemById: catalogue?.itemById ?? new Map(),
-    piecesReference: etat.reference?.itemIds ?? [],
-    max: etat.changementsMax,
-    possedees: etat.possedees,
-    onPorter: (palier) => {
-      recherche.porterAlaMain(palier);
-      message(`Stuff porté : ${palier.changements} pièce(s) à acheter, `
-        + `${nombre(Math.floor(palier.damage))} de dégâts.`);
-    },
-    selection: selectionDe('palier', (palier) => `${palier.changements} pièce(s)`),
-  });
-}
-
-/**
- * Les bonus de panoplie actifs.
- *
- * Le compte en tete est celui que les trophees verifient : (pieces − 1) par
- * panoplie, jamais le nombre de panoplies.
- */
-function renderPanoplie(build) {
-  const sets = build?.sets ?? [];
-  $('compte-bonus').textContent = String(
-    sets.reduce((n, s) => n + Math.max(0, s.pieces - 1), 0));
-  $('bloc-panoplies').hidden = sets.length === 0;
-
-  renderPanoplies($('panoplies'), sets, catalogue?.setById ?? new Map(), STAT_LABELS, {
-    itemById: catalogue?.itemById ?? new Map(),
-    equippedIds: new Set([...etat.equipped.values()].map((p) => p.id)),
-    onPick: (piece) => ouvrirFiche(piece, { onEquip: () => poserPiece(piece) }),
-  });
-}
-
-/**
- * D'ou vient le score, et ou investir pour le monter.
- *
- * Sans piece portee, il n'y a rien a analyser : le bloc disparait plutot que
- * de montrer trois listes vides.
- */
-function renderAnalyseDuStuff(bilan, stats) {
-  const bloc = $('bloc-analyse');
-  bloc.hidden = !bilan || etat.equipped.size === 0;
-  if (bloc.hidden) return;
-
-  renderAnalyse(
-    { apports: $('apports'), sensibilite: $('sensibilite'), remplacements: $('remplacements') },
-    {
-      etat,
-      catalogue,
-      stats,
-      cible: cibleAffichee(etat),
-      tenu: bilan.satisfied,
-      enRecherche: recherche.tourne(),
-      contexte: {
-        level: etat.niveau,
-        allocation: etat.allocation,
-        scrolls: etat.scrolls,
-        passives: passifsActifs(etat),
-        profile: profilDe(etat),
-        setById: catalogue.setById,
-      },
-      onRemplacer: (proposition) => {
-        setEtat(remplacer(etat, proposition.actuel, proposition.remplacant));
-        message(`${proposition.remplacant.fr} posée`
-          + `${proposition.actuel ? ` a la place de ${proposition.actuel.fr}` : ''}.`);
-      },
-    });
-}
-
-function renderInspecteur(stats, degats) {
-  const minimums = etat.conditions.map((c) => c.stat);
-  const lignes = toutVoir
-    ? lignesCompletes(stats, new Set(minimums), etat.allocation)
-    : lignesEssentielles(stats, minimums,
-        { degats, pdvEffectifs: Number(stats.pdvEffectifs) || 0 }, etat.allocation);
-
-  $('tete-quoi').textContent = toutVoir ? 'Tout voir' : 'La fiche';
-  $('tete-note').textContent = 'stuff porté';
-
-  const noeud = (l) => (l.famille
-    ? el('p', { class: 'famille' }, l.famille,
-        l.famille === FAMILLE_CARACTERISTIQUES
-          ? el('button', {
-              class: 'btn mini fantome', type: 'button', text: 'Répartir mes points',
-              onClick: () => ouvrirPoints({
-                lireEtat, setEtat, lireStats: () => buildCourant(etat, catalogue)?.stats ?? null,
-              }),
-            })
-          : null)
-    : el('button', {
-        // `exigee` et `sousMinimum` disent la meme chose vue de deux listes :
-        // cette mesure est une des votres. Elle se reconnait sans lire, a son
-        // fond et a son filet, parce que c'est elle qu'on vient verifier.
-        class: `ligne ${l.exigee || l.sousMinimum ? 'exigee' : ''}`.trim(), type: 'button',
-        ...(l.muet ? { disabled: true } : {}),
-        title: l.exigee || l.sousMinimum
-          ? `${l.libelle} est déjà dans vos minimums.`
-          : `Garder au moins ${nombre(l.valeur)} de ${l.libelle.toLowerCase()}.`,
-        onClick: () => poserMinimum(l.cle, l.valeur),
-      },
-        el('img', { class: 'ligne-icone', src: iconeStat(l.cle) ?? '', alt: '', decoding: 'async' }),
-        el('span', { class: 'ligne-nom', text: l.libelle }),
-        // Ce que la repartition des points apporte, juste devant le total.
-        // Une Force a 520 ne dit pas d'ou elle vient : le stuff en donne une
-        // part, les parchemins une autre, et les points le reste — et c'est
-        // ce dernier que le joueur a choisi, donc le seul qu'il peut reprendre.
-        // La colonne existe meme vide : sans elle, les totaux des lignes sans
-        // parenthese se calent une colonne plus tot, et la fiche perd son
-        // alignement au premier point investi.
-        el('span', { class: 'ligne-investi n',
-          ...(l.investi ? {
-            text: `(${nombre(l.investi)})`,
-            title: `${nombre(l.investi)} de ${l.libelle.toLowerCase()} viennent de `
-              + `votre répartition, pour ${nombre(l.coutInvesti)} point(s) dépensés.`,
-          } : {}) }),
-        // Une resistance porte deux chiffres : le brut et le pourcentage. Ils
-        // ne se lisent jamais l'un sans l'autre.
-        l.pourcent === null || l.pourcent === undefined
-          ? el('b', { class: `ligne-val n ${l.muet ? 'vide-mesure' : ''}`.trim(),
-              text: l.muet ? '—' : nombre(l.valeur) })
-          : el('span', { class: 'ligne-paire' },
-              el('b', { class: `n ${l.sansBrut ? 'vide-mesure' : ''}`.trim(),
-                title: 'Retire au coup', text: l.sansBrut ? '—' : nombre(l.valeur) }),
-              el('b', { class: 'n pct', title: 'Retranche en pourcentage',
-                text: `${nombre(l.pourcent)} %` }))));
-
-  $('corps-inspecteur').replaceChildren(
-    ...lignes.map(noeud),
-    el('button', {
-      class: 'btn mini fantome', type: 'button', style: 'margin:14px 16px',
-      onClick: () => { toutVoir = !toutVoir; render(); },
-      text: toutVoir ? 'Voir l\'essentiel' : 'Tout voir',
-    }));
-}
-
-function renderScore(bilan) {
-  if (!bilan) return;
-  const valeur = Number(bilan.score);
-  $('score').textContent = Number.isFinite(valeur) ? nombre(valeur) : '—';
-
-  // Un score negatif ne se lit pas comme un petit score : il dit qu'un
-  // minimum n'est pas tenu. La couleur et la note le disent ensemble.
-  const tenus = bilan?.satisfied !== false;
-  $('score').classList.toggle('pos', tenus);
-  $('score').classList.toggle('neg', !tenus);
-  // En mode « Monter », le score est un produit sans unite. Seul, il ne dit
-  // rien au joueur : la note lui donne la mesure qui se lit.
-  const sagesse = Number(bilan.sagesse);
-  const enXp = etat.mode === SEARCH_MODES.XP && Number.isFinite(sagesse);
-  $('score-note').textContent = tenus
-    ? (enXp ? `score · XP ×${facteur(multiplicateurXp(sagesse, etat.bonusXp))}` : 'score')
-    : `${bilan.unmet.length} minimum(s) non tenu(s)`;
-  recherche.dessiner();
-}
-
-/**
  * Dit si ce qui est a l'ecran repond encore aux reglages courants.
  *
  * Le bouton ne se contente pas de changer de mot : il porte une pastille, car
@@ -987,223 +381,7 @@ function renderFraicheur() {
     : '';
 }
 
-/**
- * Toutes les mesures de la fiche, dans l'ordre du jeu.
- *
- * La comparaison les parcourt toutes : c'est elle qui masque ce qui ne varie
- * pas, pas la liste qui choisit d'avance ce qui merite d'etre compare.
- */
-const MESURES_COMPARABLES = FAMILLES.flatMap(([famille, paires]) =>
-  paires.map(([cle, libelle]) => ({ cle, libelle, famille })));
-
-/**
- * Une colonne de la comparaison : ses statistiques, ses degats, ses pieces.
- *
- * Un essai garde porte ses statistiques : ce sont celles qu'il AVAIT, et les
- * recalculer aujourd'hui donnerait autre chose si les points ou les options
- * ont bouge depuis. Un candidat ou un palier n'en porte pas : on repose son
- * stuff sur une copie de l'etat et on laisse le moteur faire le calcul.
- *
- * Les degats se comptent toujours avec les sorts du jour : c'est la question
- * que le joueur pose maintenant, et l'arme de la colonne — pas celle portee —
- * frappe quand l'option la compte.
- *
- * @param {string} nom
- * @param {any|null} objet Stuff coche, ou null pour le stuff porte.
- */
-function colonneDe(nom, objet) {
-  const ids = objet ? (objet.itemIds ?? (objet.pieces ?? []).map((p) => p.id)) : null;
-  const etatCol = objet
-    ? { ...etat, ...appliquerBuild(etat, { ...objet, itemIds: ids }, catalogue.itemById) }
-    : etat;
-  const stats = objet?.stats ?? buildCourant(etatCol, catalogue)?.stats ?? {};
-  const degats = damageValue(attaquesAffichees(etatCol), stats, cibleDe(etat));
-  const pieces = ordonnerPieces([...etatCol.equipped.values()]);
-  return {
-    nom,
-    stats: { ...stats, ...valeursDegats(degats, etat.sorts.length, etat.options.arme) },
-    pieces,
-    // La forgemagie de la colonne : celle du joueur, plus celle que le
-    // moteur decide quand le mode automatique est allume.
-    exos: libellesForge(exosDe(etatCol, catalogue), pieces),
-  };
-}
-
-/** Ouvre la comparaison du stuff porte et des stuffs coches. */
-function comparer() {
-  if (choisis.size === 0) return;
-
-  ouvrirComparaison({
-    mesures: [...mesuresDegats(etat.sorts, etat.options.arme), ...MESURES_COMPARABLES],
-    colonnes: [
-      colonneDe('Porté', null),
-      ...[...choisis.values()].map(({ objet, nom }) => colonneDe(nom, objet)),
-    ],
-    minimums: new Set(etat.conditions.map((c) => c.stat)),
-  });
-}
-
-/**
- * Le raccourci de la palette, ecrit comme la machine le dit.
- *
- * « ⌘K » sur un Mac, « Ctrl K » ailleurs : montrer le mauvais signe apprend un
- * geste qui ne marche pas.
- */
-function raccourciPalette() {
-  const surMac = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '');
-  return surMac ? '⌘K' : 'Ctrl K';
-}
-
-/**
- * Remplit les listes de jeux enregistres.
- *
- * Le choix courant se garde s'il existe encore : recharger la liste apres un
- * enregistrement ne doit pas faire sauter la selection du joueur.
- */
-/** Natures de jeux enregistres, et la liste qui les montre. */
-const NATURES_JEUX = Object.freeze([
-  'sorts', 'conditions', 'stuff', 'banque', 'bannis',
-]);
-
-function remplirListesSets() {
-  for (const [nature, id] of NATURES_JEUX.map((n) => [n, `sets-${n}`])) {
-    const noeud = $(id);
-    const choisi = noeud.value;
-    const jeux = lireSets(nature);
-
-    noeud.replaceChildren(...(jeux.length === 0
-      ? [el('option', { value: '', text: 'aucun jeu enregistré' })]
-      : jeux.map((j) => el('option', { value: j.nom, text: j.nom }))));
-
-    if (choisi && jeux.some((j) => j.nom === choisi)) noeud.value = choisi;
-  }
-}
-
-/**
- * Range le stuff porte parmi les essais gardes.
- *
- * `siNouvelle` evite d'empiler quarante fois le meme stuff : la recherche
- * appelle cette fonction a chaque amelioration.
- */
-function garderSimulation(choix = {}) {
-  const build = buildCourant(etat, catalogue);
-  if (!build) {
-    message('Rien à garder : le catalogue n\'est pas encore charge.');
-    return;
-  }
-
-  let ajoutee = null;
-  try {
-    ({ ajoutee } = ajouterSimulation(
-      instantane(etat, build, scoreAffiche(etat, build.stats)),
-      { siNouvelle: choix.siNouvelle }));
-  } catch (erreur) {
-    message(erreur.message, 'erreur');
-    return;
-  }
-
-  panneauSimulations?.rafraichir();
-  if (choix.silencieux || !ajoutee) return;
-  message(`Essai gardé à ${nombre(Math.floor(ajoutee.score))} dégâts.`);
-}
-
-/** Repose un essai garde sur le personnage. */
-function restaurerSimulation(simulation) {
-  if (!catalogue) return;
-  const { patch, manquantes } = patchDepuisSimulation(etat, simulation, catalogue.itemById);
-  setEtat(patch);
-  message(manquantes === 0
-    ? 'Essai reposé. « Annuler » revient au stuff d\'avant.'
-    : `Essai reposé. ${manquantes} pièce(s) introuvable(s) au catalogue.`,
-  manquantes === 0 ? 'info' : 'erreur');
-}
-
-/**
- * Les sorts d'un combo, avec le nombre de lancers qu'il leur donne.
- *
- * Le nombre de lancers va dans « repeats » : c'est ce champ que les degats
- * comptent. « castsPerTurn » reste la limite du jeu, elle ne bouge pas.
- */
-function sortsDuCombo(combo) {
-  const parId = new Map(etat.sorts.map((s) => [s.id, s]));
-  return combo.lancers
-    .map((lancer) => {
-      const base = parId.get(lancer.id);
-      return base ? { ...base, repeats: lancer.lancers } : null;
-    })
-    .filter(Boolean);
-}
-
-/** Enregistre le combo comme un jeu de sorts. */
-function garderCombo(combo) {
-  const sorts = sortsDuCombo(combo);
-  if (sorts.length === 0) return;
-  const nom = window.prompt('Nom du jeu de sorts :', 'combo');
-  if (nom === null) return;
-  try {
-    enregistrerSet('sorts', nom, sorts);
-    remplirListesSets();
-    $('sets-sorts').value = nom.trim();
-    message(`Jeu de sorts « ${nom.trim()} » enregistré depuis le combo.`);
-  } catch (erreur) {
-    message(erreur.message, 'erreur');
-  }
-}
-
-/** Change une option de calcul. */
-const poserOption = (cle, valeur) => setEtat({ options: { ...etat.options, [cle]: valeur } });
-
-/* ---------------------------------------------------------- Les minimums --- */
-
-/**
- * Pose un minimum a la valeur atteinte, ou le remonte s'il existe deja.
- *
- * Cliquer un chiffre deja sous minimum n'est pas une erreur : c'est un joueur
- * qui vient de gagner de la valeur et veut la garder. Le minimum monte alors
- * a ce qu'il a maintenant, jamais il ne redescend.
- */
-function poserMinimum(stat, valeur) {
-  const cible = Math.round(Number(valeur) || 0);
-  const deja = etat.conditions.find((c) => c.stat === stat);
-
-  if (!deja) {
-    setEtat({ conditions: [...etat.conditions, POIDS_PAR_DEFAUT(stat, cible)] });
-    message(`Garde au moins ${nombre(cible)} de ${(STAT_LABELS[stat] ?? stat).toLowerCase()}.`);
-    return;
-  }
-
-  if (cible <= deja.target) {
-    message(`${STAT_LABELS[stat] ?? stat} est déjà gardé à ${nombre(deja.target)} au moins.`);
-    return;
-  }
-  setEtat({
-    conditions: etat.conditions.map((c) => (c.stat === stat ? { ...c, target: cible } : c)),
-  });
-  message(`${STAT_LABELS[stat] ?? stat} : le minimum monte à ${nombre(cible)}.`);
-}
-
-/** Forme d'un minimum pose a la main : la meme que dans la feuille. */
-const POIDS_PAR_DEFAUT = (stat, target) => ({ ...MINIMUM_NEUF(stat), target });
-
-/** Enleve un minimum. */
-function enleverMinimum(stat) {
-  setEtat({ conditions: etat.conditions.filter((c) => c.stat !== stat) });
-  message(`${STAT_LABELS[stat] ?? stat} n'est plus un minimum.`);
-}
-
 /* ------------------------------------------------------------- Ouvertures --- */
-
-const gestes = creerGestesCatalogue({
-  lireEtat, lireCatalogue: () => catalogue, setEtat, message,
-});
-
-const gestesSorts = creerGestesSorts({
-  lireEtat, setEtat, message, lireClassesSorts: () => classesSorts,
-});
-
-const gestesReference = creerGestesReference({
-  lireEtat, setEtat, message, nomDeClasse, lireRecherche: () => recherche,
-});
 
 /**
  * Ouvre la fiche d'une piece portee, avec ce qu'on peut en faire.
@@ -1255,108 +433,6 @@ function proposerVisiteUneFois() {
   setTimeout(() => { if (!vierge && visiteAfaire()) ouvrirVisite({ message }); }, 600);
 }
 
-/* ==================================== Les deux volets ===
- *
- * Voir `volets.mjs` : l'etat se calcule la, l'ecran ne fait que le porter.
- */
-
-/** Vrai quand les trois colonnes ne tiennent plus cote a cote. */
-const ecranEtroit = () => window.innerWidth <= LARGEUR_ETROITE;
-
-/** Vrai quand l'ecran ne montre plus qu'une zone a la fois. */
-const surTelephone = () => window.innerWidth <= LARGEUR_TELEPHONE;
-
-let volets = ouvertureDepart({ garde: lireVolets(), etroit: ecranEtroit() });
-
-/*
- * Les commandes de la recherche demenagent, elles ne se dupliquent pas.
- *
- * Sur telephone elles descendent dans le quai, sous le pouce ; ailleurs elles
- * remontent dans la barre, a leur place exacte. Un second jeu de boutons
- * aurait demande de tenir deux etats d'accord — un « Pause » grise en haut et
- * vif en bas — et cet ecart-la se voit toujours au pire moment.
- */
-const COMMANDES_DU_QUAI = ['lancer', 'arreter', 'annuler', 'partager'];
-
-/** Ou chaque commande retourne quand l'ecran s'elargit. */
-const attaches = new Map();
-
-/**
- * Deplace les commandes vers le quai, ou les rend a la barre.
- *
- * Le retour se fait dans l'ordre INVERSE, et ce n'est pas un detail. Chaque
- * commande retient le frere devant lequel elle se remet — et ce frere est
- * presque toujours une autre commande du meme lot. Les quatre quittent la
- * barre ensemble ; en les rendant dans l'ordre, la premiere cherchait a se
- * poser devant une voisine encore dans le quai, `insertBefore` levait une
- * NotFoundError, et la boucle s'arretait la.
- *
- * La consequence se voyait : les quatre boutons restaient dans un quai que
- * la feuille de style cache au-dessus de sept cent vingt pixels. « Chercher »,
- * « Pause », « Annuler » et « Partager » DISPARAISSAIENT de l'ecran des qu'une
- * fenetre etroite s'elargissait. A l'envers, chaque frere est deja rentre
- * quand on en a besoin.
- */
-function placerCommandes() {
-  const quai = $('quai');
-  const versLeQuai = surTelephone();
-  // Le quai commande l'atelier : sur l'ecran d'accueil il n'y a rien a
-  // commander, et une barre d'onglets y montrerait trois ecrans vides.
-  quai.hidden = !versLeQuai || vierge;
-
-  const ordre = versLeQuai ? COMMANDES_DU_QUAI : [...COMMANDES_DU_QUAI].reverse();
-
-  for (const id of ordre) {
-    const bouton = $(id);
-    if (!attaches.has(id)) attaches.set(id, [bouton.parentNode, bouton.nextSibling]);
-
-    if (versLeQuai) {
-      $('quai-actions').insertBefore(bouton, $('plus'));
-    } else {
-      const [parent, suivant] = attaches.get(id);
-      // Le filet : un repere qu'un rendu aurait remplace ne doit pas faire
-      // disparaitre un bouton. A la pire place plutot que nulle part.
-      if (suivant && suivant.parentNode === parent) parent.insertBefore(bouton, suivant);
-      else parent.append(bouton);
-    }
-  }
-}
-
-/** Pose l'etat des volets sur l'ecran. */
-function montrerVolets() {
-  const etroit = ecranEtroit();
-  const appli = $('travail');
-  appli.classList.remove('gauche-replie', 'droit-replie', 'volets-flottants');
-  appli.classList.add(...classesDeVolets(volets, etroit));
-
-  for (const cote of ['gauche', 'droit']) {
-    $(`bascule-${cote}`).setAttribute('aria-pressed', String(volets[cote]));
-  }
-  // Le voile ne sert qu'a refermer un volet pose PAR-DESSUS le milieu. Sur
-  // telephone les zones sont des ecrans : il n'y a rien dessous a decouvrir.
-  $('volets-voile').hidden = !etroit || surTelephone()
-    || (!volets.gauche && !volets.droit);
-
-  const courant = ongletCourant(volets);
-  for (const onglet of $('quai-onglets').children) {
-    onglet.setAttribute('aria-selected', String(onglet.dataset.onglet === courant));
-  }
-}
-
-/** Ouvre ou replie un volet, et garde le choix. */
-function basculerVolet(cote) {
-  const etroit = ecranEtroit();
-  volets = basculer(volets, cote, etroit);
-  garderVolets(volets, etroit);
-  montrerVolets();
-}
-
-/** Va sur un des trois ecrans du telephone. */
-function allerA(onglet) {
-  volets = choisirOnglet(volets, onglet);
-  montrerVolets();
-}
-
 /**
  * Pose une piece, en demandant quelle case remplacer quand c'est necessaire.
  *
@@ -1389,7 +465,7 @@ function choisirClasse(classe) {
   $('identite').hidden = false;
   $('barre-droite').hidden = false;
   $('barre-volets').hidden = false;
-  placerCommandes();
+  ecran.placerCommandes();
   setEtat({ classe });
   recherche.lancer();
   proposerVisiteUneFois();
@@ -1453,8 +529,8 @@ async function main() {
   // La pastille ouvre le journal : le numero seul ne dit rien de ce qui a
   // change, et c'est pourtant la seule question qu'on lui pose.
   $('version').onclick = ouvrirJournal;
-  placerCommandes();
-  montrerVolets();
+  ecran.placerCommandes();
+  ecran.montrerVolets();
 
   // Les noeuds que la nouvelle coquille ne montre plus vivent quand meme dans
   // le document : un champ hors de l'arbre ne garde pas sa valeur de facon
@@ -1492,7 +568,7 @@ async function main() {
       $('identite').hidden = false;
       $('barre-droite').hidden = false;
       $('barre-volets').hidden = false;
-      placerCommandes();
+      ecran.placerCommandes();
     }
 
     // Les resultats ranges reviennent avec l'etat : ils doivent etre juges
@@ -1507,15 +583,15 @@ async function main() {
       libellesOptions: LIBELLES_OPTIONS,
       nomDeClasse,
       embleme: emblemeDeClasse,
-      onRestaurer: restaurerSimulation,
+      onRestaurer: essais.restaurerSimulation,
       onFiger: gestesReference.figerSimulation,
-      onGarder: () => garderSimulation(),
+      onGarder: () => essais.garderSimulation(),
       onMessage: (texte) => message(texte),
-      selection: selectionDe('essai', (simulation) => simulation.nom
+      selection: comparateur.selectionDe('essai', (simulation) => simulation.nom
         || `${nomDeClasse(simulation.classe)} ${simulation.niveau}`),
     });
 
-    remplirListesSets();
+    jeux.remplirListesSets();
     message('');
     recherche.reprendre();
     render();
@@ -1604,89 +680,14 @@ $('bonus-xp-valeur').addEventListener('change', (ev) => {
   setEtat({ bonusXp: bonus });
 });
 
-// La palette s'ouvre a la touche, partout — sauf quand le joueur ecrit
-// ailleurs, ou le raccourci lui volerait sa frappe.
-window.addEventListener('keydown', (ev) => {
-  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'k') {
-    ev.preventDefault();
-    basculerPalette(liensPalette);
-    return;
-  }
-  // Ctrl+Z annule, sauf pendant une saisie ou il annule le texte tape.
-  if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z') {
-    const cible = ev.target;
-    const ecrit = cible instanceof HTMLElement
-      && (cible.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(cible.tagName));
-    if (!ecrit) { ev.preventDefault(); annuler(); }
-    return;
-  }
-
-  if (ev.key !== 'Escape') return;
-  if (plusOuvert()) fermerPlus();
-  else if (caseOuverte()) fermerCase();
-  else if (visiteOuverte()) fermerVisite();
-  else if (comparaisonOuverte()) fermerComparaison();
-  else if (journalOuvert()) fermerJournal();
-  else if (minimumsOuverts()) fermerMinimums();
-  else if (cibleOuverte()) fermerCible();
-  else if (importOuvert()) fermerImport();
-  else if (signalerOuvert()) fermerSignaler();
-  else if (comboOuvert()) fermerCombo();
-  else if (reglagesOuverts()) fermerReglages();
-  else if (partageOuvert()) fermerPartage();
-  else if (pointsOuverts()) fermerPoints();
-  else if (paletteOuverte()) fermerPalette();
+brancherClavier({
+  basculerPalette: () => basculerPalette(liensPalette),
+  annuler,
 });
 
-$('comparer').addEventListener('click', comparer);
+$('comparer').addEventListener('click', comparateur.comparer);
 
-/*
- * Ce qu'un jeu garde, et comment il se repose.
- *
- * Les sorts et les minimums sont deja des listes : ils se rangent tels quels.
- * Les trois autres ne le sont pas — deux ensembles d'identifiants et une
- * table de cases — et ne survivraient pas a un aller-retour en JSON sans
- * etre traduits ici. Le stuff se repose par identifiant : une piece disparue
- * du catalogue est ecartee plutot que de laisser une case vide muette.
- */
-const JEUX = Object.freeze({
-  sorts: {
-    lire: () => etat.sorts,
-    poser: (contenu) => setEtat({ sorts: contenu }),
-  },
-  conditions: {
-    lire: () => etat.conditions,
-    poser: (contenu) => setEtat({ conditions: contenu }),
-  },
-  bannis: {
-    lire: () => [...etat.bannis],
-    poser: (contenu) => setEtat({ bannis: new Set(contenu) }),
-  },
-  banque: {
-    lire: () => [...etat.possedees],
-    poser: (contenu) => setEtat({ possedees: new Set(contenu) }),
-  },
-  stuff: {
-    lire: () => [...etat.equipped.entries()].map(([cle, piece]) => [cle, piece.id]),
-    poser: (contenu) => {
-      const equipped = new Map();
-      for (const [cle, id] of contenu ?? []) {
-        const piece = catalogue?.itemById.get(id);
-        if (piece) equipped.set(cle, piece);
-      }
-      setEtat({ equipped, posees: new Set(equipped.keys()) });
-    },
-  },
-});
-
-for (const nature of NATURES_JEUX) {
-  brancherSets({
-    $, message, remplirListesSets, nature,
-    idListe: `sets-${nature}`,
-    lire: JEUX[nature].lire,
-    poser: JEUX[nature].poser,
-  });
-}
+jeux.brancher();
 
 // Le graphe vit dans un canvas : il ne suit pas la cascade. Replier une
 // section change sa largeur, donc il faut le redessiner.
@@ -1705,20 +706,7 @@ $('regler-combo').addEventListener('click',
 $('visite').addEventListener('click', () => ouvrirVisite({ message }));
 $('signaler').addEventListener('click',
   () => ouvrirSignaler({ lireEtat, nomDeClasse, message }));
-$('bascule-gauche').addEventListener('click', () => basculerVolet('gauche'));
-$('bascule-droit').addEventListener('click', () => basculerVolet('droit'));
-$('volets-voile').addEventListener('click', () => {
-  volets = { gauche: false, droit: false };
-  montrerVolets();
-});
-
-// Un ecran qui passe d'etroit a large change ce qu'un volet ouvert veut
-// dire : il occupait le milieu, il reprend sa colonne.
-window.addEventListener('resize', () => { placerCommandes(); montrerVolets(); });
-
-for (const onglet of $('quai-onglets').children) {
-  onglet.addEventListener('click', () => allerA(onglet.dataset.onglet));
-}
+ecran.brancher();
 $('plus').addEventListener('click', () => ouvrirPlus());
 
 main();
