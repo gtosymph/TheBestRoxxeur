@@ -17,6 +17,7 @@ import {
 } from './simulations.mjs';
 import { comparerDegats } from './simulation-degats.mjs';
 import { piegerFocus } from './focus-piege.mjs';
+import { ligneSimulation } from './simulation-ligne.mjs';
 
 /**
  * Statistiques comparees : toutes celles du moteur.
@@ -275,92 +276,6 @@ export function installerSimulations(racine, options) {
     dessiner();
   }
 
-  function ligne(simulation) {
-    const pieces = simulation.pieces ?? [];
-    const nom = libelle(simulation, nomDeClasse);
-    const catalogue = itemById();
-
-    const marques = [
-      'simulation',
-      cochees.has(simulation.id) ? 'cochee' : '',
-      simulation.favori ? 'favori' : '',
-    ].filter(Boolean).join(' ');
-
-    return el('div', { class: marques, 'data-simulation': simulation.id },
-      el('label', { class: 'simulation-coche',
-        title: selection
-          ? 'Comparer cet essai avec les autrès stuffs choisis'
-          : 'Cocher deux simulations pour les comparer' },
-        selection
-          ? el('input', { type: 'checkbox',
-              ...(selection.choisis.has(simulation) ? { checked: true } : {}),
-              onChange: () => selection.onBasculer(simulation) })
-          : el('input', { type: 'checkbox', ...(cochees.has(simulation.id) ? { checked: true } : {}),
-              onChange: () => basculer(simulation.id) })),
-
-      // L'etoile remonte l'essai en tete et le met a l'abri du menage : la
-      // liste est bornee, un favori ne part jamais pour faire de la place.
-      el('button', { class: `simulation-favori ${simulation.favori ? 'actif' : ''}`.trim(),
-        type: 'button', text: simulation.favori ? '\u2605' : '\u2606',
-        'aria-pressed': simulation.favori ? 'true' : 'false',
-        title: simulation.favori
-          ? 'Enlever des favoris'
-          : 'Mettre en favori : la simulation remonte en tête et reste gardée',
-        onClick: () => { basculerFavori(simulation.id); dessiner(); } }),
-
-      el('img', { class: 'simulation-embleme', src: embleme(simulation.classe),
-        alt: '', title: nomDeClasse(simulation.classe), decoding: 'async' }),
-
-      el('div', { class: 'simulation-corps' },
-        el('div', { class: 'simulation-tete' },
-          el('span', { class: 'simulation-nom', text: nom, title: 'Cliquer pour renommér',
-            onClick: () => renommer(simulation) }),
-          // Le crayon dit que le nom se change. Le clic sur le texte marche
-          // toujours, mais rien ne l'annoncait : un essai garde restait
-          // « Iop 190 » parmi dix autres « Iop 190 ».
-          el('button', { class: 'mini simulation-renommer', type: 'button', text: '✎',
-            title: 'Renommér cette simulation',
-            'aria-label': `Renommér ${nom}`,
-            onClick: () => renommer(simulation) }),
-          el('span', { class: `simulation-score ${simulation.tenu ? 'pos' : 'neg'}`,
-            text: entier(simulation.score ?? 0),
-            title: simulation.tenu
-              ? 'Toutes les conditions sont tenues'
-              : `${simulation.manquantes ?? 0} minimum(s) non tenu(s)` })),
-        el('div', { class: 'simulation-sous',
-          text: `${nomDeClasse(simulation.classe)} ${simulation.niveau}`
-            + ` · ${pieces.length} pièce(s) · ${quand(simulation.date)}` }),
-        // Le stuff se lit sur la ligne meme : sans lui, deux essais au meme
-        // score restent indiscernables.
-        el('div', { class: 'simulation-stuff' },
-          pieces.map(({ id }) => {
-            const piece = catalogue.get(id);
-            return piece ? el('img', {
-              src: piece.img, alt: '', title: piece.fr, decoding: 'async', loading: 'lazy',
-              onMouseenter: (ev) => montrerBulle(piece, ev.clientX, ev.clientY, { ancre: ev.currentTarget }),
-              onMousemove: (ev) => suivreBulle(ev.clientX, ev.clientY),
-              onMouseleave: cacherBulle,
-            }) : null;
-          }))),
-
-      el('div', { class: 'simulation-actions' },
-        el('button', { class: 'mini large', type: 'button', text: 'Remettre',
-          title: 'Remet ce build, ses conditions, ses sorts et ses réglages',
-          onClick: () => onRestaurer(simulation) }),
-        // Figer ne touche pas au build pose : le joueur garde son essai en
-        // cours et change seulement le point de comparaison des achats.
-        onFiger ? el('button', { class: 'mini', type: 'button', text: 'Figer',
-          title: 'Prend ce stuff comme stuff porté en jeu, sans toucher au build pose',
-          onClick: () => onFiger(simulation) }) : null,
-        el('button', { class: 'mini', type: 'button', text: '×', title: 'Enlever cette simulation',
-          onClick: () => {
-            enleverSimulation(simulation.id);
-            cochees.delete(simulation.id);
-            dessiner();
-          } })),
-    );
-  }
-
   function dessiner() {
     const rangees = lireSimulations();
     for (const id of [...cochees]) if (!rangees.some((s) => s.id === id)) cochees.delete(id);
@@ -400,7 +315,7 @@ export function installerSimulations(racine, options) {
             onChange: () => { favorisSeuls = !favorisSeuls; dessiner(); } }),
           ' Favoris'),
         aEnlever === 0 ? null : el('button', { class: 'mini', type: 'button',
-          text: favoris.length > 0 ? 'Enlever les autrès' : 'Tout enlever',
+          text: favoris.length > 0 ? 'Enlever les autres' : 'Tout enlever',
           title: favoris.length > 0
             ? 'Enleve les simulations qui ne sont pas en favori'
             : 'Enleve toutes les simulations gardées',
@@ -417,7 +332,12 @@ export function installerSimulations(racine, options) {
       liste.length === 0
         ? el('p', { class: 'note',
             text: 'Aucune simulation gardée. Chaque recherche mise en pause en range une.' })
-        : el('div', { class: 'simulations' }, liste.map(ligne)),
+        : el('div', { class: 'simulations' }, liste.map((simulation) => ligneSimulation(simulation, {
+          cochee: cochees.has(simulation.id), selection, catalogue: itemById(), nomDeClasse, embleme,
+          onBasculer: basculer, onRenommer: renommer, onRestaurer, onFiger,
+          onFavori: (id) => { basculerFavori(id); dessiner(); },
+          onEnlever: (id) => { enleverSimulation(id); cochees.delete(id); dessiner(); },
+        }))),
     );
   }
 

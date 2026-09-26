@@ -13,21 +13,11 @@ import { STAT_KEYS } from '../src/data/stats.mjs';
 import { preparerRecherche, solve } from '../src/solver/genetic.mjs';
 import { creerArchive } from '../src/solver/candidates.mjs';
 import { reposApresVague } from '../src/solver/intensite.mjs';
+import { fusionnerPaliers, GENERATIONS_PAR_VAGUE, optionsDeVague, parCle } from './vagues.mjs';
 import {
   aConditionDAxe, AXE_XP, axeDe, lireAxe, objectifDeTranche,
   trancheDe, tranchesAVisiter,
 } from '../src/solver/survie.mjs';
-
-/**
- * Generations par vague : le compromis entre reactivite et debit.
- *
- * Une vague ne rend la main qu'une fois finie : c'est elle qui fixe le delai
- * de reponse a la Pause et le rythme des echanges entre fils. Mesure du
- * 2026-08-31 dans le navigateur : 20 generations coutent environ une seconde
- * sur un objectif avec arme, plusieurs fois plus quand tous les fils se
- * partagent les coeurs.
- */
-const GENERATIONS_PAR_VAGUE = 20;
 
 /**
  * Une vague sur ce nombre part explorer une tranche de vie sous le gagnant.
@@ -68,13 +58,18 @@ function resumer(result) {
   };
 }
 
-async function chercher(request) {
-  catalogPromise ??= loadCatalog();
-  const catalog = await catalogPromise;
+/** Laisse le fil traiter ses messages, le temps que l'intensite demande. */
+function reposer(departVague, intensite) {
+  const repos = reposApresVague(Date.now() - departVague, intensite);
+  return new Promise((resolve) => { setTimeout(resolve, repos); });
+}
+
+/** Ce que toutes les vagues d'une demande partagent. */
+function baseDeRecherche(request, catalog) {
   const { passives } = normalizePassives(request.passivesConfig, new Set(STAT_KEYS));
   const exos = normaliserExos(request.exosConfig, new Set(STAT_KEYS));
 
-  const base = {
+  return {
     items: catalog.items,
     setById: catalog.setById,
     level: request.level,
@@ -90,182 +85,177 @@ async function chercher(request) {
     allowedSlots: request.allowedSlots ? new Set(request.allowedSlots) : null,
     objective: request.objective,
   };
+}
 
-  // La demande ne bouge pas d'une vague a l'autre : pools, verrous,
-  // classements et cache d'evaluation se preparent une seule fois. Le
-  // classement des pieces coute a lui seul un dixieme du temps d'une vague.
-  const contexte = preparerRecherche(base);
-
-  // Les candidats se cumulent sur toute la recherche : chaque vague repart
-  // avec une archive neuve, celle-ci garde la memoire de toutes les vagues.
-  const archive = creerArchive({ identite: (ids) => [...ids].sort((a, b) => a - b) });
-
-  // Les paliers de proximite se cumulent sur toute la recherche : chaque
-  // vague en rend sa lecture, celle-ci garde le meilleur de chaque palier.
-  const paliers = new Map();
-
-  // Les paliers de survie aussi : pour chaque tranche de points de vie, le
-  // build le plus fort vu au fil des vagues.
-  const survie = new Map();
-
-  let allocation = request.allocation ?? {};
-  let graines = [];
-  let totalGenerations = 0;
-  let meilleur = null;
-  let vague = 0;
-
-  // Contexte et graines propres a chaque tranche visitee : ils se preparent
-  // une fois et se gardent d'une visite a l'autre.
-  const tranches = new Map();
-  let visites = 0;
+/**
+ * Tout ce qu'une recherche garde d'une vague a l'autre.
+ *
+ * C'est l'accumulateur du fil : il change en place a chaque vague, et ne sort
+ * jamais du fil que par les messages.
+ */
+function creerMemoire(request, catalog) {
+  const base = baseDeRecherche(request, catalog);
   // L'axe suit le mode : tranches d'endurance en mode degats, tranches de
   // degats en mode endurance.
   const axe = axeDe(request.objective?.mode);
-  // En mode « Monter », l'echange existe toujours : le score EST un produit
-  // entre les degats et la sagesse. Les autres axes n'ont de compromis a
-  // montrer que si le joueur a pose la condition qui les borne.
-  const survieUtile = axe === AXE_XP || aConditionDAxe(request.objective, axe);
-
-  /**
-   * Explore une tranche de vie sous le gagnant : une vague ordinaire, sous un
-   * autre objectif. Seuls ses paliers de survie reviennent ; son gagnant ne
-   * repond pas a la demande du joueur et ne touche ni au personnage ni aux
-   * candidats.
-   */
-  const explorerTranche = (tranche) => {
-    if (!tranches.has(tranche)) {
-      const objective = objectifDeTranche(request.objective, tranche, axe.pas, axe);
-      tranches.set(tranche, {
-        objective, contexte: preparerRecherche({ ...base, objective }), graines: [], allocation: {},
-      });
-    }
-    const piste = tranches.get(tranche);
-
-    const result = solve(
-      { ...base, objective: piste.objective, allocation: piste.allocation, contexte: piste.contexte,
-        seedGenomes: [...graines, ...piste.graines] },
-      {
-        ...request.options,
-        maxGenerations: GENERATIONS_PAR_VAGUE,
-        stagnationLimit: Number.POSITIVE_INFINITY,
-        optimiserPoints: true,
-        seed: (request.seed + 104729 * (visites + 1)) >>> 0,
-      },
-    );
-    piste.graines = result.topGenomes;
-    piste.allocation = result.allocation ?? piste.allocation;
-
-    // Ce qui se trouve sous le plafond sert aussi la recherche principale :
-    // un build qui tient la condition de vie de justesse y passe parfois
-    // mieux que par le chemin ordinaire. Ses meilleurs genomes rejoignent
-    // les migrants, la prochaine vague les juge sur le vrai objectif.
-    migrants.push(...result.topGenomes.slice(0, 4));
-
-    for (const palier of result.survie ?? []) {
-      const connu = survie.get(palier.tranche);
-      if (!connu || palier[axe.valeur] > connu[axe.valeur]) survie.set(palier.tranche, palier);
-    }
+  return {
+    base,
+    axe,
+    // En mode « Monter », l'echange existe toujours : le score EST un produit
+    // entre les degats et la sagesse. Les autres axes n'ont de compromis a
+    // montrer que si le joueur a pose la condition qui les borne.
+    survieUtile: axe === AXE_XP || aConditionDAxe(request.objective, axe),
+    // La demande ne bouge pas d'une vague a l'autre : pools, verrous,
+    // classements et cache d'evaluation se preparent une seule fois. Le
+    // classement des pieces coute a lui seul un dixieme du temps d'une vague.
+    contexte: preparerRecherche(base),
+    // Les candidats se cumulent sur toute la recherche : chaque vague repart
+    // avec une archive neuve, celle-ci garde la memoire de toutes les vagues.
+    archive: creerArchive({ identite: (ids) => [...ids].sort((a, b) => a - b) }),
+    // Les paliers de proximite, puis ceux de survie : pour chaque palier, le
+    // build le plus fort vu au fil des vagues.
+    paliers: new Map(),
+    survie: new Map(),
+    // Contexte et graines propres a chaque tranche visitee : ils se preparent
+    // une fois et se gardent d'une visite a l'autre.
+    tranches: new Map(),
+    allocation: request.allocation ?? {},
+    graines: [],
+    totalGenerations: 0,
+    meilleur: null,
+    vague: 0,
+    visites: 0,
   };
+}
+
+/**
+ * Explore une tranche de vie sous le gagnant : une vague ordinaire, sous un
+ * autre objectif. Seuls ses paliers de survie reviennent ; son gagnant ne
+ * repond pas a la demande du joueur et ne touche ni au personnage ni aux
+ * candidats.
+ */
+function explorerTranche(memoire, request, tranche) {
+  const { base, axe, tranches } = memoire;
+  if (!tranches.has(tranche)) {
+    const objective = objectifDeTranche(request.objective, tranche, axe.pas, axe);
+    tranches.set(tranche, {
+      objective, contexte: preparerRecherche({ ...base, objective }), graines: [], allocation: {},
+    });
+  }
+  const piste = tranches.get(tranche);
+
+  const result = solve(
+    { ...base, objective: piste.objective, allocation: piste.allocation, contexte: piste.contexte,
+      seedGenomes: [...memoire.graines, ...piste.graines] },
+    optionsDeVague(request.options, request.seed + 104729 * (memoire.visites + 1)),
+  );
+  piste.graines = result.topGenomes;
+  piste.allocation = result.allocation ?? piste.allocation;
+
+  // Ce qui se trouve sous le plafond sert aussi la recherche principale :
+  // un build qui tient la condition de vie de justesse y passe parfois
+  // mieux que par le chemin ordinaire. Ses meilleurs genomes rejoignent
+  // les migrants, la prochaine vague les juge sur le vrai objectif.
+  migrants.push(...result.topGenomes.slice(0, 4));
+
+  fusionnerPaliers(memoire.survie, result.survie, { cle: 'tranche', valeur: axe.valeur });
+}
+
+/** La tranche a explorer a cette vague, ou null pour une vague ordinaire. */
+function trancheDeLaVague(memoire) {
+  const { survieUtile, meilleur, vague, axe, visites } = memoire;
+  // Une vague sur quatre part sous le gagnant, des qu'un gagnant existe.
+  if (!survieUtile || !meilleur || vague % VAGUES_PAR_TRANCHE !== VAGUES_PAR_TRANCHE - 1) return null;
+  const courant = lireAxe(meilleur, axe.cle);
+  const aVisiter = tranchesAVisiter(trancheDe(courant, axe.pas), TRANCHES_VISITEES);
+  return aVisiter.length > 0 ? aVisiter[visites % aVisiter.length] : null;
+}
+
+/** Une vague sur le vrai objectif du joueur, et son compte rendu au fil principal. */
+function vaguePrincipale(memoire, request, apports) {
+  const debut = memoire.totalGenerations;
+  const result = solve(
+    { ...memoire.base, allocation: memoire.allocation,
+      seedGenomes: [...memoire.graines, ...apports], contexte: memoire.contexte },
+    optionsDeVague(request.options, request.seed + memoire.vague * 7919),
+    (progress) => {
+      if ((debut + progress.generation) % 5 === 0) {
+        self.postMessage({
+          type: 'progress', seed: request.seed,
+          generation: debut + progress.generation, best: progress.best,
+        });
+      }
+    },
+  );
+
+  memoire.totalGenerations += GENERATIONS_PAR_VAGUE;
+  memoire.graines = result.topGenomes;
+  memoire.allocation = result.allocation ?? memoire.allocation;
+
+  for (const candidat of result.candidats ?? []) {
+    memoire.archive.proposer(candidat.itemIds, candidat.score, candidat);
+  }
+  fusionnerPaliers(memoire.paliers, result.paliers, { cle: 'changements', valeur: 'score' });
+  fusionnerPaliers(memoire.survie, result.survie, { cle: 'tranche', valeur: memoire.axe.valeur });
+
+  const resume = resumer(result);
+  if (!memoire.meilleur || resume.score > memoire.meilleur.score) memoire.meilleur = resume;
+
+  /*
+   * La vague porte les paliers, pas seulement le score.
+   *
+   * Le trace « degats ou survie » se construit a partir d'eux. Tant qu'ils
+   * n'arrivaient qu'a la fin, la courbe restait celle de la recherche
+   * PRECEDENTE pendant toute la nouvelle : le joueur lancait, attendait
+   * plusieurs minutes, et ne voyait rien bouger.
+   *
+   * Ce sont deux frontieres, une entree par tranche : quelques dizaines de
+   * lignes, envoyees une fois par seconde et par fil. L'archive des
+   * candidats, elle, reste pour la fin — elle n'a pas de taille promise.
+   */
+  self.postMessage({
+    type: 'vague',
+    seed: request.seed,
+    generation: memoire.totalGenerations,
+    best: memoire.meilleur.score,
+    // La premiere valeur d'une vague repete la derniere de la precedente.
+    history: memoire.vague === 0 ? result.history : result.history.slice(1),
+    resume,
+    paliers: parCle(memoire.paliers, 'changements'),
+    survie: parCle(memoire.survie, 'tranche'),
+    topGenomes: result.topGenomes.slice(0, 4),
+  });
+}
+
+async function chercher(request) {
+  catalogPromise ??= loadCatalog();
+  const memoire = creerMemoire(request, await catalogPromise);
 
   while (!arretDemande) {
     const apports = migrants.splice(0, 8);
-    const debut = totalGenerations;
     const departVague = Date.now();
 
-    // Une vague sur quatre part sous le gagnant, des qu'un gagnant existe.
-    if (survieUtile && meilleur && vague % VAGUES_PAR_TRANCHE === VAGUES_PAR_TRANCHE - 1) {
-      const courant = lireAxe(meilleur, axe.cle);
-      const aVisiter = tranchesAVisiter(trancheDe(courant, axe.pas), TRANCHES_VISITEES);
-      if (aVisiter.length > 0) {
-        explorerTranche(aVisiter[visites % aVisiter.length]);
-        visites += 1;
-        vague += 1;
-        const repos = reposApresVague(Date.now() - departVague, request.intensite);
-        await new Promise((resolve) => setTimeout(resolve, repos));
-        continue;
-      }
+    const tranche = trancheDeLaVague(memoire);
+    if (tranche === null) {
+      vaguePrincipale(memoire, request, apports);
+    } else {
+      explorerTranche(memoire, request, tranche);
+      memoire.visites += 1;
     }
-
-    const result = solve(
-      { ...base, allocation, seedGenomes: [...graines, ...apports], contexte },
-      {
-        ...request.options,
-        maxGenerations: GENERATIONS_PAR_VAGUE,
-        stagnationLimit: Number.POSITIVE_INFINITY,
-        optimiserPoints: true,
-        seed: (request.seed + vague * 7919) >>> 0,
-      },
-      (progress) => {
-        if ((debut + progress.generation) % 5 === 0) {
-          self.postMessage({
-            type: 'progress', seed: request.seed,
-            generation: debut + progress.generation, best: progress.best,
-          });
-        }
-      },
-    );
-
-    totalGenerations += GENERATIONS_PAR_VAGUE;
-    graines = result.topGenomes;
-    allocation = result.allocation ?? allocation;
-
-    for (const candidat of result.candidats ?? []) {
-      archive.proposer(candidat.itemIds, candidat.score, candidat);
-    }
-
-    for (const palier of result.paliers ?? []) {
-      const connu = paliers.get(palier.changements);
-      if (!connu || palier.score > connu.score) paliers.set(palier.changements, palier);
-    }
-
-    for (const palier of result.survie ?? []) {
-      const connu = survie.get(palier.tranche);
-      if (!connu || palier[axe.valeur] > connu[axe.valeur]) survie.set(palier.tranche, palier);
-    }
-
-    const resume = resumer(result);
-    if (!meilleur || resume.score > meilleur.score) meilleur = resume;
-
-    /*
-     * La vague porte les paliers, pas seulement le score.
-     *
-     * Le trace « degats ou survie » se construit a partir d'eux. Tant qu'ils
-     * n'arrivaient qu'a la fin, la courbe restait celle de la recherche
-     * PRECEDENTE pendant toute la nouvelle : le joueur lancait, attendait
-     * plusieurs minutes, et ne voyait rien bouger.
-     *
-     * Ce sont deux frontieres, une entree par tranche : quelques dizaines de
-     * lignes, envoyees une fois par seconde et par fil. L'archive des
-     * candidats, elle, reste pour la fin — elle n'a pas de taille promise.
-     */
-    self.postMessage({
-      type: 'vague',
-      seed: request.seed,
-      generation: totalGenerations,
-      best: meilleur.score,
-      // La premiere valeur d'une vague repete la derniere de la precedente.
-      history: vague === 0 ? result.history : result.history.slice(1),
-      resume,
-      paliers: [...paliers.values()].sort((a, b) => a.changements - b.changements),
-      survie: [...survie.values()].sort((a, b) => a.tranche - b.tranche),
-      topGenomes: result.topGenomes.slice(0, 4),
-    });
-
-    vague += 1;
+    memoire.vague += 1;
     // La pause laisse le fil traiter l'ordre d'arret et les migrants. Sa
     // duree suit l'intensite demandee : c'est elle qui menage le processeur.
-    const repos = reposApresVague(Date.now() - departVague, request.intensite);
-    await new Promise((resolve) => setTimeout(resolve, repos));
+    await reposer(departVague, request.intensite);
   }
 
   self.postMessage({
     type: 'done',
     seed: request.seed,
-    generations: totalGenerations,
-    candidats: archive.liste().map((entree) => entree.detail),
-    paliers: [...paliers.values()].sort((a, b) => a.changements - b.changements),
-    survie: [...survie.values()].sort((a, b) => a.tranche - b.tranche),
-    ...(meilleur ?? { score: Number.NEGATIVE_INFINITY }),
+    generations: memoire.totalGenerations,
+    candidats: memoire.archive.liste().map((entree) => entree.detail),
+    paliers: parCle(memoire.paliers, 'changements'),
+    survie: parCle(memoire.survie, 'tranche'),
+    ...(memoire.meilleur ?? { score: Number.NEGATIVE_INFINITY }),
   });
 }
 
