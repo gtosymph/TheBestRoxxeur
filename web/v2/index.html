@@ -18,6 +18,15 @@
 <meta property="og:image:alt" content="The Best Roxxeur — optimiseur de stuff Dofus, avec une courbe dégâts contre survie.">
 <meta property="og:locale" content="fr_FR">
 <meta name="twitter:card" content="summary_large_image">
+<!-- L'adresse que les moteurs de recherche doivent retenir : la racine du
+     site renvoie ici, et deux adresses pour une page diluent son rang. -->
+<link rel="canonical" href="https://gtosymph.github.io/TheBestRoxxeur/web/v2/index.html">
+<!-- Le losange de la marque, pour reconnaitre l'onglet parmi les autres. -->
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- L'outil s'installe comme une application, et s'ouvre sans reseau. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icone-192.png">
+<meta name="theme-color" content="#16151f">
 <link rel="stylesheet" href="socle.css">
 <link rel="stylesheet" href="../composants.css">
 <link rel="stylesheet" href="coquille.css">
@@ -38,8 +47,12 @@
       var nom = (adresse.get('test') || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       bac = nom && nom !== '1' ? '_test_' + nom : '_test';
     }
+    // Un joueur qui n'a rien choisi suit son systeme : clair, il recoit
+    // THEME_V2_CLAIR (catalogue-themes.mjs), sinon l'habillage de depart.
+    var systemeClair = window.matchMedia
+      && window.matchMedia('(prefers-color-scheme: light)').matches;
     var choix = adresse.get('theme')
-      || localStorage.getItem('copyroxx_v2_theme' + bac) || 'studio';
+      || localStorage.getItem('copyroxx_v2_theme' + bac) || (systemeClair ? 'lin' : 'studio');
     if (/^[a-z-]+$/.test(choix) && choix !== 'studio') {
       var feuille = document.createElement('link');
       feuille.id = 'feuille-theme';
@@ -435,11 +448,12 @@
   import { installerPliage } from '../pliage.mjs';
   import { EN_BAC_DESSAI } from '../stockage.mjs';
   import { CLE_THEME_V2, configurerThemes, installerTheme, THEMES_V2 } from '../theme.mjs';
+  import { THEME_V2_CLAIR } from './catalogue-themes.mjs';
 
   // v2 a ses propres habillages et sa propre cle : « braise » n'existe pas
   // dans la liste de v1, et une cle commune ferait retomber v1 sur son
   // habillage de depart des que v2 aurait ecrit le sien.
-  configurerThemes({ themes: THEMES_V2, defaut: 'studio', cle: CLE_THEME_V2 });
+  configurerThemes({ themes: THEMES_V2, defaut: 'studio', clair: THEME_V2_CLAIR, cle: CLE_THEME_V2 });
   // Sans hote, la fonction se contente de poser l'habillage garde : le choix
   // vit dans la feuille des reglages, pas dans la barre.
   installerTheme(null);
@@ -456,6 +470,14 @@
   // v2 ne nomme pas ses blocs comme v1 : les titres pliables se marquent, et
   // un titre commande la section qui le contient.
   installerPliage({ titres: '.chapeau.pliable', section: '.section', compteur: '.compte' });
+
+  // Le worker garde une copie des fichiers pour ouvrir l'outil sans reseau.
+  // Un refus (navigation privee, fichier local) ne change rien a la page.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch((erreur) => {
+      console.warn('Mode hors ligne indisponible :', erreur);
+    });
+  }
 </script>
 <script type="module" src="./app.mjs"></script>
 

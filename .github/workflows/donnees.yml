@@ -4,7 +4,8 @@
 # rien dire chez nous. Sans ce workflow, le catalogue vieillissait en silence
 # et les builds devenaient faux sans qu'aucun signe n'apparaisse.
 #
-# Chaque lundi matin, il ingere les donnees, les compare a celles du depot et,
+# Chaque lundi matin, il ingere les donnees (objets, panoplies, monstres et
+# sorts), les compare a celles du depot et,
 # si quelque chose a bouge et que les tests passent, ouvre une PR qui dit ce
 # qui change : combien d'objets ajoutes, enleves, modifies, et lesquels. La
 # fusion reste un geste humain — un objet mal ingere ne doit pas partir en
@@ -50,6 +51,13 @@ jobs:
         run: |
           npm run data:all
           npm run data:icons
+
+      # Les sorts se relisent a chaque passage : data/raw n'existe pas ici,
+      # donc les donnees de RoxxSolver se telechargent fraiches. Un sort qui ne
+      # tient pas debout (cout absent, degats aberrants) arrete le workflow au
+      # lieu de partir dans une PR.
+      - name: Auditer les sorts
+        run: npm run audit:sorts
 
       - name: Mesurer le changement
         id: mesure

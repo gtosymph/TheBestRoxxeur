@@ -28,6 +28,8 @@ const MIME = {
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.webmanifest': 'application/manifest+json',
 };
 
 /**
@@ -37,7 +39,7 @@ const MIME = {
  * Sur un telephone en 4G, cela faisait plusieurs secondes d'attente blanche.
  * Gzip fait tomber du JSON d'environ 85 %.
  */
-const COMPRESSIBLES = new Set(['.html', '.css', '.mjs', '.js', '.json', '.svg']);
+const COMPRESSIBLES = new Set(['.html', '.css', '.mjs', '.js', '.json', '.svg', '.webmanifest']);
 
 /** En dessous, la compression coute plus qu'elle ne rapporte. */
 const SEUIL_COMPRESSION = 1024;

@@ -1,13 +1,18 @@
 /**
- * Importe les sorts par classe depuis le projet dofopti-web.
+ * Importe les sorts par classe.
  * Ecrit data/spells.json au format attendu par le moteur.
+ *
+ * La liste des sorts vient d'une copie versionnee de data/classes.json du
+ * projet dofopti-web (scripts/sources/classes-dofopti.json). Avant, le script
+ * lisait ce fichier dans le dossier personnel : il ne tournait que sur une
+ * seule machine, et le rafraichissement automatique ne touchait jamais aux
+ * sorts. Pour mettre la copie a jour, relancez tools/build_classes.py dans
+ * dofopti-web, puis copiez son data/classes.json ici.
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import { lignesDuPalier } from '../src/data/lignes-sorts.mjs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
 
-const SOURCE = join(homedir(), 'projects/Perso/dofopti-web/data/classes.json');
+const SOURCE = 'scripts/sources/classes-dofopti.json';
 
 /**
  * Donnees brutes de RoxxSolver (format DofusDB) : effets par palier, avec
@@ -21,15 +26,15 @@ const URL_ROXX = 'https://roxxsolver.com/get/class_spells?v=3.6.2.1';
  * Bonus « cible telefrag » du Xelor, extraits par scripts/fetch-telefrag.mjs.
  * Cle "<idSort>:<niveau>", valeur { bonusImmediat, bonusParLancer, gainPa }.
  */
-const SOURCE_TELEFRAG = 'data/raw/telefrag-xelor.json';
+const SOURCE_TELEFRAG = 'scripts/sources/telefrag-xelor.json';
 
+/**
+ * Sans ce fichier, les sorts du Xelor perdaient leurs bonus en silence : le
+ * catalogue sortait plus pauvre et rien ne le disait. Il est versionne, donc
+ * son absence est une erreur.
+ */
 async function chargerTelefrag() {
-  try {
-    return JSON.parse(await readFile(SOURCE_TELEFRAG, 'utf8'));
-  } catch {
-    process.stdout.write('Bonus telefrag absents (lancez scripts/fetch-telefrag.mjs).\n');
-    return {};
-  }
+  return JSON.parse(await readFile(SOURCE_TELEFRAG, 'utf8'));
 }
 
 /** Effets "meilleur element" du Huppermage : hors du perimetre de la refonte. */

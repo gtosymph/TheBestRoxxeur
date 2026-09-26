@@ -20,6 +20,23 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.12.0',
+    date: '2026-09-26',
+    titre: 'Installable, et ouvert même sans réseau',
+    points: [
+      'Le site s\'installe comme une application, avec sa propre icône. Il '
+        + 's\'ouvre ensuite même sans réseau, avec les pièces déjà vues.',
+      'Au premier passage, l\'habillage suit votre système : clair si votre '
+        + 'appareil est réglé en clair.',
+      'Pendant une recherche, la liste des stuffs trouvés dit qu\'elle se remplit '
+        + 'à la pause. Quand aucun build ne tient vos minimums, elle le dit aussi.',
+      'Un catalogue qui ne charge pas montre une phrase claire et un bouton '
+        + '« Réessayer ».',
+      'Les messages d\'annulation parlent du bouton « Annuler », et les raccourcis '
+        + 's\'écrivent comme sur votre machine : ⌘ sur un Mac, Ctrl ailleurs.',
+    ],
+  },
+  {
     version: '1.11.0',
     date: '2026-09-24',
     titre: 'Comparer avec son stuff actuel',

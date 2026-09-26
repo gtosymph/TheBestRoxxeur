@@ -14,17 +14,7 @@ import { conditionValue } from '../../src/solver/condition-value.mjs';
 import { ouvrirMinimums } from './vue-minimums.mjs';
 import { avecCible } from './minimums.mjs';
 import { nombre } from './nombres.mjs';
-
-/**
- * Le raccourci de la palette, ecrit comme la machine le dit.
- *
- * « ⌘K » sur un Mac, « Ctrl K » ailleurs : montrer le mauvais signe apprend un
- * geste qui ne marche pas.
- */
-function raccourciPalette() {
-  const surMac = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '');
-  return surMac ? '⌘K' : 'Ctrl K';
-}
+import { raccourci } from './raccourci.mjs';
 
 /** Un bouton ne s'imbrique pas dans un bouton : le geste de cote vit a COTE de la ligne. */
 function ligne(texte, valeur, actions = {}) {
@@ -83,7 +73,7 @@ export function creerRenduAvoir({
           title: 'Voir les pièces que le solveur ne proposera plus.' }));
 
     $('ouvrir-palette').replaceChildren('Toutes les pièces',
-      el('span', { class: 'raccourci', text: raccourciPalette() }));
+      el('span', { class: 'raccourci', text: raccourci('K') }));
   }
 
   function renderMinimums(stats, degats) {

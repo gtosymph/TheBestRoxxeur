@@ -13,6 +13,7 @@ import { renderAnalyse } from '../analyse-panel.mjs';
 import { remplacer } from '../equipement.mjs';
 
 import { nombre } from './nombres.mjs';
+import { notesDesTrouves } from './trouves.mjs';
 
 /**
  * @param {object} liens
@@ -47,6 +48,7 @@ export function creerRenduListes({
       porte: bilan,
       onPorter: (candidat) => recherche.porterAlaMain(candidat),
       selection: selectionDe('trouve', (candidat) => `Trouvé ${candidats.indexOf(candidat) + 1}`),
+      notes: notesDesTrouves(candidats, { enRecherche: recherche.tourne() }),
     });
   }
 

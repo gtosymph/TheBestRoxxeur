@@ -24,6 +24,12 @@
 /** Habillage d'un visiteur qui n'a encore rien choisi. */
 export const THEME_V2_DEFAUT = 'studio';
 
+/**
+ * L'habillage d'un premier passage quand le systeme est regle en clair.
+ * « Lin » est le clair le plus neutre : ni jaune, ni contraste force.
+ */
+export const THEME_V2_CLAIR = 'lin';
+
 export const THEMES_V2 = Object.freeze([
   {
     cle: 'studio',

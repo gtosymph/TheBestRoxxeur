@@ -112,7 +112,7 @@ export function ouvrirImport({ lireEtat, setEtat, message, lireCatalogue }) {
     fermerImport();
     message(`Stuff importé : ${patch.equipped.size} pièce(s) portées et figées comme référence.`
       + (laisses.length > 0 ? ` ${laisses.length} pièce(s) laissée(s) de côté.` : '')
-      + ' Ctrl+Z le rend.', 'info');
+      + ' « Annuler » rend le précédent.', 'info');
   });
 
   racine = el('div', { class: 'feuille-fond', onClick: (ev) => { if (ev.target === racine) fermerImport(); } },

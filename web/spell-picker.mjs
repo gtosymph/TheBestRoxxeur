@@ -200,7 +200,7 @@ export function ouvrirPicker({ classe, niveau, pris, onAjouter, onAjouterPlusieu
         }),
         el('span', { class: 'espace' }),
         el('button', { class: 'mini large', type: 'button', text: 'Ajouter les visibles',
-          title: 'Ajoute tous les sorts qui passent les filtrès, sur leur variante la plus haute',
+          title: 'Ajoute tous les sorts qui passent les filtres, sur leur variante la plus haute',
           onClick: () => ajouterEnMasse(visibles) }),
         el('button', { class: 'mini large', type: 'button', text: 'Ajouter tout',
           title: 'Ajoute tous les sorts de la classe, sur leur variante la plus haute',

@@ -17,7 +17,7 @@ import { CLES, ecrire, lireTexte } from './stockage.mjs';
  *
  * Les chemins de `fichier` y sont relatifs au document, donc a `web/v2/`.
  */
-import { THEME_V2_DEFAUT, THEMES_V2 } from './v2/catalogue-themes.mjs';
+import { THEME_V2_CLAIR, THEME_V2_DEFAUT, THEMES_V2 } from './v2/catalogue-themes.mjs';
 export { THEMES_V2 };
 
 /**
@@ -35,18 +35,36 @@ export const CLE_THEME_V2 = CLES.themeV2;
  */
 let THEMES = THEMES_V2;
 let DEFAUT = THEME_V2_DEFAUT;
+let CLAIR = THEME_V2_CLAIR;
 let CLE = CLE_THEME_V2;
 const ID_FEUILLE = 'feuille-theme';
 
 /**
  * Dit quel jeu de themes cette coquille propose.
  *
- * @param {{themes: any[], defaut: string, cle?: string}} reglage
+ * @param {{themes: any[], defaut: string, clair?: string|null, cle?: string}} reglage
  */
-export function configurerThemes({ themes, defaut, cle = CLE_THEME_V2 }) {
+export function configurerThemes({ themes, defaut, clair = null, cle = CLE_THEME_V2 }) {
   THEMES = themes;
   DEFAUT = defaut;
+  CLAIR = clair;
   CLE = cle;
+}
+
+/**
+ * L'habillage d'un joueur qui n'en a jamais choisi.
+ *
+ * L'habillage de depart est sombre. Un systeme regle en clair recevait quand
+ * meme une page sombre, et le joueur qui n'ouvre jamais les reglages ne
+ * savait pas qu'un habillage clair existait.
+ */
+function habillageDuSysteme() {
+  try {
+    const clair = CLAIR && globalThis.matchMedia?.('(prefers-color-scheme: light)')?.matches;
+    return clair ? CLAIR : DEFAUT;
+  } catch {
+    return DEFAUT;
+  }
 }
 
 /** Rend le theme demande, ou celui par defaut si la cle est inconnue. */
@@ -66,7 +84,7 @@ function trouver(cle) {
 export function themeGarde() {
   const demande = new URLSearchParams(location.search).get('theme');
   if (demande) return trouver(demande).cle;
-  return trouver(lireTexte(CLE)).cle;
+  return trouver(lireTexte(CLE) ?? habillageDuSysteme()).cle;
 }
 
 /** Vrai quand le theme vient de l'adresse : le choix ne doit alors pas etre garde. */

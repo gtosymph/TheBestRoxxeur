@@ -11,7 +11,7 @@ import { LIBELLE_CASE } from './layout.mjs';
 import { iconeStat } from './icons.mjs';
 import { cacherBulle, montrerBulle, suivreBulle } from './hover-card.mjs';
 import {
-  el, entier, fill, nombre, ton, vignette,
+  el, entier, fill, nombre, vignette,
 } from './render-outils.mjs';
 
 export { el } from './render-outils.mjs';
@@ -23,43 +23,6 @@ export { renderAnalyse, renderCandidats, renderPanoplies } from './render-result
 /** Nombre de cases montrees dans le catalogue. */
 const MAX_CASES = 300;
 
-
-/**
- * Remplit un panneau de paires libelle / valeur.
- * @param {HTMLElement} root
- * @param {readonly (readonly [string, string])[]} liste
- * @param {Record<string, number> | null} stats
- */
-export function renderPaires(root, liste, stats, options = {}) {
-  const { suivies = new Set(), onPick = null } = options;
-
-  if (!stats) {
-    fill(root, el('dt', { text: '—' }), el('dd', { class: 'nul', text: '—' }));
-    return;
-  }
-
-  fill(root, liste.flatMap(([cle, libelle]) => {
-    const valeur = stats[cle] ?? 0;
-    const icone = iconeStat(cle);
-    const suivie = suivies.has(cle);
-
-    const nom = el('dt', {
-      class: `${onPick ? 'cliquable' : ''} ${suivie ? 'suivie' : ''}`.trim(),
-      title: onPick
-        ? (suivie ? `${libelle} — déjà dans les conditions` : `${libelle} — cliquez pour en faire une condition`)
-        : libelle,
-      ...(onPick ? { role: 'button', tabindex: '0' } : {}),
-      ...(onPick ? { onClick: () => onPick(cle) } : {}),
-      ...(onPick ? { onKeydown: (ev) => {
-        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onPick(cle); }
-      } } : {}),
-    },
-      icone ? el('img', { src: icone, alt: '', decoding: 'async' }) : null,
-      el('span', { text: libelle }));
-
-    return [nom, el('dd', { class: ton(valeur), text: nombre(valeur) })];
-  }));
-}
 
 /** Types de la case monture, proposes en onglets separes. */
 const TYPES_MONTURE = Object.freeze(['Dragodinde', 'Volkorne', 'Muldo', 'Familier', 'Montilier']);
@@ -182,38 +145,6 @@ export function renderCatalogue(root, compteur, items, onPick, bannis = new Set(
   compteur.textContent = items.length > MAX_CASES
     ? `${nombre(items.length)} pièces — ${MAX_CASES} montrées`
     : `${nombre(items.length)} piece${items.length > 1 ? 's' : ''}`;
-}
-
-/**
- * Remplit la liste des pieces bannies.
- * @param {HTMLElement} root
- * Le meme rendu sert aux pieces que le joueur possede : dans les deux cas,
- * une liste de pieces dont un clic retire l'etiquette.
- *
- * @param {any[]} items Pieces bannies, dans l'ordre du catalogue.
- * @param {(item: any) => void} onUnban
- * @param {{vide?: string, aide?: string}} [textes] Mots propres a la liste.
- */
-export function renderBannis(root, items, onUnban, textes = {}) {
-  const {
-    vide = 'Aucune pièce bannie. Ouvrez la fiche d\'une pièce pour la bannir.',
-    aide = 'cliquez pour autoriser de nouveau',
-  } = textes;
-
-  if (items.length === 0) {
-    fill(root, el('p', { class: 'note', text: vide }));
-    return;
-  }
-
-  fill(root, items.map((item) => el('button', {
-    class: 'puce-bannie', type: 'button',
-    title: `${item.fr} — ${aide}`,
-    onClick: () => onUnban(item),
-  },
-    item.img ? el('img', { src: item.img, alt: '', decoding: 'async' }) : null,
-    el('span', { text: item.fr }),
-    el('span', { class: 'croix', text: '×' }),
-  )));
 }
 
 /**
