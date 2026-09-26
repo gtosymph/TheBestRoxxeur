@@ -1,0 +1,62 @@
+{
+ "13254:15": {
+  "bonusImmediat": 0,
+  "bonusParLancer": 4,
+  "gainPa": 0
+ },
+ "13254:82": {
+  "bonusImmediat": 0,
+  "bonusParLancer": 5,
+  "gainPa": 0
+ },
+ "13254:149": {
+  "bonusImmediat": 0,
+  "bonusParLancer": 6,
+  "gainPa": 0
+ },
+ "13253:30": {
+  "bonusImmediat": 6,
+  "bonusParLancer": 0,
+  "gainPa": 0
+ },
+ "13253:97": {
+  "bonusImmediat": 9,
+  "bonusParLancer": 0,
+  "gainPa": 0
+ },
+ "13253:164": {
+  "bonusImmediat": 12,
+  "bonusParLancer": 0,
+  "gainPa": 0
+ },
+ "13242:35": {
+  "bonusImmediat": 0,
+  "bonusParLancer": 0,
+  "gainPa": 1
+ },
+ "13242:102": {
+  "bonusImmediat": 0,
+  "bonusParLancer": 0,
+  "gainPa": 1
+ },
+ "13242:169": {
+  "bonusImmediat": 0,
+  "bonusParLancer": 0,
+  "gainPa": 1
+ },
+ "13256:50": {
+  "bonusImmediat": 12,
+  "bonusParLancer": 0,
+  "gainPa": 0
+ },
+ "13256:117": {
+  "bonusImmediat": 18,
+  "bonusParLancer": 0,
+  "gainPa": 0
+ },
+ "13256:184": {
+  "bonusImmediat": 24,
+  "bonusParLancer": 0,
+  "gainPa": 0
+ }
+}

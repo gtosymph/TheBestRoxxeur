@@ -15,6 +15,7 @@ npm run serve     # ouvre http://localhost:4173/web/v2/index.html
 npm test          # lance les tests (node:test, aucune dependance)
 npm run bench     # mesure la convergence du solveur
 npm run bench:gate  # le meme banc, en garde-fou : il echoue si le score baisse
+npm run smoke     # ouvre la page dans Chrome sans fenetre et refuse toute erreur
 ```
 
 Node 22 ou plus recent est necessaire. Le projet n'a aucune dependance de
@@ -144,7 +145,7 @@ force par `?theme=`.
 ## Les donnees
 
 `data/` porte les JSON ingeres depuis les sources du jeu. Les scripts
-`npm run data:items`, `data:sets`, `data:effects` les reconstruisent.
+`npm run data:items`, `data:sets`, `data:effects` et `data:sorts` les reconstruisent.
 `data/raw/` garde les sources brutes : ne le modifiez jamais a la main.
 
 ## Le profil du joueur

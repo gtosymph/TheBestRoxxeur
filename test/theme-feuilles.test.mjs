@@ -157,3 +157,34 @@ test('une feuille introuvable s\'enleve au lieu de rester vide', async () => {
 
   assert.deepEqual(doc.feuilles(), []);
 });
+
+/* ------------------------------------- L'habillage d'un premier passage --- */
+
+/** Pose un systeme clair ou sombre, et un choix garde ou non. */
+async function premierPassage({ clair, garde = null, sansMedia = false }) {
+  const { theme } = await poserLeDecor();
+  globalThis.localStorage = { getItem: () => garde, setItem() {}, removeItem() {} };
+  globalThis.matchMedia = sansMedia ? undefined : (requete) => ({
+    matches: requete.includes('light') ? clair : !clair,
+  });
+  theme.configurerThemes({ themes: theme.THEMES_V2, defaut: 'studio', clair: 'lin', cle: 'essai' });
+  return theme;
+}
+
+test('un premier passage suit la preference du systeme', async (t) => {
+  await t.test('un systeme clair recoit un habillage clair', async () => {
+    assert.equal((await premierPassage({ clair: true })).themeGarde(), 'lin');
+  });
+
+  await t.test('un systeme sombre garde l\'habillage de depart', async () => {
+    assert.equal((await premierPassage({ clair: false })).themeGarde(), 'studio');
+  });
+
+  await t.test('le choix garde passe devant le systeme', async () => {
+    assert.equal((await premierPassage({ clair: true, garde: 'braise' })).themeGarde(), 'braise');
+  });
+
+  await t.test('sans matchMedia, l\'habillage de depart s\'applique', async () => {
+    assert.equal((await premierPassage({ clair: true, sansMedia: true })).themeGarde(), 'studio');
+  });
+});

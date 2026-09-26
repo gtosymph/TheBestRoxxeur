@@ -34,6 +34,11 @@ jobs:
       - name: Banc de convergence
         run: npm run bench:gate
 
+      # Ouvre la page dans Chrome, deja installe sur le runner. Une faute
+      # d'import dans l'interface passait les tests et publiait un ecran blanc.
+      - name: Ouverture dans le navigateur
+        run: npm run smoke
+
   publier:
     # Les propositions de fusion se verifient, elles ne se publient pas.
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'

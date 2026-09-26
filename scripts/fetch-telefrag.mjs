@@ -11,12 +11,12 @@
  *     (Ralentissement rend 1 PA).
  *
  * Les sous-sorts ne sont pas dans class_spells : ils viennent de l'API
- * DofusDB, avec un cache local. Ecrit data/raw/telefrag-xelor.json.
+ * DofusDB, avec un cache local. Ecrit scripts/sources/telefrag-xelor.json.
  */
 import { readFile, writeFile } from 'node:fs/promises';
 
 const SOURCE = 'data/raw/class_spells.json';
-const SORTIE = 'data/raw/telefrag-xelor.json';
+const SORTIE = 'scripts/sources/telefrag-xelor.json';
 const API = 'https://api.dofusdb.fr';
 
 /** Element de chaque effet de degats. */

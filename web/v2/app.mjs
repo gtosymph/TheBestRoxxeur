@@ -64,6 +64,7 @@ import { creerJeux } from './jeux-enregistres.mjs';
 import { creerEssais } from './essais.mjs';
 import { creerVoletsEcran } from './volets-ecran.mjs';
 import { brancherClavier } from './clavier.mjs';
+import { raccourci } from './raccourci.mjs';
 
 const { $, muets } = creerPont({ racine: document, fabrique: (t) => document.createElement(t) });
 
@@ -135,12 +136,13 @@ function annuler() {
 /** Enleve toutes les pieces portees. L'annulation les repose. */
 function vider() {
   setEtat({ equipped: new Map(), posees: new Set() });
-  message('Toutes les pièces sont enlevées. Ctrl+Z les repose.');
+  message('Toutes les pièces sont enlevées. « Annuler » les repose.');
 }
 
 function message(texte, type = 'info') {
   const zone = $('message');
   zone.textContent = texte ?? '';
+  zone.removeAttribute('title');
   zone.className = `message-v2 ${texte ? type : ''}`.trim();
 }
 
@@ -316,7 +318,7 @@ function renderArret() {
   bouton.title = cherche
     ? 'Coupe la recherche net. Contrairement à la pause, elle ne rend rien : '
       + 'ce que les fils avaient en main est perdu.'
-    : 'Annule la dernière action (Ctrl+Z)';
+    : `Annule la dernière action (${raccourci('Z')})`;
   bouton.replaceChildren(
     icone(cherche ? 'stop' : 'annuler'),
     el('span', { text: cherche ? 'Arrêter' : 'Annuler' }));
@@ -516,9 +518,9 @@ async function accueillirLien() {
       }
       const perdus = sorts.length - tenus.length;
       message(perdus > 0
-        ? `Réglage adopte, sans ${perdus} sort(s) que le catalogue ne connaît pas. `
-          + 'Ctrl+Z rend le votre.'
-        : 'Réglage adopte. Ctrl+Z rend le votre.');
+        ? `Réglage adopté, sans ${perdus} sort(s) que le catalogue ne connaît pas. `
+          + '« Annuler » rend le vôtre.'
+        : 'Réglage adopté. « Annuler » rend le vôtre.');
       render();
     },
   });
@@ -598,8 +600,26 @@ async function main() {
     await accueillirLien();
     proposerVisiteUneFois();
   } catch (erreur) {
-    message(`Catalogue indisponible : ${erreur.message}`, 'erreur');
+    montrerEchecDuDemarrage(erreur);
   }
+}
+
+/**
+ * Le demarrage a echoue : le plus souvent, le catalogue n'est pas arrive.
+ *
+ * Le message montrait l'erreur JavaScript brute, que le joueur ne peut ni lire
+ * ni corriger. La phrase dit quoi faire ; le detail reste dans la console et
+ * dans l'info-bulle, pour qui signale le probleme.
+ */
+function montrerEchecDuDemarrage(erreur) {
+  console.error('Demarrage impossible :', erreur);
+  message('Le catalogue n\'a pas pu se charger. Vérifiez votre connexion, puis réessayez.', 'erreur');
+  const zone = $('message');
+  zone.title = `Détail : ${erreur?.message ?? erreur}`;
+  zone.append(' ', el('button', {
+    class: 'btn mini', type: 'button', text: 'Réessayer',
+    onClick: () => window.location.reload(),
+  }));
 }
 
 /*

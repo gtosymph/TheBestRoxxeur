@@ -95,7 +95,7 @@ function garnir(noeud, item, contexte = {}) {
           ];
         })),
 
-    restant > 0 ? el('div', { class: 'bulle-reste', text: `+ ${restant} autrès` }) : null,
+    restant > 0 ? el('div', { class: 'bulle-reste', text: `+ ${restant} autres` }) : null,
 
     passifDe(item.id)
       ? el('div', { class: 'bulle-passif' },

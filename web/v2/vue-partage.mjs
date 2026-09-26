@@ -176,7 +176,7 @@ export function proposerReglage({ compte, nomDeClasse, onAdopter }) {
             + 'elles ne seront pas posées.' })]
         : []),
       el('p', { class: 'aide',
-        text: 'L\'adopter remplace ce qui est à l\'écran. Ctrl+Z le rend.' }),
+        text: 'L\'adopter remplace ce qui est à l\'écran. « Annuler » le rend.' }),
       el('div', { class: 'ligne-lien' },
         el('button', { class: 'btn premier', type: 'button', text: 'Adopter ce réglage',
           onClick: () => { fermerPartage(); onAdopter(); } }),

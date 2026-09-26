@@ -93,14 +93,22 @@ export function renderAnalyse(racineApports, racineSensibilite, analyse) {
  * @param {Map<number, any>} contexte.itemById
  * @param {number|null} contexte.scorePorte Score du build porte, ou null.
  * @param {(candidat: any) => void} contexte.onPorter
+ * @param {{vide?: string, avertissement?: string|null}} [contexte.notes] Ce que
+ *   la liste dit quand elle est vide, et au-dessus des builds.
  */
-export function renderCandidats(root, candidats, { portes, itemById, porte, onPorter, selection = null }) {
+export function renderCandidats(root, candidats, {
+  portes, itemById, porte, onPorter, selection = null, notes = {},
+}) {
   if (!candidats || candidats.length === 0) {
-    fill(root, el('p', { class: 'note', text: 'Aucun autre build. Lancez une recherche.' }));
+    fill(root, el('p', { class: 'note', text: notes.vide ?? 'Aucun autre build. Lancez une recherche.' }));
     return;
   }
 
-  fill(root, candidats.map((candidat) => {
+  const avertissement = notes.avertissement
+    ? el('p', { class: 'note', role: 'status', text: notes.avertissement })
+    : null;
+
+  fill(root, [avertissement, ...candidats.map((candidat) => {
     const ids = candidat.itemIds ?? [];
     const aMettre = ids.filter((id) => !portes.has(id));
     const aEnlever = [...portes].filter((id) => !ids.includes(id));
@@ -179,7 +187,7 @@ export function renderCandidats(root, candidats, { portes, itemById, porte, onPo
         ? el('div', { class: 'candidat-exos', text: decrireExos(candidat.exos, itemById) })
         : null,
     );
-  }));
+  })]);
 }
 
 /**

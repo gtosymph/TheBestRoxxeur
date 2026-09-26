@@ -15,6 +15,7 @@
  */
 import { CLES, ecrire, lireTexte } from '../stockage.mjs';
 import { LARGEUR_TELEPHONE } from './volets.mjs';
+import { raccourci } from './raccourci.mjs';
 
 /** Cle du rangement : la visite ne se propose d'office qu'une fois. */
 export const CLE_VISITE = CLES.visite;
@@ -75,8 +76,8 @@ export const ETAPES = Object.freeze([
   {
     cible: '#ouvrir-palette',
     titre: 'Le catalogue',
-    texte: 'Toutes les pièces du jeu, cherchables. Ctrl+K l\'ouvre de '
-      + 'n\'importe ou. Une pièce posée à la main reste : la recherche cherche '
+    texte: `Toutes les pièces du jeu, cherchables. ${raccourci('K')} l'ouvre de `
+      + 'n\'importe où. Une pièce posée à la main reste : la recherche cherche '
       + 'autour d\'elle.',
   },
   {
@@ -118,7 +119,7 @@ export const ETAPES = Object.freeze([
   },
   {
     cible: '#trouves',
-    titre: 'Les autrès stuffs',
+    titre: 'Les autres stuffs',
     texte: 'La recherche en garde plusieurs, pas seulement le meilleur. '
       + 'Cochez-en deux pour les comparer pièce par pièce.',
   },
