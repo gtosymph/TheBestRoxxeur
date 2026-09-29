@@ -20,6 +20,22 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.13.0',
+    date: '2026-09-29',
+    titre: 'Vos sorts, et les coups qui viennent après',
+    points: [
+      'Chaque sort qui frappe aux tours suivants ou sous condition porte sa propre '
+        + 'case : cochez-la pour compter ces dégâts dans le total.',
+      'Aiguille est corrigé : son poison touche au tour suivant, et son second coup '
+        + 'tombe seulement si la cible perd le Téléfrag.',
+      'Le bouton « Créer un sort » écrit un sort que le catalogue ne connaît pas, '
+        + 'avec autant de lignes de dégâts que vous voulez.',
+      'Le lien de partage transporte vos sorts écrits à la main, vos lancers et '
+        + 'vos cases cochées.',
+      'Le choix des sorts montre à part les dégâts des tours suivants, au lieu de « 0–0 ».',
+    ],
+  },
+  {
     version: '1.12.0',
     date: '2026-09-26',
     titre: 'Installable, et ouvert même sans réseau',

@@ -56,6 +56,7 @@ import { ouvrirImport } from './vue-import.mjs';
 import { creerRenduVerdict } from './rendu-verdict.mjs';
 import { creerRenduAvoir } from './rendu-avoir.mjs';
 import { creerRenduSorts } from './rendu-sorts.mjs';
+import { creerGestesSortPerso } from './gestes-sort-perso.mjs';
 import { creerRenduInspecteur } from './rendu-inspecteur.mjs';
 import { creerRenduListes } from './rendu-listes.mjs';
 import { creerComparateur } from './comparateur.mjs';
@@ -171,6 +172,8 @@ const gestesSorts = creerGestesSorts({
   lireEtat, setEtat, message, lireClassesSorts: () => classesSorts,
 });
 
+const gestesPerso = creerGestesSortPerso({ lireEtat, setEtat, message, gestesSorts });
+
 const gestesReference = creerGestesReference({
   lireEtat, setEtat, message, nomDeClasse, lireRecherche: () => recherche,
 });
@@ -199,7 +202,7 @@ const avoir = creerRenduAvoir({
 });
 
 const rangeeSorts = creerRenduSorts({
-  $, lireEtat, setEtat, lireCatalogue, lireClassesSorts: () => classesSorts, gestesSorts,
+  $, lireEtat, setEtat, lireCatalogue, lireClassesSorts: () => classesSorts, gestesSorts, gestesPerso,
 });
 
 const inspecteur = creerRenduInspecteur({

@@ -11,6 +11,7 @@
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import { lignesDuPalier } from '../src/data/lignes-sorts.mjs';
+import { avecLignesSpeciales } from '../src/data/lignes-speciales.mjs';
 
 const SOURCE = 'scripts/sources/classes-dofopti.json';
 
@@ -140,20 +141,37 @@ function enrichirVariante(variante, sortRoxx) {
   const lignes = lignesRoxx(palier);
   if (lignes.length === 0) return variante;
 
-  const immediates = lignes.filter((l) => !(l.differe > 0));
-  const somme = (liste, cle) => liste.reduce((n, l) => n + l[cle], 0);
+  return {
+    ...avecTotauxDuTour(variante, lignes),
+    critRate: Number(palier.criticalHitProbability ?? variante.critRate ?? 0),
+  };
+}
+
+/**
+ * Pose des lignes sur une variante, avec les totaux qu'elle montre.
+ *
+ * Les totaux ne comptent que les degats surs du tour courant : une ligne
+ * differee ou sous condition se lit a part, dans le detail du sort.
+ */
+function avecTotauxDuTour(variante, lignes) {
+  const immediates = lignes.filter((l) => !(l.differe > 0) && !l.condition);
+  const somme = (cle) => immediates.reduce((n, l) => n + l[cle], 0);
 
   return {
     ...variante,
     lines: lignes,
     element: (immediates[0] ?? lignes[0]).element,
-    critRate: Number(palier.criticalHitProbability ?? variante.critRate ?? 0),
-    // Les totaux montres ne comptent que les degats du tour courant.
-    min: somme(immediates, 'min'),
-    max: somme(immediates, 'max'),
-    critMin: somme(immediates, 'critMin'),
-    critMax: somme(immediates, 'critMax'),
+    min: somme('min'),
+    max: somme('max'),
+    critMin: somme('critMin'),
+    critMax: somme('critMax'),
   };
+}
+
+/** Applique la table des lignes speciales (src/data/lignes-speciales.mjs). */
+function corrigerSpeciales(idSort, variante) {
+  const lignes = avecLignesSpeciales(idSort, variante.lines ?? []);
+  return lignes === variante.lines ? variante : avecTotauxDuTour(variante, lignes);
 }
 
 /** Ramene un chemin d'icone vers le dossier local des ressources. */
@@ -227,6 +245,7 @@ async function main() {
       const cout = coutRoxx(sortRoxx);
       const paliers = variantes(sort.levels)
         .map((v) => (sortRoxx ? enrichirVariante(v, sortRoxx) : v))
+        .map((v) => corrigerSpeciales(sort.id, v))
         .map((v) => {
           const bonus = telefragParCle[`${sort.id}:${v.level}`];
           return bonus ? { ...v, telefragCible: bonus } : v;

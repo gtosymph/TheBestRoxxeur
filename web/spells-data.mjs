@@ -71,6 +71,8 @@ export function versSortMoteur(sort, contexte = {}) {
       critMin: ligne.critMin, critMax: ligne.critMax,
       // Une ligne differee touche N tours apres le lancer.
       ...(ligne.differe > 0 ? { differe: ligne.differe } : {}),
+      // Une ligne sous condition ne tombe que si le combat s'y prete.
+      ...(ligne.condition ? { condition: ligne.condition } : {}),
       source: contexte.source ?? 'sort',
       range: contexte.range ?? null,
     })),

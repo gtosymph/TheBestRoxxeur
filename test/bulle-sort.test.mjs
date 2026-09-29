@@ -56,6 +56,11 @@ test('les lignes d un sort', async (t) => {
     assert.equal(lignesDuSort(differe)[0].differe, 1);
   });
 
+  await t.test('une ligne sous condition dit sa condition', () => {
+    const cond = { lines: [{ element: 'terre', min: 9, max: 12, condition: 'Si la cible perd le Téléfrag' }] };
+    assert.equal(lignesDuSort(cond)[0].condition, 'Si la cible perd le Téléfrag');
+  });
+
   await t.test('un sort sans ligne rend une liste vide', () => {
     assert.deepEqual(lignesDuSort({}), []);
     assert.deepEqual(lignesDuSort(null), []);
@@ -127,5 +132,30 @@ test('la description complete', async (t) => {
 
   await t.test('sans sort, il n y a rien a decrire', () => {
     assert.equal(decrireSort(null), null);
+  });
+});
+
+test('la bulle dit les degats gardes a part, et s\'ils comptent', async (t) => {
+  const SABLIER = {
+    name: 'Sablier', apCost: 2, castsPerTurn: 1,
+    lines: [
+      { element: 'feu', min: 10, max: 12, critMin: 13, critMax: 15 },
+      { element: 'feu', min: 23, max: 25, critMin: 28, critMax: 30, differe: 2 },
+    ],
+  };
+
+  await t.test('non comptes, ils se lisent quand meme', () => {
+    const vue = decrireSort(SABLIER, { stats: { intelligence: 100 } });
+    assert.ok(vue.phrases.some((p) => /tours suivants.*non compté/.test(p)), vue.phrases.join(' | '));
+  });
+
+  await t.test('comptes, la bulle le dit', () => {
+    const vue = decrireSort({ ...SABLIER, compterDiffere: true }, { stats: { intelligence: 100 } });
+    assert.ok(vue.phrases.some((p) => /tours suivants.*\(compté\)/.test(p)), vue.phrases.join(' | '));
+  });
+
+  await t.test('un sort ordinaire n\'en parle pas', () => {
+    const vue = decrireSort({ ...SABLIER, lines: [SABLIER.lines[0]] }, { stats: { intelligence: 100 } });
+    assert.ok(!vue.phrases.some((p) => /tours suivants/.test(p)));
   });
 });

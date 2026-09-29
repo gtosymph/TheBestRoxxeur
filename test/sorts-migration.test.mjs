@@ -105,3 +105,50 @@ test('les lignes de degats suivent le catalogue', async (t) => {
     assert.equal(enrichirSorts(sorts, [], 200).sorts, sorts);
   });
 });
+
+test('une ligne sous condition atteint les sorts deja choisis', () => {
+  // Aiguille comptait son poison au tour meme. Le catalogue corrige ajoute
+  // un coup sous condition : un joueur qui avait deja pris le sort doit le
+  // recevoir, et garder son choix de le compter ou non.
+  const catalogue = [{
+    id: 5, spells: [{
+      id: 13244, fr: 'Aiguille', apCost: 2, maxCast: 3, exclusiveGroup: 330,
+      variants: [{
+        level: 192, critRate: 5, element: 'terre',
+        lines: [
+          { element: 'terre', min: 9, max: 12, critMin: 13, critMax: 16, differe: 1 },
+          { element: 'terre', min: 9, max: 12, critMin: 13, critMax: 16, condition: 'Si la cible perd le Téléfrag' },
+        ],
+      }],
+    }],
+  }];
+  const ancien = {
+    id: 13244, name: 'Aiguille', exclusiveGroup: 330, telefragCible: null, speciales: true,
+    lines: [
+      { element: 'terre', min: 9, max: 12, critMin: 13, critMax: 16, source: 'sort', range: null },
+      { element: 'terre', min: 9, max: 12, critMin: 13, critMax: 16, source: 'sort', range: null },
+    ],
+  };
+  const [sort] = enrichirSorts([ancien], catalogue, 200).sorts;
+  assert.equal(sort.lines[0].differe, 1);
+  assert.equal(sort.lines[1].condition, 'Si la cible perd le Téléfrag');
+  assert.equal(sort.speciales, true, 'le choix du joueur reste');
+});
+
+test('un sort recu par un lien garde les choix du joueur', () => {
+  // Le lien ne porte que l'identifiant et les choix : le catalogue refabrique
+  // le reste, sans perdre les lancers ni le choix des lignes speciales.
+  const recu = { id: 100, repeats: 2, speciales: true, unParTour: true };
+  const [sort] = enrichirSorts([recu], CATALOGUE, 200).sorts;
+  assert.equal(sort.name, 'Flamme');
+  assert.equal(sort.repeats, 2);
+  assert.equal(sort.speciales, true);
+  assert.equal(sort.unParTour, true);
+});
+
+test('un sort ecrit par le joueur ne bouge pas', async () => {
+  const { nouveauSortPerso } = await import('../src/data/sort-perso.mjs');
+  const perso = nouveauSortPerso([]);
+  const sorts = [perso];
+  assert.equal(enrichirSorts(sorts, CATALOGUE, 200).sorts, sorts);
+});

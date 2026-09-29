@@ -287,3 +287,32 @@ test('la cible voyage dans le lien et revient entiere', async () => {
 test('une cible vide ne voyage pas', () => {
   assert.equal(formePartagee(etatInitial()).cible, undefined);
 });
+
+test('un sort personnalise voyage entier dans le lien', async () => {
+  // Le catalogue ne peut pas refabriquer un sort que le joueur a ecrit : sa
+  // fiche entiere voyage, a cote des identifiants des sorts du jeu.
+  const { nouveauSortPerso } = await import('../src/data/sort-perso.mjs');
+  const perso = {
+    ...nouveauSortPerso([]), name: 'Combo allie', apCost: 4, castsPerTurn: 2,
+    lines: [
+      { element: 'air', min: 20, max: 22, critMin: 24, critMax: 26, source: 'sort', range: null },
+      { element: 'feu', min: 5, max: 6, critMin: 7, critMax: 8, differe: 1, source: 'sort', range: null },
+    ],
+  };
+  const depart = { ...etatRegle(), sorts: [...etatRegle().sorts, perso] };
+  const arrivee = adopter(await decoder(await coder(depart)), CATALOGUE);
+
+  assert.equal(arrivee.sorts.length, 2);
+  assert.deepEqual(arrivee.sorts[0], { id: 1 });
+  const [, recu] = arrivee.sorts;
+  assert.equal(recu.name, 'Combo allie');
+  assert.equal(recu.lines.length, 2);
+  assert.equal(recu.lines[1].differe, 1);
+});
+
+test('les lancers et le choix des lignes speciales voyagent avec le sort', async () => {
+  const sort = { ...etatRegle().sorts[0], repeats: 2, speciales: true };
+  const arrivee = adopter(await decoder(await coder({ ...etatRegle(), sorts: [sort] })), CATALOGUE);
+
+  assert.deepEqual(arrivee.sorts, [{ id: 1, repeats: 2, speciales: true }]);
+});

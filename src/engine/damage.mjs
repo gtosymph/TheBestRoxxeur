@@ -174,6 +174,23 @@ export function computeLine(line, stats, critRate = criticalRate(stats), resista
 }
 
 /**
+ * Vrai quand une ligne entre dans le total du sort.
+ *
+ * Une ligne ordinaire compte toujours. Une ligne differee attend
+ * `compterDiffere`, une ligne sous condition attend `compterCondition` : le
+ * fait vient de la ligne, le choix vient du sort.
+ *
+ * @param {{differe?: number, condition?: string}} line
+ * @param {{compterDiffere?: boolean, compterCondition?: boolean}} spell
+ * @returns {boolean}
+ */
+export function ligneComptee(line, spell) {
+  if (line.differe > 0 && spell.compterDiffere !== true) return false;
+  if (line.condition && spell.compterCondition !== true) return false;
+  return true;
+}
+
+/**
  * Calcule les degats moyens d'un sort compose de plusieurs lignes.
  *
  * Le total d'un sort additionne ses lignes, pour UN lancer : c'est la valeur
@@ -197,29 +214,38 @@ export function computeLine(line, stats, critRate = criticalRate(stats), resista
  * le sort porte ce que l'utilisateur veut compter.
  *
  * @param {boolean} [spell.compterDiffere] Compter les lignes des tours suivants.
+ *
+ * Une ligne sous condition (`condition`, un libelle) ne tombe que si le
+ * combat s'y prete : Aiguille frappe encore quand la cible perd le Telefrag.
+ * Elle suit la meme regle que le differe : elle se lit a part, dans
+ * « conditionnel », et `spell.compterCondition` la fait entrer dans le total.
+ * Une ligne a la fois differee et sous condition exige les deux choix.
+ *
+ * @param {boolean} [spell.compterCondition] Compter les lignes sous condition.
  * @param {Record<string, number>} stats
  * @param {Record<string, number>} [resistances] Resistances de la cible par
  *   element (voir cible.mjs). Absentes : la cible ne resiste a rien.
- * @returns {{normal: number, critical: number, average: number, differe: number, perAp: number|null}}
+ * @returns {{normal: number, critical: number, average: number, differe: number,
+ *   conditionnel: number, perAp: number|null}}
  */
 export function computeSpell(spell, stats, resistances = null) {
   const lines = Array.isArray(spell.lines) ? spell.lines : [];
   const rate = criticalRate(stats, spell.baseCrit ?? 0);
-  const compterDiffere = spell.compterDiffere === true;
 
   let normal = 0;
   let critical = 0;
   let average = 0;
   let differe = 0;
+  let conditionnel = 0;
 
   for (const line of lines) {
     const result = computeLine(line, stats, rate, resistances);
-    if (line.differe > 0) {
-      differe += result.average;
-      // Le differe se lit toujours a part, meme quand il compte : c'est ce
-      // qui permet de montrer « dont tant aux tours suivants ».
-      if (!compterDiffere) continue;
-    }
+    // Le differe et le conditionnel se lisent toujours a part, meme quand ils
+    // comptent : c'est ce qui permet de montrer « dont tant aux tours suivants ».
+    if (line.differe > 0) differe += result.average;
+    if (line.condition) conditionnel += result.average;
+    if (!ligneComptee(line, spell)) continue;
+
     normal += result.normal;
     critical += result.critical;
     average += result.average;
@@ -234,6 +260,7 @@ export function computeSpell(spell, stats, resistances = null) {
     critical,
     average,
     differe,
+    conditionnel,
     casts,
     parTour: average * casts,
     perAp: apCost ? average / apCost : null,
@@ -302,7 +329,6 @@ export function computeSpellDetail(spell, stats, resistances = null) {
   const lines = Array.isArray(spell.lines) ? spell.lines : [];
   const moyennes = computeSpell(spell, stats, resistances);
   const rate = criticalRate(stats, spell.baseCrit ?? 0);
-  const compterDiffere = spell.compterDiffere === true;
 
   const bornes = { normalMin: 0, normalMax: 0, critMin: 0, critMax: 0 };
   const parLigne = [];
@@ -315,6 +341,7 @@ export function computeSpellDetail(spell, stats, resistances = null) {
     const ligne = {
       element,
       differe: line.differe > 0 ? line.differe : 0,
+      ...(line.condition ? { condition: line.condition } : {}),
       normalMin: computeHit({ element, base: min, source, range, maitrise }, stats, resistances),
       normalMax: computeHit({ element, base: max, source, range, maitrise }, stats, resistances),
       critMin: computeHit({ element, base: critMin, critical: true, source, range, maitrise }, stats, resistances),
@@ -322,9 +349,9 @@ export function computeSpellDetail(spell, stats, resistances = null) {
     };
 
     // Les bornes montrees decrivent ce que le score additionne : une ligne
-    // differee ne les gonfle que si l'utilisateur la compte. Sinon elle se lit
-    // dans le detail, a part.
-    if (!ligne.differe || compterDiffere) {
+    // differee ou sous condition ne les gonfle que si l'utilisateur la compte.
+    // Sinon elle se lit dans le detail, a part.
+    if (ligneComptee(line, spell)) {
       bornes.normalMin += ligne.normalMin;
       bornes.normalMax += ligne.normalMax;
       bornes.critMin += ligne.critMin;

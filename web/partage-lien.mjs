@@ -34,6 +34,7 @@
 import { enBase64, versOctets } from '../src/partage/base64.mjs';
 import { appliquerRange, serialiserEtat } from './etat-stockage.mjs';
 import { etatInitial } from './reglages.mjs';
+import { sortsPartages, sortsRanges } from './partage-sorts.mjs';
 
 /** Nom du champ, dans le fragment. */
 export const CHAMP = 'b';
@@ -149,11 +150,12 @@ export function formePartagee(etat) {
    * qui partage — un lien fabrique sur un poste renvoyait les autres vers un
    * fichier qui n'existe que la.
    *
-   * Rien ne se perd : un sort ne se modifie pas a la main dans l'outil, il
-   * s'ajoute et s'enleve. Le catalogue le refabrique a l'arrivee, et il le
-   * refabrique AU NIVEAU DU LIEN, donc a la bonne variante.
+   * Le catalogue le refabrique a l'arrivee, AU NIVEAU DU LIEN, donc a la
+   * bonne variante. Les choix du joueur et les sorts qu'il a ecrits
+   * lui-meme voyagent a part : voir partage-sorts.mjs.
    */
-  if ((etat.sorts ?? []).length > 0) forme.sorts = etat.sorts.map((sort) => sort.id);
+  delete forme.sorts;
+  Object.assign(forme, sortsPartages(etat.sorts));
 
   // Un minimum se lit a l'ordre de ses champs, pas a leur nom. Le tri au
   // dessus a deja decide si les minimums voyagent : ceux de depart, non.
@@ -207,11 +209,8 @@ export function formeRangee(forme) {
     range.posees = [];
   }
 
-  if (Array.isArray(forme.sorts)) {
-    range.sorts = forme.sorts
-      .filter((id) => Number.isFinite(id))
-      .map((id) => ({ id }));
-  }
+  delete range.perso;
+  if (Array.isArray(forme.sorts) || Array.isArray(forme.perso)) range.sorts = sortsRanges(forme);
 
   if (Array.isArray(forme.conditions)) {
     range.conditions = forme.conditions
@@ -331,7 +330,7 @@ export function resume(forme, catalogue) {
   return {
     pieces: portees.length,
     inconnues: portees.filter((id) => !catalogue?.itemById?.has(id)).length,
-    sorts: Array.isArray(forme?.sorts) ? forme.sorts.length : 0,
+    sorts: sortsRanges(forme).length,
     minimums: Array.isArray(forme?.conditions) ? forme.conditions.length : 0,
     niveau: Number.isFinite(forme?.niveau) ? forme.niveau : null,
     classe: Number.isFinite(forme?.classe) ? forme.classe : null,

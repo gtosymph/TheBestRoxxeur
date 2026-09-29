@@ -15,6 +15,7 @@ import { fermerMinimums, minimumsOuverts } from './vue-minimums.mjs';
 import { fermerJournal, journalOuvert } from './vue-journal.mjs';
 import { cibleOuverte, fermerCible } from './vue-cible.mjs';
 import { fermerImport, importOuvert } from './vue-import.mjs';
+import { fermerSortPerso, sortPersoOuvert } from './vue-sort-perso.mjs';
 
 /**
  * Ce qu'Echap ferme, dans l'ordre : la feuille du dessus d'abord.
@@ -30,6 +31,7 @@ const FEUILLES = Object.freeze([
   [cibleOuverte, fermerCible],
   [importOuvert, fermerImport],
   [signalerOuvert, fermerSignaler],
+  [sortPersoOuvert, fermerSortPerso],
   [comboOuvert, fermerCombo],
   [reglagesOuverts, fermerReglages],
   [partageOuvert, fermerPartage],

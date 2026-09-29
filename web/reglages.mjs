@@ -77,9 +77,10 @@ export const OPTIONS = Object.freeze([
     aide: 'Compte les bonus des sorts quand la cible est telefrag :\n'
       + 'Horloge et Rayon Obscur frappent plus fort, Flétrissement monte a chaque\n'
       + 'lancer, Ralentissement vole 1 PA (dans le combo).' },
-  { cle: 'toursSuivants', groupe: 'degats', libelle: 'Sorts des tours suivants',
-    aide: 'Compte les dégâts qui touchent aux tours suivants (Gousset, Sablier de Xelor,\n'
-      + 'Flèche Dévorante…). Décoche : seuls les dégâts du tour courant comptent.' },
+  { cle: 'toursSuivants', groupe: 'degats', libelle: 'Tours suivants et conditions',
+    aide: 'Compte les dégâts qui touchent aux tours suivants (Gousset, Sablier de Xélor,\n'
+      + 'Flèche Dévorante…) et ceux qui attendent une condition (Aiguille).\n'
+      + 'C\'est le choix de départ : chaque sort garde sa propre case dans la liste des sorts.' },
   { cle: 'combo', groupe: 'combo', libelle: 'Optimisateur de combo de sorts',
     aide: 'Choisit le meilleur enchaînement de lancers sous le budget de PA du build.\n'
       + 'Le premier lancer d\'un sort qui génère un telefrag rend 2 PA.' },

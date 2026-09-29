@@ -51,4 +51,17 @@ test('les donnees livrees', async (t) => {
       assert.equal(new Set(cles).size, cles.length, `${nom} compte deux fois le meme coup`);
     }
   });
+
+  await t.test('Aiguille porte un poison au tour suivant et un coup sous condition', () => {
+    // Les effets bruts ecrivent deux coups au tour meme. La fiche du jeu dit
+    // le contraire : voir src/data/lignes-speciales.mjs.
+    const aiguille = sort('Aiguille');
+    assert.ok(aiguille, 'Aiguille est au catalogue');
+    for (const variante of aiguille.variants) {
+      assert.equal(variante.lines[0].differe, 1, `poison au tour suivant (niveau ${variante.level})`);
+      assert.ok(variante.lines.some((l) => l.condition), `coup sous condition (niveau ${variante.level})`);
+      // Rien ne tombe au tour meme sans choix du joueur.
+      assert.equal(variante.min, 0);
+    }
+  });
 });

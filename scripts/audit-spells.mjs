@@ -68,9 +68,9 @@ function verifierVariante(variante, ou) {
     verifierLigne(ligne, `${ou} ligne ${rang + 1} (${ligne.element})`);
   }
 
-  // Les totaux annonces ne comptent que le tour courant : une ligne differee
-  // touche plus tard, elle n'y entre pas.
-  const immediates = lignes.filter((l) => !(l.differe > 0));
+  // Les totaux annonces ne comptent que les coups surs du tour courant : une
+  // ligne differee ou sous condition n'y entre pas.
+  const immediates = lignes.filter((l) => !(l.differe > 0) && !l.condition);
   const somme = (cle) => immediates.reduce((n, l) => n + (l[cle] ?? 0), 0);
 
   for (const cle of ['min', 'max', 'critMin', 'critMax']) {

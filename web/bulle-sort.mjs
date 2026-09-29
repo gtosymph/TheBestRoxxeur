@@ -50,7 +50,8 @@ export function coutDuSort(sort, fiche = null) {
  * Les lignes de degats du sort, telles que le jeu les ecrit.
  *
  * @param {any} sort
- * @returns {{element: string, normal: string, critique: string, differe: number}[]}
+ * @returns {{element: string, normal: string, critique: string, differe: number,
+ *   condition?: string}[]}
  */
 export function lignesDuSort(sort) {
   return (sort?.lines ?? []).map((ligne) => ({
@@ -58,6 +59,7 @@ export function lignesDuSort(sort) {
     normal: plage(ligne.min, ligne.max),
     critique: plage(ligne.critMin ?? ligne.min, ligne.critMax ?? ligne.max),
     differe: Number(ligne.differe) || 0,
+    ...(ligne.condition ? { condition: ligne.condition } : {}),
   }));
 }
 
@@ -70,7 +72,7 @@ export function lignesDuSort(sort) {
  * @param {Record<string, number>|null} stats
  * @param {Record<string, number>|null} [cible] Resistances de la cible.
  * @returns {{moyenne: number, parTour: number, parPa: number|null,
- *   comptes: number, limite: number}|null}
+ *   comptes: number, limite: number, aPart: number, aPartCompte: boolean}|null}
  */
 export function renduDuSort(sort, stats, cible = null) {
   if (!stats || (sort?.lines ?? []).length === 0) return null;
@@ -84,6 +86,9 @@ export function renduDuSort(sort, stats, cible = null) {
     parPa: detail.perAp,
     comptes,
     limite: limiteDe(sort),
+    // Les coups des tours suivants et sous condition, comptes ou non.
+    aPart: detail.differe + detail.conditionnel,
+    aPartCompte: sort.compterDiffere === true || sort.compterCondition === true,
   };
 }
 
@@ -110,6 +115,10 @@ export function decrireSort(sort, contexte = {}) {
       phrases.push(`${ENTIER(rendu.parTour)} sur le tour, à ${rendu.comptes} lancers`);
     } else if (rendu.limite > 1) {
       phrases.push(`compté une fois sur ${rendu.limite} lancers possibles`);
+    }
+    if (rendu.aPart > 0) {
+      phrases.push(`${ENTIER(rendu.aPart)} de plus aux tours suivants ou sous condition `
+        + (rendu.aPartCompte ? '(compté)' : '(non compté)'));
     }
   }
 
