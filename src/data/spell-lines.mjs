@@ -121,6 +121,13 @@ function corriger(ligne, champ, valeur) {
     return { ...ligne, [champ]: entierPositif(valeur) };
   }
 
+  // Zero tour : la ligne frappe au tour meme, et perd son delai.
+  if (champ === 'differe') {
+    const { differe, ...sansDelai } = ligne;
+    const tours = entierPositif(valeur);
+    return tours > 0 ? { ...sansDelai, differe: tours } : sansDelai;
+  }
+
   return null;
 }
 

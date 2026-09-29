@@ -128,7 +128,8 @@ function garnirSort(noeud, sort, contexte = {}) {
           vue.lignes.map((ligne) => ligneArme(
             { element: ligne.element },
             `${ligne.normal} (${ligne.critique} crit)`
-              + (ligne.differe > 0 ? ` — dans ${ligne.differe} tour(s)` : ''),
+              + (ligne.differe > 0 ? ` — dans ${ligne.differe} tour(s)` : '')
+              + (ligne.condition ? ` — ${ligne.condition.charAt(0).toLowerCase()}${ligne.condition.slice(1)}` : ''),
           ))),
 
     vue.rendu

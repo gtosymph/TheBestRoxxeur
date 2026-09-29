@@ -41,7 +41,8 @@ function memesLignes(a, b) {
       && mienne.element === ligne.element
       && mienne.min === ligne.min && mienne.max === ligne.max
       && mienne.critMin === ligne.critMin && mienne.critMax === ligne.critMax
-      && (mienne.differe ?? 0) === (ligne.differe ?? 0);
+      && (mienne.differe ?? 0) === (ligne.differe ?? 0)
+      && (mienne.condition ?? '') === (ligne.condition ?? '');
   });
 }
 
@@ -98,7 +99,19 @@ function refreshAncien(ancien, parId, niveau) {
   const variante = varianteAccessible(catalogue, niveau) ?? (catalogue.variants ?? [])[0];
   if (!variante) return { ...ancien, exclusiveGroup: catalogue.exclusiveGroup ?? null };
 
-  return versSortMoteur({ ...catalogue, ...variante, critRate: variante.critRate });
+  return {
+    ...versSortMoteur({ ...catalogue, ...variante, critRate: variante.critRate }),
+    ...choixDuJoueur(ancien),
+  };
+}
+
+/**
+ * Les reglages que le joueur a poses sur un sort : ils survivent a sa
+ * reconstruction. Un lien de partage ne porte que l'identifiant et ces choix.
+ */
+function choixDuJoueur(sort) {
+  const cles = ['repeats', 'unParTour', 'speciales'];
+  return Object.fromEntries(cles.filter((cle) => sort[cle] !== undefined).map((cle) => [cle, sort[cle]]));
 }
 
 /**

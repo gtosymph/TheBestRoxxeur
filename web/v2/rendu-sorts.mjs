@@ -8,6 +8,8 @@ import { el } from '../render.mjs';
 import { avecLancers, lancersDe, limiteDe } from '../lancers.mjs';
 import { buildCourant, cibleDe, sortsCalcules } from '../objectif.mjs';
 import { cacherBulle, montrerBulleSort, suivreBulle } from '../hover-card.mjs';
+import { avecSpeciales, compteSpeciales, resumeSpeciales } from '../sorts-speciaux.mjs';
+import { estSortPerso } from '../../src/data/sort-perso.mjs';
 
 import { resumeCombo } from './options.mjs';
 
@@ -19,9 +21,10 @@ import { resumeCombo } from './options.mjs';
  * @param {() => any} liens.lireCatalogue
  * @param {() => any[]|null} liens.lireClassesSorts
  * @param {{ouvrir: () => void, toutEnlever: () => void}} liens.gestesSorts
+ * @param {{creer: () => void, modifier: (id: string) => void}} liens.gestesPerso
  */
 export function creerRenduSorts({
-  $, lireEtat, setEtat, lireCatalogue, lireClassesSorts, gestesSorts,
+  $, lireEtat, setEtat, lireCatalogue, lireClassesSorts, gestesSorts, gestesPerso,
 }) {
   /**
    * Combien de fois ce sort part dans le tour.
@@ -50,6 +53,34 @@ export function creerRenduSorts({
   }
 
   /**
+   * La case qui compte les lignes speciales du sort, ou null s'il n'en a pas.
+   *
+   * Le Sablier frappe deux tours apres le lancer, Aiguille frappe encore si
+   * la cible perd le Telefrag. Le joueur decide, sort par sort, si ces coups
+   * entrent dans le total ; l'option des reglages ne donne que le depart.
+   */
+  function caseSpeciales(sort, options) {
+    const resume = resumeSpeciales(sort);
+    if (!resume) return null;
+
+    return el('label', { class: 'chip-speciales', title: resume.aide, onClick: (ev) => ev.stopPropagation() },
+      el('input', {
+        type: 'checkbox', checked: compteSpeciales(sort, options),
+        'aria-label': `Compter les dégâts ${resume.libelle} de ${sort.name ?? 'ce sort'}`,
+        onChange: (ev) => {
+          setEtat({ sorts: avecSpeciales(lireEtat().sorts, sort.id, ev.target.checked) });
+        },
+      }),
+      resume.libelle);
+  }
+
+  /** La vignette d'un sort : son icone, ou une marque pour un sort ecrit a la main. */
+  function vignetteDuSort(sort) {
+    if (sort.icon) return el('img', { src: sort.icon, alt: '', decoding: 'async' });
+    return estSortPerso(sort) ? el('span', { class: 'chip-perso', 'aria-hidden': 'true', text: '✎' }) : null;
+  }
+
+  /**
    * La fiche d'un sort dans le catalogue, pour sa portee et sa zone.
    * Le sort garde dans l'etat ce que le moteur lit ; le reste se relit ici.
    */
@@ -75,18 +106,28 @@ export function creerRenduSorts({
 
     $('chips-sorts').replaceChildren(...etat.sorts.map((sort) => el('span', {
       class: 'chip',
+      // Un sort ecrit par le joueur se rouvre d'un clic, pour le modifier.
+      ...(estSortPerso(sort) ? {
+        role: 'button', tabindex: '0', title: 'Cliquez pour modifier ce sort',
+        onClick: () => gestesPerso.modifier(sort.id),
+        onKeydown: (ev) => { if (ev.key === 'Enter') gestesPerso.modifier(sort.id); },
+      } : {}),
       onMouseenter: (ev) => montrerBulleSort(calcules.get(sort.id) ?? sort, ev.clientX, ev.clientY, {
         stats, cible, fiche: ficheDuSort(sort.id), ancre: ev.currentTarget,
       }),
       onMousemove: (ev) => suivreBulle(ev.clientX, ev.clientY),
       onMouseleave: cacherBulle,
     },
-      sort.icon ? el('img', { src: sort.icon, alt: '', decoding: 'async' }) : null,
+      vignetteDuSort(sort),
       sort.name ?? sort.fr ?? String(sort.id),
       champLancers(sort),
+      caseSpeciales(sort, etat.options),
       el('button', {
         type: 'button', text: '×', title: `Enlever ${sort.name ?? sort.fr ?? 'ce sort'}`,
-        onClick: () => setEtat({ sorts: lireEtat().sorts.filter((s) => s.id !== sort.id) }),
+        onClick: (ev) => {
+          ev.stopPropagation();
+          setEtat({ sorts: lireEtat().sorts.filter((s) => s.id !== sort.id) });
+        },
       }))));
     // Le bouton de l'enchainement porte l'etat du reglage : sans cela, il faut
     // l'ouvrir pour savoir si le combo compte ou non.
@@ -100,6 +141,9 @@ export function creerRenduSorts({
       el('button', { class: 'btn mini fantome', type: 'button', style: 'padding-left:0',
         text: sorts.length ? 'Changer mes sorts' : 'Choisir des sorts…',
         onClick: gestesSorts.ouvrir }),
+      el('button', { class: 'btn mini fantome', type: 'button', text: 'Créer un sort',
+        title: 'Écrire un sort que le catalogue ne connaît pas, avec vos propres lignes de dégâts.',
+        onClick: gestesPerso.creer }),
       ...(sorts.length
         ? [el('button', { class: 'btn mini fantome', type: 'button',
             text: 'Tout enlever', onClick: gestesSorts.toutEnlever })]

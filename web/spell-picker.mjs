@@ -8,6 +8,7 @@ import { el } from './render.mjs';
 import { COULEUR_ELEMENT, iconeElement } from './icons.mjs';
 import { versSortMoteur } from './spells-data.mjs';
 import { piegerFocus } from './focus-piege.mjs';
+import { plagesVariante } from './sorts-speciaux.mjs';
 
 /** Elements proposes dans le filtre. */
 const ELEMENTS_FILTRE = ['neutre', 'terre', 'feu', 'eau', 'air'];
@@ -37,17 +38,20 @@ export function fermerPicker() {
 /** Construit la pastille d'une variante. */
 function pastilleVariante(sort, variante, choisi, onPick) {
   const couleur = COULEUR_ELEMENT[variante.element] ?? '#8d97a9';
+  const plages = plagesVariante(variante);
   return el('button', {
     class: `variante ${choisi ? 'prise' : ''}`.trim(),
     type: 'button',
     style: `--teinte:${couleur}`,
     title: `Niveau ${variante.level} — ${variante.element}\n`
       + `${variante.min} à ${variante.max} (critique ${variante.critMin} à ${variante.critMax})\n`
-      + `${variante.critRate} % de critique propre`,
+      + `${variante.critRate} % de critique propre`
+      + (plages.aPart ? `\n${plages.aPart} aux tours suivants ou sous condition` : ''),
     onClick: () => onPick(sort, variante),
   },
     el('span', { class: 'niv', text: `niv ${variante.level}` }),
-    el('span', { class: 'plage', text: `${variante.min}–${variante.max}` }),
+    el('span', { class: 'plage', text: plages.tour }),
+    plages.aPart ? el('span', { class: 'plage-a-part', text: plages.aPart }) : null,
     variante.critRate > 0 ? el('span', { class: 'cc', text: `${variante.critRate}%` }) : null,
   );
 }

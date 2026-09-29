@@ -21,7 +21,7 @@ import { SEARCH_MODES } from '../src/solver/score.mjs';
  * @param {(patch: object) => void} liens.setEtat
  * @param {(texte: string, type?: string) => void} liens.message
  * @param {() => any[]|null} liens.lireClassesSorts Sorts par classe, ou null.
- * @returns {{ouvrir: () => void, toutEnlever: () => void}}
+ * @returns {{ouvrir: () => void, toutEnlever: () => void, poser: (sort: any) => void}}
  */
 export function creerGestesSorts({ lireEtat, setEtat, message, lireClassesSorts }) {
   /** Enleve tous les sorts retenus. */
@@ -37,8 +37,14 @@ export function creerGestesSorts({ lireEtat, setEtat, message, lireClassesSorts 
    */
   function ajouterPlusieurs(nouveaux) {
     const courant = lireEtat();
-    const ids = new Set(nouveaux.map((s) => s.id));
-    const sorts = [...courant.sorts.filter((s) => !ids.has(s.id)), ...nouveaux];
+    // Un sort deja pris garde sa place : modifier un sort ecrit par le joueur
+    // ne doit pas le renvoyer au bout de la liste.
+    const parId = new Map(nouveaux.map((s) => [s.id, s]));
+    const pris = new Set(courant.sorts.map((s) => s.id));
+    const sorts = [
+      ...courant.sorts.map((s) => parId.get(s.id) ?? s),
+      ...nouveaux.filter((s) => !pris.has(s.id)),
+    ];
 
     const bascule = courant.mode === SEARCH_MODES.STATS && sorts.length > 0;
     setEtat({ sorts, ...(bascule ? { mode: SEARCH_MODES.DAMAGE } : {}) });
@@ -64,5 +70,5 @@ export function creerGestesSorts({ lireEtat, setEtat, message, lireClassesSorts 
     });
   }
 
-  return { ouvrir, toutEnlever };
+  return { ouvrir, toutEnlever, poser: (sort) => ajouterPlusieurs([sort]) };
 }

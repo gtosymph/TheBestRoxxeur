@@ -108,3 +108,13 @@ test('deux lignes du meme element doublent les degats du sort', () => {
 
   assert.equal(computeSpellDetail(doublee, stats).average, computeSpellDetail(feu, stats).average * 2);
 });
+
+test('modifierLigne pose et enleve le tour d\'une ligne', () => {
+  const sort = sortFeu();
+  const differe = modifierLigne(sort, 0, 'differe', '2');
+  assert.equal(differe.lines[0].differe, 2);
+
+  const remis = modifierLigne(differe, 0, 'differe', 0);
+  assert.equal(remis.lines[0].differe, undefined, 'zero : la ligne frappe au tour meme');
+  assert.equal(sort.lines[0].differe, undefined, 'le sort d\'origine ne change pas');
+});
