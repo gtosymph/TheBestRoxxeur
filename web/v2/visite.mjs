@@ -71,7 +71,8 @@ export const ETAPES = Object.freeze([
     cible: '#avoir',
     titre: 'Ce que vous avez déjà',
     texte: 'Votre stuff actuel, votre banque, et les pièces que vous refusez. '
-      + 'Une pièce que vous possédez ne compte pas comme un achat.',
+      + 'Une pièce que vous possédez ne compte pas comme un achat. Figez votre '
+      + 'stuff actuel : l\'outil saura préparer la transition vers un stuff trouvé.',
   },
   {
     cible: '#ouvrir-palette',
@@ -128,6 +129,13 @@ export const ETAPES = Object.freeze([
     titre: 'Proche de votre stuff',
     texte: 'Si je n\'achète qu\'une à trois pièces, que puis-je gagner ? La '
       + 'réponse chiffrée, par nombre d\'achats.',
+  },
+  {
+    cible: '#transition',
+    titre: 'Préparer la transition',
+    texte: 'Le chemin de votre stuff actuel au stuff posé, étape par étape. '
+      + 'Chaque étape garde vos minimums. Mettez les prix et vos kamas : '
+      + 'la feuille dit quoi acheter maintenant, et quoi garder en banque.',
   },
   {
     cible: '#simulations',
