@@ -73,12 +73,50 @@ function mainsEnConflit(items) {
 }
 
 /**
+ * Juge un stuff : tient-il ses conditions, et que vaut-il ?
+ *
+ * Un stuff tient quand chaque piece s'equipe, que chaque minimum est atteint
+ * et qu'aucun maximum absolu n'est depasse. Le plan et les pieces de passage
+ * jugent avec cette seule regle.
+ *
+ * @param {any[]} items
+ * @param {object} contexte level, allocation, scrolls, passives, profile,
+ *   setById, objective, exos.
+ * @returns {{valide: boolean, score: number}}
+ */
+export function jugerStuff(items, contexte) {
+  const { level, allocation, scrolls, passives, profile, setById, objective, exos = null } = contexte;
+  const { stats, invalid } = computeBuild({
+    items, level, allocation, scrolls, passives, profile, menace: objective?.menace,
+    exos, exosLibres: objective?.exosLibres ?? null,
+  }, setById);
+  const detail = scoreBuild(stats, objective, SANS_DETAILS);
+  const valide = !mainsEnConflit(items) && invalid.length === 0 && detail.satisfied
+    && maxViolations(objective.conditions, stats, detail.damage).length === 0;
+  return { valide, score: detail.score };
+}
+
+/**
+ * Le stuff porte apres les premieres etapes du plan.
+ *
+ * @param {any[]} actuel
+ * @param {{entrantes: any[], sortantes: any[]}[]} etapes
+ * @param {number} nombre Etapes faites.
+ * @returns {any[]}
+ */
+export function stuffApres(actuel, etapes, nombre) {
+  return etapes.slice(0, nombre).reduce((porte, etape) => {
+    const sortantes = new Set(etape.sortantes);
+    return [...porte.filter((item) => !sortantes.has(item)), ...etape.entrantes];
+  }, actuel);
+}
+
+/**
  * Juge les stuffs intermediaires, chacun une seule fois.
  *
  * @returns {(masque: number) => {valide: boolean, score: number}}
  */
 function creerJuge(actuel, changements, contexte) {
-  const { level, allocation, scrolls, passives, profile, setById, objective, exos = null } = contexte;
   const taille = 1 << changements.length;
   const etats = new Uint8Array(taille);
   const scores = new Float64Array(taille);
@@ -96,16 +134,9 @@ function creerJuge(actuel, changements, contexte) {
 
   return function juger(masque) {
     if (etats[masque] === INCONNU) {
-      const items = stuffDe(masque);
-      const { stats, invalid } = computeBuild({
-        items, level, allocation, scrolls, passives, profile, menace: objective?.menace,
-        exos, exosLibres: objective?.exosLibres ?? null,
-      }, setById);
-      const detail = scoreBuild(stats, objective, SANS_DETAILS);
-      const valide = !mainsEnConflit(items) && invalid.length === 0 && detail.satisfied
-        && maxViolations(objective.conditions, stats, detail.damage).length === 0;
+      const { valide, score } = jugerStuff(stuffDe(masque), contexte);
       etats[masque] = valide ? VALIDE : INVALIDE;
-      scores[masque] = detail.score;
+      scores[masque] = score;
     }
     return { valide: etats[masque] === VALIDE, score: scores[masque] };
   };

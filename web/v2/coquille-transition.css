@@ -52,6 +52,32 @@
 .transition-etape p { margin: 0; }
 .transition-etape .aide { color: var(--texte-3); }
 
+/* Le bloc des pieces de passage : la seconde option, sous « Maintenant ». */
+.transition-passage {
+  display: grid; gap: 6px; padding: 10px 12px; border: 1px dashed var(--filet-clair);
+  border-radius: var(--r); font-size: 12px; color: var(--texte);
+}
+.transition-passage strong {
+  font-size: 10px; letter-spacing: .6px; text-transform: uppercase; color: var(--texte-2);
+}
+.transition-passage p { margin: 0; }
+.transition-passage .aide { color: var(--texte-3); }
+.transition-passage .aide.att { color: var(--ambre); }
+.transition-candidate {
+  display: grid; align-items: center; gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto 130px;
+}
+.transition-candidate + .transition-candidate { padding-top: 6px; border-top: 1px solid var(--filet); }
+.transition-candidate .quoi { display: grid; min-width: 0; }
+.transition-candidate .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.transition-candidate .quoi .aide { margin: 0; font-size: 11px; line-height: 1.35; }
+.transition-candidate .gain { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--jade); }
+.transition-candidate input {
+  width: 100%; height: 28px; min-width: 0; text-align: right; font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.transition-candidate input[aria-invalid="true"] { border-color: var(--rose); }
+
 @media (max-width: 560px) {
   .transition-prix, .transition-kamas { grid-template-columns: minmax(0, 1fr) 110px; }
   .transition-prix .aide { grid-column: 1 / -1; }
