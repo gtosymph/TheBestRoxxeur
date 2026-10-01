@@ -20,6 +20,21 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.15.0',
+    date: '2026-10-01',
+    titre: 'Progresser sans attendre, avec une pièce de passage',
+    points: [
+      'Quand l\'étape suivante coûte plus que vos kamas, la transition propose aussi '
+        + 'des pièces de passage pour les cases de cette étape.',
+      'Une pièce de passage garde vos minimums et augmente le score. Une pièce en '
+        + 'banque passe en premier, car elle ne coûte rien.',
+      'Mettez son prix : la feuille montre le gain par million de kamas, et les kamas '
+        + 'perdus quand la pièce visée la remplace.',
+      'L\'attente en banque reste la première option : la pièce de passage est un '
+        + 'choix, pas une étape du plan.',
+    ],
+  },
+  {
     version: '1.14.0',
     date: '2026-10-01',
     titre: 'Préparer la transition vers son stuff',

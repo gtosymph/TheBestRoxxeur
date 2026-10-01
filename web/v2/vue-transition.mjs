@@ -12,13 +12,15 @@
 import { el } from '../render.mjs';
 import { piegerFocus } from '../focus-piege.mjs';
 import { CLES, ecrireJson, lireJson } from '../stockage.mjs';
-import { apparier, planifierTransition } from '../../src/solver/transition.mjs';
+import { apparier, planifierTransition, stuffApres } from '../../src/solver/transition.mjs';
+import { piecesDePassage } from '../../src/solver/passage.mjs';
 import {
   lireKamas, lireTablePrix, poserPrix, prixDuPlan, prixPerime,
 } from '../../src/data/prix.mjs';
 
 import { nombre } from './nombres.mjs';
 import { demandeDeTransition } from './transition.mjs';
+import { blocPassage } from './rendu-passage.mjs';
 
 let racine = null;
 let libererFocus = null;
@@ -59,7 +61,9 @@ export function ouvrirTransition({ lireEtat, lireCatalogue }) {
     document.body.append(racine);
   }
 
-  const demande = demandeDeTransition(lireEtat(), lireCatalogue());
+  const etat = lireEtat();
+  const catalogue = lireCatalogue();
+  const demande = demandeDeTransition(etat, catalogue);
   let { table, kamas: disponibles } = lireRangement();
   const plan = el('div', { class: 'transition-plan', 'aria-live': 'polite' });
 
@@ -70,10 +74,54 @@ export function ouvrirTransition({ lireEtat, lireCatalogue }) {
     .filter(Boolean);
 
   function dessinerPlan() {
+    const prix = prixDuPlan(table);
+    const resultat = planifierTransition({ ...demande, prix, kamas: disponibles });
+    const contenu = contenuDuPlan(resultat);
+    const passage = resultat.etapes ? blocDePassage(resultat, prix) : null;
+    // Le bloc de passage se lit juste avant la liste des etapes.
+    if (passage) contenu.splice(contenu.length - 1, 0, passage);
     // replaceChildren ecrirait « null » pour un bloc absent : on les enleve.
-    plan.replaceChildren(...contenuDuPlan(planifierTransition({
-      ...demande, prix: prixDuPlan(table), kamas: disponibles,
-    })).filter(Boolean));
+    plan.replaceChildren(...contenu.filter(Boolean));
+  }
+
+  /** Les pieces de passage, quand l'etape suivante coute trop. */
+  function blocDePassage({ etapes, maintenant }, prix) {
+    const { etapesPayables, reste } = maintenant;
+    if (etapesPayables >= etapes.length) return null;
+    const passage = piecesDePassage({
+      porte: stuffApres(demande.actuel, etapes, etapesPayables),
+      etape: etapes[etapesPayables],
+      cible: demande.cible,
+      catalogue: catalogue.items,
+      bannis: etat.bannis,
+      possedees: demande.possedees,
+      prix,
+      reste,
+      contexte: demande.contexte,
+    });
+    return blocPassage(passage, {
+      numero: etapesPayables + 1,
+      champKamas,
+      prixDe: (item) => table[item.id]?.kamas ?? null,
+      poserPrix: (item, lu) => { table = poserPrix(table, item.id, lu, Date.now()); },
+    });
+  }
+
+  /**
+   * Redessine le plan apres que le focus a quitte le champ.
+   *
+   * Le plan porte lui-meme des champs (les pieces de passage) : le redessiner
+   * pendant l'evenement « change » detruirait le champ ou Tab mene. On attend
+   * que le focus arrive, puis on le rend au champ de meme nom.
+   */
+  function redessiner() {
+    setTimeout(() => {
+      const libelle = document.activeElement?.getAttribute?.('aria-label');
+      dessinerPlan();
+      if (libelle && !document.activeElement?.closest?.('.feuille')) {
+        racine.querySelector(`[aria-label="${CSS.escape(libelle)}"]`)?.focus();
+      }
+    }, 0);
   }
 
   /** Un champ de kamas : une saisie absurde se signale et ne se garde pas. */
@@ -90,7 +138,7 @@ export function ouvrirTransition({ lireEtat, lireCatalogue }) {
         if (lu !== null) ev.target.value = nombre(lu);
         poser(lu);
         garder();
-        dessinerPlan();
+        redessiner();
       },
     });
   }
