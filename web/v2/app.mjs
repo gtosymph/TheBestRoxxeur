@@ -60,6 +60,8 @@ import { creerGestesSortPerso } from './gestes-sort-perso.mjs';
 import { creerRenduInspecteur } from './rendu-inspecteur.mjs';
 import { creerRenduListes } from './rendu-listes.mjs';
 import { creerComparateur } from './comparateur.mjs';
+import { transitionPossible } from './transition.mjs';
+import { ouvrirTransition } from './vue-transition.mjs';
 import { creerGestesMinimums } from './gestes-minimums.mjs';
 import { creerJeux } from './jeux-enregistres.mjs';
 import { creerEssais } from './essais.mjs';
@@ -288,6 +290,7 @@ function peindre() {
   listes.renderTrouves(bilan);
   listes.renderProximite();
   comparateur.renderComparer($('comparer'));
+  $('transition').hidden = !transitionPossible(etat);
   listes.renderPanoplie(build);
   listes.renderAnalyseDuStuff(bilan, stats);
   inspecteur.renderInspecteur(stats, degats);
@@ -709,6 +712,8 @@ brancherClavier({
 });
 
 $('comparer').addEventListener('click', comparateur.comparer);
+$('transition').addEventListener('click',
+  () => catalogue && ouvrirTransition({ lireEtat, lireCatalogue }));
 
 jeux.brancher();
 
