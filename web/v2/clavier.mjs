@@ -3,6 +3,7 @@
  */
 import { fermerPalette, paletteOuverte } from './palette.mjs';
 import { comparaisonOuverte, fermerComparaison } from './vue-comparaison.mjs';
+import { fermerTransition, transitionOuverte } from './vue-transition.mjs';
 import { fermerPoints, pointsOuverts } from './vue-points.mjs';
 import { fermerReglages, reglagesOuverts } from './vue-reglages.mjs';
 import { fermerPartage, partageOuvert } from './vue-partage.mjs';
@@ -26,6 +27,7 @@ const FEUILLES = Object.freeze([
   [caseOuverte, fermerCase],
   [visiteOuverte, fermerVisite],
   [comparaisonOuverte, fermerComparaison],
+  [transitionOuverte, fermerTransition],
   [journalOuvert, fermerJournal],
   [minimumsOuverts, fermerMinimums],
   [cibleOuverte, fermerCible],

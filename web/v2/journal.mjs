@@ -20,6 +20,23 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.14.0',
+    date: '2026-10-01',
+    titre: 'Préparer la transition vers son stuff',
+    points: [
+      'Le bouton « Préparer la transition » planifie le passage de votre stuff actuel '
+        + 'au stuff posé, étape par étape.',
+      'Chaque étape garde vos minimums : deux pièces qui se tiennent l\'une l\'autre '
+        + 'changent ensemble, et une arme à deux mains enlève le bouclier.',
+      'Les étapes qui rapportent le plus par kama passent en premier, sans pièce de '
+        + 'passage à revendre.',
+      'Mettez vos kamas : la feuille dit quelles étapes vous pouvez payer, quelles '
+        + 'pièces acheter pour la banque, et combien il vous manque.',
+      'Les prix s\'écrivent comme en jeu (« 1,5m », « 800k ») et gardent leur date : '
+        + 'un prix de plus de 7 jours se signale.',
+    ],
+  },
+  {
     version: '1.13.0',
     date: '2026-09-29',
     titre: 'Vos sorts, et les coups qui viennent après',

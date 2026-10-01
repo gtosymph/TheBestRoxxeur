@@ -1,0 +1,58 @@
+/* La feuille « Préparer la transition » : les prix, les kamas, puis le plan.
+   Les couleurs viennent des jetons de socle.css : la feuille suit le theme. */
+
+.bandeau-comparer { gap: 8px; }
+
+.transition-prix-liste { display: grid; gap: 6px; margin-bottom: 14px; }
+.transition-prix {
+  display: grid; align-items: center; gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 130px 92px;
+  font-size: 12px; color: var(--texte);
+}
+.transition-prix .nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.transition-prix .aide { margin: 0; font-size: 11px; color: var(--texte-3); }
+.transition-prix .aide.att { color: var(--ambre); }
+.transition-prix input, .transition-kamas input {
+  width: 100%; height: 28px; min-width: 0; text-align: right; font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.transition-prix input[aria-invalid="true"], .transition-kamas input[aria-invalid="true"] {
+  border-color: var(--rose);
+}
+
+.transition-kamas {
+  display: grid; align-items: center; gap: 8px; grid-template-columns: minmax(0, 1fr) 130px 92px;
+  padding: 10px 0; border-top: 1px solid var(--filet); border-bottom: 1px solid var(--filet);
+  font-size: 12px; font-weight: 640; color: var(--texte);
+}
+
+.transition-plan { display: grid; gap: 10px; margin-top: 14px; }
+.transition-plan .note { margin: 0; font-size: 12px; color: var(--texte-2); }
+.transition-plan .note.att { color: var(--ambre); }
+
+.transition-maintenant {
+  display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--r);
+  background: var(--iris-fond); color: var(--texte); font-size: 12px;
+}
+.transition-maintenant strong {
+  font-size: 10px; letter-spacing: .6px; text-transform: uppercase; color: var(--iris);
+}
+.transition-maintenant p { margin: 0; }
+
+.transition-etapes { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.transition-etape {
+  display: grid; gap: 3px; padding: 8px 10px; border: 1px solid var(--filet); border-radius: var(--r);
+  background: var(--surface-2); font-size: 12px; color: var(--texte);
+}
+.transition-etape.payable { border-color: var(--iris-sourd); }
+.transition-etape .tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.transition-etape .n { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--texte-2); }
+.transition-etape .gain { color: var(--jade); }
+.transition-etape .gain.perte { color: var(--rose); }
+.transition-etape p { margin: 0; }
+.transition-etape .aide { color: var(--texte-3); }
+
+@media (max-width: 560px) {
+  .transition-prix, .transition-kamas { grid-template-columns: minmax(0, 1fr) 110px; }
+  .transition-prix .aide { grid-column: 1 / -1; }
+}
