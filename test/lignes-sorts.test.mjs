@@ -113,3 +113,25 @@ test('les lignes d un palier', async (t) => {
     assert.deepEqual(lignesDuPalier(null), []);
   });
 });
+
+/**
+ * Depuis la 3.7, le jeu ecrit une poussee fixe « 2 » avec diceNum 2 et
+ * diceSide 1. Un de plus petit que le premier ne dit pas « de 2 a 1 » : la
+ * valeur est fixe. Lire diceSide comme maximum rendait min 2, max 1.
+ */
+test('une valeur fixe ecrite avec un second de plus petit', async (t) => {
+  await t.test('la poussee de 2 reste 2, critique compris', () => {
+    const poussee = degats(5, 2, 1, 'a,A');
+    const [ligne] = lignesDuPalier({ effects: [poussee], criticalEffect: [poussee] });
+    assert.equal(ligne.min, 2);
+    assert.equal(ligne.max, 2);
+    assert.equal(ligne.critMin, 2);
+    assert.equal(ligne.critMax, 2);
+  });
+
+  await t.test('une vraie fourchette garde son maximum', () => {
+    const [ligne] = lignesDuPalier({ effects: [degats(98, 20, 25, 'A')] });
+    assert.equal(ligne.min, 20);
+    assert.equal(ligne.max, 25);
+  });
+});

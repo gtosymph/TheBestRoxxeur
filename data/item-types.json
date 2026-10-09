@@ -450,18 +450,6 @@
     "fr": "Pierre d'âme pleine"
   },
   {
-    "id": 87,
-    "superTypeId": 6,
-    "categoryId": 1,
-    "fr": "Parchemin de recherche"
-  },
-  {
-    "id": 88,
-    "superTypeId": 6,
-    "categoryId": 1,
-    "fr": "Pierre magique"
-  },
-  {
     "id": 89,
     "superTypeId": 6,
     "categoryId": 1,
@@ -484,12 +472,6 @@
     "superTypeId": 9,
     "categoryId": 2,
     "fr": "Écorce"
-  },
-  {
-    "id": 97,
-    "superTypeId": 27,
-    "categoryId": 0,
-    "fr": "Certificat de Dragodinde"
   },
   {
     "id": 98,
@@ -603,7 +585,7 @@
     "id": 126,
     "superTypeId": 14,
     "categoryId": 3,
-    "fr": "Quêtes principales"
+    "fr": "Quêtes mondiales"
   },
   {
     "id": 127,
@@ -781,8 +763,8 @@
   },
   {
     "id": 167,
-    "superTypeId": 9,
-    "categoryId": 2,
+    "superTypeId": 6,
+    "categoryId": 1,
     "fr": "Essence de gardien de donjon"
   },
   {
@@ -882,12 +864,6 @@
     "fr": "Matériel d'exploration"
   },
   {
-    "id": 196,
-    "superTypeId": 27,
-    "categoryId": 0,
-    "fr": "Certificat de Muldo"
-  },
-  {
     "id": 197,
     "superTypeId": 9,
     "categoryId": 2,
@@ -940,12 +916,6 @@
     "superTypeId": 6,
     "categoryId": 1,
     "fr": "Potion de monture"
-  },
-  {
-    "id": 207,
-    "superTypeId": 27,
-    "categoryId": 0,
-    "fr": "Certificat de Volkorne"
   },
   {
     "id": 209,
@@ -1332,22 +1302,10 @@
     "fr": "Éklâme"
   },
   {
-    "id": 311,
-    "superTypeId": 12,
-    "categoryId": 0,
-    "fr": "Monture"
-  },
-  {
     "id": 312,
     "superTypeId": 9,
     "categoryId": 2,
     "fr": "Ressource de quête"
-  },
-  {
-    "id": 314,
-    "superTypeId": 6,
-    "categoryId": 1,
-    "fr": "Consommable obsolète des Songes"
   },
   {
     "id": 315,
@@ -1359,7 +1317,7 @@
     "id": 322,
     "superTypeId": 6,
     "categoryId": 1,
-    "fr": "Éclats"
+    "fr": "Éclat"
   },
   {
     "id": 323,
@@ -1432,5 +1390,29 @@
     "superTypeId": 14,
     "categoryId": 3,
     "fr": "Jetons événementiels"
+  },
+  {
+    "id": 335,
+    "superTypeId": 9,
+    "categoryId": 2,
+    "fr": "Éclat de forgemagie"
+  },
+  {
+    "id": 336,
+    "superTypeId": 9,
+    "categoryId": 2,
+    "fr": "Gemme de forgemagie"
+  },
+  {
+    "id": 338,
+    "superTypeId": 14,
+    "categoryId": 3,
+    "fr": "La Source"
+  },
+  {
+    "id": 339,
+    "superTypeId": 6,
+    "categoryId": 1,
+    "fr": "Nourriture évènementielle"
   }
 ]

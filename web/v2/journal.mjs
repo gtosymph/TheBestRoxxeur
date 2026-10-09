@@ -20,6 +20,16 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.15.1',
+    date: '2026-10-09',
+    titre: 'Les objets de Dofus 3.7',
+    points: [
+      'Le catalogue suit la mise à jour 3.7 : 5 objets ajoutés et 289 objets modifiés.',
+      'Les panoplies d\'apparat, les monstres et les sorts suivent aussi la 3.7.',
+      'Une poussée fixe, comme celle d\'Estoc Brûlant, garde sa vraie valeur.',
+    ],
+  },
+  {
     version: '1.15.0',
     date: '2026-10-01',
     titre: 'Progresser sans attendre, avec une pièce de passage',

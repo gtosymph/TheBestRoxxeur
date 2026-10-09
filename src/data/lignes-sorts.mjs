@@ -54,6 +54,12 @@ const zoneDe = (effet) => {
 };
 
 /**
+ * Le maximum d'un effet. Un second de plus petit que le premier ne fait pas
+ * une fourchette : la 3.7 ecrit une poussee fixe de 2 en « 2, 1 ».
+ */
+const maximum = (effet) => Math.max(effet.diceNum || effet.value || 0, effet.diceSide || 0);
+
+/**
  * Extrait les lignes de degats d'un palier.
  *
  * Regles, verifiees sur les fiches du jeu :
@@ -85,9 +91,9 @@ export function lignesDuPalier(palier) {
     return {
       element: ELEMENT_EFFET[effet.effectId],
       min: effet.diceNum || effet.value || 0,
-      max: effet.diceSide || effet.diceNum || effet.value || 0,
+      max: maximum(effet),
       critMin: crit.diceNum || crit.value || 0,
-      critMax: crit.diceSide || crit.diceNum || crit.value || 0,
+      critMax: maximum(crit),
       differe: Number(effet.delay ?? 0),
       groupes,
       exigeEtat,

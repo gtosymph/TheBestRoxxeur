@@ -9,7 +9,8 @@
  * sorts. Pour mettre la copie a jour, relancez tools/build_classes.py dans
  * dofopti-web, puis copiez son data/classes.json ici.
  */
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { lignesDuPalier } from '../src/data/lignes-sorts.mjs';
 import { avecLignesSpeciales } from '../src/data/lignes-speciales.mjs';
 
@@ -62,6 +63,8 @@ async function chargerRoxx() {
     const reponse = await fetch(URL_ROXX);
     if (!reponse.ok) throw new Error(`class_spells indisponible (HTTP ${reponse.status}).`);
     const texte = await reponse.text();
+    // data/raw est ignore par git : sur la CI, le dossier n'existe pas encore.
+    await mkdir(dirname(SOURCE_ROXX), { recursive: true });
     await writeFile(SOURCE_ROXX, texte, 'utf8');
     return JSON.parse(texte);
   }
@@ -80,6 +83,8 @@ function indexerRoxx(brut) {
   const parId = new Map();
   const parNom = new Map();
   for (const [classe, couples] of Object.entries(brut)) {
+    // Depuis la 3.7, une cle « _meta » (les etats du jeu) suit les classes.
+    if (!Array.isArray(couples)) continue;
     for (const couple of couples) {
       for (const cle of ['0', '1']) {
         const sort = couple[cle];

@@ -95,8 +95,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Esquive % des coups en reculant de case(s)",
-    "en": "Parries % of hits by moving back cell(s)"
+    "fr": "Esquive % des coups en reculant de case",
+    "en": "Parries % of hits by moving back cell"
   },
   {
     "id": 10,
@@ -2284,8 +2284,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 1,
-    "fr": ": + lancer(s) par tour",
-    "en": ": + cast(s) per turn"
+    "fr": ": + lancer par tour",
+    "en": ": + cast per turn"
   },
   {
     "id": 291,
@@ -2295,8 +2295,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 1,
-    "fr": ": + lancer(s) par cible",
-    "en": ": + cast(s) per target"
+    "fr": ": + lancer par cible",
+    "en": ": + cast per target"
   },
   {
     "id": 292,
@@ -2691,7 +2691,7 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 1,
-    "fr": "Dommage Critiques",
+    "fr": "Dommage Critique",
     "en": "Critical Damage"
   },
   {
@@ -2702,7 +2702,7 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": -1,
-    "fr": "- Dommage Critiques",
+    "fr": "- Dommage Critique",
     "en": "- Critical Damage"
   },
   {
@@ -2858,6 +2858,17 @@
     "bonusType": 0,
     "fr": "Réduit la taille d'une aura de la cible",
     "en": "Decreases the size of the target's aura"
+  },
+  {
+    "id": 434,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "Modifie la zone de l'aura de la cible",
+    "en": "Changes an aura's area of effect"
   },
   {
     "id": 440,
@@ -3472,8 +3483,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Change l'élément de frappe",
-    "en": "Changes the strike element"
+    "fr": "Change l'élément de frappe en à %",
+    "en": "Changes the strike element to at a rate of %"
   },
   {
     "id": 701,
@@ -3798,12 +3809,12 @@
     "id": 780,
     "characteristic": 0,
     "elementId": -1,
-    "operator": "+",
+    "operator": "",
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Invoque le dernier allié mort avec % de ses PV",
-    "en": "Summons the last ally who died with % HP"
+    "fr": "Invoque le dernier allié mort avec % de sa vie",
+    "en": "Summons the last ally who died with % of their health"
   },
   {
     "id": 781,
@@ -4364,7 +4375,7 @@
     "useInFight": false,
     "bonusType": 0,
     "fr": "État",
-    "en": "state"
+    "en": "} state"
   },
   {
     "id": 951,
@@ -4375,7 +4386,7 @@
     "useInFight": false,
     "bonusType": 0,
     "fr": "Enlève l'état",
-    "en": "Removes the state"
+    "en": "Removes the } state"
   },
   {
     "id": 952,
@@ -4386,7 +4397,7 @@
     "useInFight": false,
     "bonusType": 0,
     "fr": "Désactive l'état",
-    "en": "Deactivates the state"
+    "en": "Deactivates the } state"
   },
   {
     "id": 955,
@@ -4407,8 +4418,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Créé depuis : jour(s)",
-    "en": "Created day(s) ago"
+    "fr": "Créé depuis : jour",
+    "en": "Created in the past: day"
   },
   {
     "id": 964,
@@ -4880,8 +4891,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Invoque le dernier allié mort avec % de ses PV",
-    "en": "Summons the last ally who died with % HP"
+    "fr": "Invoque le dernier allié mort avec % de sa vie",
+    "en": "Summons the last ally who died with % of their health"
   },
   {
     "id": 1035,
@@ -6534,6 +6545,17 @@
     "en": ""
   },
   {
+    "id": 2048,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "Dissipe les marques de prévisualisation",
+    "en": "Clears preview marks"
+  },
+  {
     "id": 2160,
     "characteristic": 0,
     "elementId": -1,
@@ -7487,8 +7509,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Donne le sort :",
-    "en": "Gives the spell:"
+    "fr": "Attribut le sort initial :",
+    "en": "Assigns the starting spell:"
   },
   {
     "id": 2865,
@@ -7509,8 +7531,8 @@
     "isInPercent": true,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Expérience x% ( minute)",
-    "en": "Experience x% ( minute)"
+    "fr": "Expérience x% (hors arènes) ( minute)",
+    "en": "Experience x% (excluding arenas) ( minute)"
   },
   {
     "id": 2868,
@@ -8283,6 +8305,17 @@
     "en": "Changes the target's side"
   },
   {
+    "id": 3185,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "Réinitialise les effets d'une arme de niveau inférieur ou égal à",
+    "en": "Resets the effects of a weapon whose level is equal to or less than"
+  },
+  {
     "id": 3281,
     "characteristic": 0,
     "elementId": -1,
@@ -8345,8 +8378,8 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": ": + lancer(s) par tour",
-    "en": ": + cast(s) per turn"
+    "fr": ": + lancer par tour",
+    "en": ": + cast per turn"
   },
   {
     "id": 3293,
@@ -9148,7 +9181,7 @@
     "isInPercent": false,
     "useInFight": false,
     "bonusType": 0,
-    "fr": "Retire les portails sur la cellule",
+    "fr": "Retire les portails sur la case",
     "en": "Removes portals from the cell"
   },
   {
@@ -9590,5 +9623,104 @@
     "bonusType": 0,
     "fr": "Valeur d'un objet",
     "en": "An item's value"
+  },
+  {
+    "id": 4068,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "",
+    "en": ""
+  },
+  {
+    "id": 4069,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "",
+    "en": ""
+  },
+  {
+    "id": 4070,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": ":",
+    "en": ":"
+  },
+  {
+    "id": 4071,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "Incrémente le compteur de",
+    "en": "Increases the counter by"
+  },
+  {
+    "id": 4072,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "Décrémente le compteur de",
+    "en": "Decreases the counter by"
+  },
+  {
+    "id": 4073,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "Réinitialise le compteur",
+    "en": "Resets the counter"
+  },
+  {
+    "id": 4074,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "Pose une marque de prévisualisation",
+    "en": "Places a preview mark"
+  },
+  {
+    "id": 4075,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "",
+    "en": ""
+  },
+  {
+    "id": 4076,
+    "characteristic": 0,
+    "elementId": -1,
+    "operator": "",
+    "isInPercent": false,
+    "useInFight": false,
+    "bonusType": 0,
+    "fr": "",
+    "en": ""
   }
 ]
