@@ -11,7 +11,7 @@
  */
 
 /** Version publiee, au format « majeur.mineur.correctif ». */
-export const VERSION = '1.15.0';
+export const VERSION = '1.15.1';
 
 /** Version telle qu'elle se montre a l'ecran. */
 export const VERSION_LUE = `v${VERSION}`;

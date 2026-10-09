@@ -41095,7 +41095,8 @@
       28344,
       28428,
       28429,
-      28430
+      28430,
+      34578
     ],
     "effects": []
   },
@@ -41132,7 +41133,7 @@
   },
   {
     "id": 581,
-    "fr": "Panoplie d'apparat Roublard",
+    "fr": "Panoplie d'apparat Roublarde",
     "itemIds": [
       21454,
       21455,
@@ -41231,7 +41232,8 @@
       23568,
       23583,
       23584,
-      23646
+      23646,
+      34580
     ],
     "effects": []
   },
@@ -41321,7 +41323,8 @@
       25363,
       25364,
       25994,
-      30235
+      30235,
+      34579
     ],
     "effects": []
   },
@@ -41457,7 +41460,7 @@
   },
   {
     "id": 604,
-    "fr": "Panoplie d'apparat de Lumino",
+    "fr": "Panoplie d'apparat de Lumino Star",
     "itemIds": [
       27428,
       27429,
@@ -42940,13 +42943,14 @@
   },
   {
     "id": 742,
-    "fr": "Panoplie d'apparat du Plagiste",
+    "fr": "Panoplie d'apparat du plagiste",
     "itemIds": [
       28563,
       28564,
       28565,
       28566,
-      30812
+      30812,
+      34500
     ],
     "effects": []
   },
@@ -43363,8 +43367,7 @@
     "fr": "Panoplie d'apparat de Glourdorak",
     "itemIds": [
       9924,
-      9926,
-      12273
+      9926
     ],
     "effects": []
   },
@@ -43958,7 +43961,8 @@
       30062,
       30063,
       30064,
-      30066
+      30066,
+      30240
     ],
     "effects": []
   },
@@ -44104,7 +44108,7 @@
   },
   {
     "id": 858,
-    "fr": "Panoplie Retrofus",
+    "fr": "Panoplie d'apparat Retrofus",
     "itemIds": [
       30434,
       30538,
@@ -52307,7 +52311,7 @@
   },
   {
     "id": 1059,
-    "fr": "Ankamanoplie",
+    "fr": "Ankamanoplie d'apparat",
     "itemIds": [
       33531,
       33532,
@@ -53644,12 +53648,12 @@
   },
   {
     "id": 1081,
-    "fr": "Panoplie d'apparat de la loterie Turquoise",
+    "fr": "Panoplie d'apparat de la loterie Ébène",
     "itemIds": [
-      34128,
-      34129,
-      34130,
-      34131
+      34641,
+      34642,
+      34643,
+      34644
     ],
     "effects": []
   },
@@ -53690,7 +53694,7 @@
   },
   {
     "id": 1085,
-    "fr": "Panoplie d'apparat de la loterie Poupre",
+    "fr": "Panoplie d'apparat de la loterie Pourpre",
     "itemIds": [
       34230,
       34231,
@@ -54131,7 +54135,7 @@
   },
   {
     "id": 1102,
-    "fr": "Panoplie des 25 ans du Krosmoz",
+    "fr": "Panoplie d'apparat des 25 ans du Krosmoz",
     "itemIds": [
       34512,
       34513,
@@ -54155,6 +54159,19 @@
     "effects": []
   },
   {
+    "id": 1103,
+    "fr": "Panoplie d'apparat de Goultard le Maudit",
+    "itemIds": [
+      34552,
+      34553,
+      34554,
+      34555,
+      34556,
+      34557
+    ],
+    "effects": []
+  },
+  {
     "id": 1104,
     "fr": "Panoplie d'apparat de la loterie Ivoire",
     "itemIds": [
@@ -54162,6 +54179,16 @@
       34559,
       34560,
       34561
+    ],
+    "effects": []
+  },
+  {
+    "id": 1105,
+    "fr": "Panoplie d'apparat d'Otomaï",
+    "itemIds": [
+      34563,
+      34564,
+      34565
     ],
     "effects": []
   },
@@ -54179,11 +54206,90 @@
     "effects": []
   },
   {
+    "id": 1109,
+    "fr": "Panoplie d'apparat de Jade",
+    "itemIds": [
+      34636,
+      34637,
+      34638,
+      34639,
+      34640
+    ],
+    "effects": []
+  },
+  {
     "id": 1110,
     "fr": "Panoplie d'apparat de Welsh et Shedar",
     "itemIds": [
       34622,
       34623
+    ],
+    "effects": []
+  },
+  {
+    "id": 1111,
+    "fr": "Panoplie d'apparat de la Démone VII",
+    "itemIds": [
+      34676,
+      34677,
+      34678,
+      34679
+    ],
+    "effects": []
+  },
+  {
+    "id": 1112,
+    "fr": "Panoplie d'apparat diaprée de la Démone VII",
+    "itemIds": [
+      34680,
+      34681,
+      34682,
+      34683
+    ],
+    "effects": []
+  },
+  {
+    "id": 1113,
+    "fr": "Panoplie d'apparat du Gardien des âmes",
+    "itemIds": [
+      34684,
+      34685,
+      34687,
+      34688,
+      34689,
+      34690
+    ],
+    "effects": []
+  },
+  {
+    "id": 1125,
+    "fr": "Panoplie d'apparat de Zabelle",
+    "itemIds": [
+      34795,
+      34796,
+      34797,
+      34798
+    ],
+    "effects": []
+  },
+  {
+    "id": 1126,
+    "fr": "Panoplie d'apparat de Welsh",
+    "itemIds": [
+      34800,
+      34802,
+      34804,
+      34805
+    ],
+    "effects": []
+  },
+  {
+    "id": 1127,
+    "fr": "Panoplie d'apparat de Shedar",
+    "itemIds": [
+      34801,
+      34803,
+      34806
     ],
     "effects": []
   }
