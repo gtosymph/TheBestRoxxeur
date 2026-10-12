@@ -16,7 +16,9 @@
  * 1. L'adversaire frappe uniformement dans les cinq elements. Le modele prend
  *    donc la moyenne des cinq coups. Une resistance dans un seul element ne
  *    vaut qu'un cinquieme de sa valeur : c'est juste en donjon, severe face a
- *    un adversaire unique.
+ *    un adversaire unique. Le neutre fait exception, son poids se regle : en
+ *    PvP, les degats neutres sont rares, et une resistance neutre y vaut
+ *    moins qu'une autre.
  * 2. La resistance fixe n'a de valeur que face a un coup de taille connue.
  *    Le coup de reference vaut trois cents degats par defaut ; le baisser
  *    donne plus de poids aux resistances fixes.
@@ -32,6 +34,9 @@ const RES_FIXE = Object.freeze(ELEMENTS.map(
 const RES_PCT = Object.freeze(ELEMENTS.map(
   (element) => `pctRes${element[0].toUpperCase()}${element.slice(1)}`,
 ));
+
+/** Rang du neutre dans les elements, le seul dont le poids se regle. */
+const RANG_NEUTRE = ELEMENTS.indexOf('neutre');
 
 /**
  * Reduction minimale admise.
@@ -50,24 +55,28 @@ export const MENACE_DEFAUT = Object.freeze({
   plafond: 50,
   /** Compter les resistances melee et distance, moitie chacune. */
   position: true,
+  /** Poids du neutre dans la moyenne, en pourcentage d'un element entier. */
+  neutre: 100,
 });
 
 /**
  * Complete un reglage partiel, et refuse les valeurs qui n'ont pas de sens.
  *
- * @param {{coup?: number, plafond?: number, position?: boolean}} [brut]
- * @returns {{coup: number, plafond: number, position: boolean}} Fige.
+ * @param {{coup?: number, plafond?: number, position?: boolean, neutre?: number}} [brut]
+ * @returns {{coup: number, plafond: number, position: boolean, neutre: number}} Fige.
  */
 export function normaliserMenace(brut = null) {
   if (!brut) return MENACE_DEFAUT;
 
   const coup = Number(brut.coup);
   const plafond = Number(brut.plafond);
+  const neutre = Number(brut.neutre);
 
   return Object.freeze({
     coup: Number.isFinite(coup) && coup > 0 ? coup : MENACE_DEFAUT.coup,
     plafond: Number.isFinite(plafond) && plafond >= 0 ? plafond : MENACE_DEFAUT.plafond,
     position: brut.position !== false,
+    neutre: Number.isFinite(neutre) && neutre >= 0 && neutre <= 100 ? neutre : MENACE_DEFAUT.neutre,
   });
 }
 
@@ -77,21 +86,30 @@ export function normaliserMenace(brut = null) {
  * Un resultat de 0,8 veut dire que le personnage prend quatre cinquiemes des
  * degats. Au-dessus de un, il est vulnerable.
  *
+ * Le coup moyen pese chaque element : un pour les quatre elements, le poids
+ * du neutre pour le neutre. A zero, le neutre sort de la moyenne, sa
+ * vulnerabilite comprise.
+ *
  * @param {Record<string, number>} stats Statistiques agregees.
- * @param {{coup: number, plafond: number, position: boolean}} [menace]
+ * @param {{coup: number, plafond: number, position: boolean, neutre?: number}} [menace]
  * @returns {number} Strictement positif.
  */
 export function reductionSubie(stats, menace = MENACE_DEFAUT) {
   const { coup, plafond } = menace;
+  // Un reglage ancien, sans poids du neutre, garde le calcul a cinq elements.
+  const poidsNeutre = (menace.neutre ?? MENACE_DEFAUT.neutre) / 100;
 
   let total = 0;
+  let poids = 0;
   for (let i = 0; i < RES_FIXE.length; i += 1) {
+    const poidsElement = i === RANG_NEUTRE ? poidsNeutre : 1;
     const fixe = stats[RES_FIXE[i]] ?? 0;
     const pct = Math.min(plafond, stats[RES_PCT[i]] ?? 0) / 100;
-    total += Math.max(0, coup - fixe) * (1 - pct);
+    total += poidsElement * Math.max(0, coup - fixe) * (1 - pct);
+    poids += poidsElement;
   }
 
-  let reduction = total / (RES_FIXE.length * coup);
+  let reduction = total / (poids * coup);
 
   if (menace.position) {
     const melee = Math.min(plafond, stats.pctResMelee ?? 0);
@@ -107,7 +125,7 @@ export function reductionSubie(stats, menace = MENACE_DEFAUT) {
  *
  * @param {number} pdv Points de vie reels.
  * @param {Record<string, number>} stats Statistiques agregees.
- * @param {{coup: number, plafond: number, position: boolean}} [menace]
+ * @param {{coup: number, plafond: number, position: boolean, neutre?: number}} [menace]
  * @returns {number} Entier.
  */
 export function pdvEffectifs(pdv, stats, menace = MENACE_DEFAUT) {
