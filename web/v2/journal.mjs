@@ -20,6 +20,17 @@
 /** @type {Entree[]} */
 export const JOURNAL = Object.freeze([
   {
+    version: '1.16.0',
+    date: '2026-10-13',
+    titre: 'Des pdv effectifs pour le PvP',
+    points: [
+      'Le réglage « Poids du neutre » dit combien le neutre compte dans les pdv effectifs.',
+      'À 0 %, vos résistances neutres ne comptent plus, et la moyenne se fait sur terre, '
+        + 'feu, eau et air : en PvP, les dégâts neutres sont rares.',
+      'À 100 %, le calcul ne change pas : c\'est la valeur de départ.',
+    ],
+  },
+  {
     version: '1.15.1',
     date: '2026-10-09',
     titre: 'Les objets de Dofus 3.7',

@@ -223,6 +223,7 @@ export function menaceDe(etat) {
     coup: etat.options.menaceCoup,
     plafond: etat.options.menacePlafond,
     position: etat.options.menacePosition !== false,
+    neutre: etat.options.menaceNeutre,
   });
 }
 

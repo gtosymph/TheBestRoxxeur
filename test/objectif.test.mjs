@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 
 import {
   attaqueArme, attaquesAffichees, budgetForge, buildCourant, exosDe, forgeDe, itemsFiltres,
-  objectif, sortsCalcules, valeurDeReference,
+  menaceDe, objectif, sortsCalcules, valeurDeReference,
 } from '../web/objectif.mjs';
 import { etatInitial } from '../web/reglages.mjs';
 import { SEARCH_MODES } from '../src/solver/score.mjs';
@@ -318,5 +318,24 @@ test('forgemagie automatique', async (t) => {
     const cible = objectif(etatPanoplie(), CATALOGUE_PANOPLIE);
     assert.equal(cible.forge.budget, 101);
     assert.equal(typeof cible.forge.valeurs, 'object');
+  });
+});
+
+test('menaceDe porte le poids du neutre', async (t) => {
+  await t.test('par defaut, le neutre compte entierement', () => {
+    assert.equal(etatInitial().options.menaceNeutre, 100);
+    assert.equal(menaceDe(etatInitial()).neutre, 100);
+  });
+
+  await t.test('le reglage du joueur arrive au moteur', () => {
+    const etat = etatInitial();
+    const pvp = { ...etat, options: { ...etat.options, menaceNeutre: 0 } };
+    assert.equal(menaceDe(pvp).neutre, 0);
+  });
+
+  await t.test('un etat ancien, sans le reglage, garde le neutre entier', () => {
+    const etat = etatInitial();
+    const { menaceNeutre: _oublie, ...anciennes } = etat.options;
+    assert.equal(menaceDe({ ...etat, options: anciennes }).neutre, 100);
   });
 });

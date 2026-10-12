@@ -19,7 +19,9 @@
 export const PRES_DES_DEGATS = Object.freeze(['arme', 'distance']);
 
 /** Options qui definissent ce que « Pdv effectifs » veut dire. */
-export const PRES_DES_PDV = Object.freeze(['menaceCoup', 'menacePlafond', 'menacePosition']);
+export const PRES_DES_PDV = Object.freeze([
+  'menaceCoup', 'menaceNeutre', 'menacePlafond', 'menacePosition',
+]);
 
 /**
  * Options qui ne parlent que de l'enchainement des sorts choisis.

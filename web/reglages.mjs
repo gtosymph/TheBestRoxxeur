@@ -98,6 +98,12 @@ export const OPTIONS = Object.freeze([
       + 'résistances fixes dans les « Pdv effectifs » : 30 de résistance fixe\n'
       + 'enleve 10 % d\'un coup de 300, mais 20 % d\'un coup de 150.\n'
       + 'Baissez-le si vous prenez beaucoup de petits coups.' },
+  { cle: 'menaceNeutre', groupe: 'defense', libelle: 'Poids du neutre (%)', type: 'nombre', min: 0, max: 100,
+    aide: 'Part des coups neutres dans les « Pdv effectifs ». A 100, le neutre\n'
+      + 'compte comme les quatre autres éléments. En PvP, les dégâts neutres\n'
+      + 'sont rares : a 0, vos résistances neutres ne comptent plus, et la\n'
+      + 'moyenne se fait sur terre, feu, eau et air. Entre les deux, le neutre\n'
+      + 'compte un peu.' },
   { cle: 'menacePlafond', groupe: 'defense', libelle: 'Plafond de résistance (%)', type: 'nombre', min: 0, max: 100,
     aide: 'Le jeu plafonné chaque résistance en pourcentage a 50 pour un joueur.\n'
       + 'Au-delà, le calcul ignore le surplus. Montez-le a 60 si vous voulez\n'
@@ -238,7 +244,7 @@ export function etatInitial() {
       armePortee: '', armePorteeMin: 0,
       armeElementsMin: 0, armeElementsMax: 0,
       // Modele d'adversaire qui sert aux points de vie effectifs.
-      menaceCoup: 300, menacePlafond: 50, menacePosition: true,
+      menaceCoup: 300, menaceNeutre: 100, menacePlafond: 50, menacePosition: true,
       forgeAuto: false, forgePoids: 101,
       exosPa: 0, exosPm: 0, exosPo: 0,
     },

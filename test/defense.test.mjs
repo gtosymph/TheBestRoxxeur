@@ -173,6 +173,77 @@ test('normaliserMenace', async (t) => {
   await t.test('le reglage rendu est fige', () => {
     assert.throws(() => { normaliserMenace().coup = 1; });
   });
+
+  await t.test('le neutre compte entierement par defaut', () => {
+    assert.equal(MENACE_DEFAUT.neutre, 100);
+  });
+
+  await t.test('un poids du neutre partiel garde les autres valeurs', () => {
+    assert.deepEqual(normaliserMenace({ neutre: 25 }), { ...MENACE_DEFAUT, neutre: 25 });
+  });
+
+  await t.test('un poids du neutre a zero reste a zero', () => {
+    assert.equal(normaliserMenace({ neutre: 0 }).neutre, 0);
+  });
+
+  await t.test('un poids du neutre faux revient au defaut', () => {
+    for (const neutre of [-1, 101, 'x', NaN]) {
+      assert.equal(normaliserMenace({ neutre }).neutre, MENACE_DEFAUT.neutre);
+    }
+  });
+});
+
+/**
+ * Poids du neutre.
+ *
+ * En PvP, les degats neutres sont rares : une resistance neutre y vaut moins
+ * qu'une resistance dans un autre element. Le poids du neutre dit quelle part
+ * d'un element entier le neutre represente dans la moyenne des coups.
+ */
+test('poids du neutre', async (t) => {
+  const sansNeutre = normaliserMenace({ neutre: 0 });
+
+  await t.test('a zero, la resistance neutre en pourcentage ne compte pas', () => {
+    assert.equal(reductionSubie(avec({ pctResNeutre: 50 }), sansNeutre), 1);
+  });
+
+  await t.test('a zero, la resistance neutre fixe ne compte pas', () => {
+    assert.equal(reductionSubie(avec({ resNeutre: 300 }), sansNeutre), 1);
+  });
+
+  await t.test('a zero, la vulnerabilite neutre ne compte pas', () => {
+    assert.equal(reductionSubie(avec({ pctResNeutre: -50 }), sansNeutre), 1);
+  });
+
+  await t.test('a zero, la moyenne se fait sur les quatre autres elements', () => {
+    // Vingt pour cent en terre, feu, eau et air : la reduction vaut vingt
+    // pour cent, et non seize comme sur cinq elements.
+    const stats = avec({ pctResTerre: 20, pctResFeu: 20, pctResEau: 20, pctResAir: 20 });
+    assert.equal(reductionSubie(stats, sansNeutre), 0.8);
+  });
+
+  await t.test('un poids partiel reduit la part du neutre', () => {
+    // Poids un demi : (0,5 x 150 + 4 x 300) / (4,5 x 300) = 17/18.
+    const menace = normaliserMenace({ neutre: 50 });
+    const reduction = reductionSubie(avec({ pctResNeutre: 50 }), menace);
+    assert.equal(Number(reduction.toFixed(9)), Number((17 / 18).toFixed(9)));
+  });
+
+  await t.test('a cent, le calcul reste celui des cinq elements egaux', () => {
+    const menace = normaliserMenace({ neutre: 100 });
+    assert.equal(reductionSubie(avec({ pctResFeu: 50 }), menace), 0.9);
+  });
+
+  await t.test('le plancher tient aussi sans le neutre', () => {
+    const stats = avec({ resTerre: 9999, resFeu: 9999, resEau: 9999, resAir: 9999 });
+    assert.equal(reductionSubie(stats, sansNeutre), REDUCTION_PLANCHER);
+  });
+
+  await t.test('les points de vie effectifs ignorent le neutre a zero', () => {
+    const stats = avec({ pctResNeutre: 50 });
+    assert.equal(pdvEffectifs(3000, stats, sansNeutre), 3000);
+    assert.equal(pdvEffectifs(3000, stats), 3333);
+  });
 });
 
 /**
