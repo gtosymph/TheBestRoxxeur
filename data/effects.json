@@ -4375,7 +4375,7 @@
     "useInFight": false,
     "bonusType": 0,
     "fr": "État",
-    "en": "} state"
+    "en": "state"
   },
   {
     "id": 951,
@@ -4386,7 +4386,7 @@
     "useInFight": false,
     "bonusType": 0,
     "fr": "Enlève l'état",
-    "en": "Removes the } state"
+    "en": "Removes the state"
   },
   {
     "id": 952,
@@ -4397,7 +4397,7 @@
     "useInFight": false,
     "bonusType": 0,
     "fr": "Désactive l'état",
-    "en": "Deactivates the } state"
+    "en": "Deactivates the state"
   },
   {
     "id": 955,
